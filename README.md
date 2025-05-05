@@ -74,9 +74,8 @@ metadata:
 ### Define a function:
 
 ```yaml
-!eval
-- defun
-- mkpod
+&mkpod
+- lambda 
 - [name: !string, image: !string]
 - apiVersion: v1
   kind: Pod
