@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 	"github.com/pkg/errors"
-	"sigs.k8s.io/yaml/goyaml.v3"
+	"github.com/totegamma/yisp/yaml"
 )
 
 func eval(name string, arg []any) (any, error) {
