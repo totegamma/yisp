@@ -1,13 +1,13 @@
 package main
 
 import (
-	"strconv"
-	"maps"
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
 	"github.com/totegamma/yisp/yaml"
 	"io"
+	"maps"
+	"strconv"
 	"strings"
 )
 
@@ -41,11 +41,10 @@ const (
 )
 
 type YispNode struct {
-	Kind  Kind
-	Tag   string
-	Body  any
+	Kind Kind
+	Tag  string
+	Body any
 }
-
 
 func (env *Environment) Clone() *Environment {
 	newEnv := NewEnvironment()
@@ -53,29 +52,13 @@ func (env *Environment) Clone() *Environment {
 	return newEnv
 }
 
-/*
-func eval(name string, arg []any) (any, error) {
-	switch name {
-	case "join":
-		var result string
-		for _, item := range arg {
-			if str, ok := item.(string); ok {
-				result += str
-			} else {
-				return nil, fmt.Errorf("invalid argument type for join: %T", item)
-			}
-		}
-		return result, nil
-	default:
-		return nil, fmt.Errorf("unknown function: %s", name)
-	}
-}
-*/
-
 func eval(node *YispNode, env *Environment) (any, error) {
 	switch node.Kind {
 	case KindSymbol:
-		return fmt.Sprintf("symbol: %v", node.Body), nil
+		body := globals.Vars[node.Body.(string)]
+		node := body.(*YispNode)
+
+		return eval(node, env)
 
 	case KindParameter:
 		return fmt.Sprintf("parameter: %v (type: %v)", node.Body, node.Tag), nil
@@ -105,25 +88,62 @@ func eval(node *YispNode, env *Environment) (any, error) {
 		return node.Body, nil
 
 	case KindArray:
+
 		arr, ok := node.Body.([]any)
 		if !ok {
 			return nil, fmt.Errorf("invalid array type: %T", node.Body)
 		}
 
-		results := make([]any, len(arr))
-		for i, item := range arr {
-			node, ok := item.(*YispNode)
+		if node.Tag == "!eval" {
+			carNode, ok := arr[0].(*YispNode)
 			if !ok {
-				return nil, fmt.Errorf("invalid item type: %T", item)
+				return nil, fmt.Errorf("invalid car type: %T", arr[0])
+			}
+			car, ok := carNode.Body.(string)
+			if !ok {
+				return nil, fmt.Errorf("invalid car value: %T", carNode.Body)
 			}
 
-			result, err := eval(node, env)
-			if err != nil {
-				return nil, err
+			cdr := arr[1:]
+
+			switch car {
+			case "join":
+				var result string
+				for _, item := range cdr {
+					node, ok := item.(*YispNode)
+					if !ok {
+						return nil, fmt.Errorf("invalid item type: %T", item)
+					}
+					val, err := eval(node, env)
+					if err != nil {
+						return nil, err
+					}
+					str, ok := val.(string)
+					if !ok {
+						return nil, fmt.Errorf("invalid argument type for join: %T", val)
+					}
+					result += str
+				}
+				return result, nil
 			}
-			results[i] = result
+
+		} else {
+
+			results := make([]any, len(arr))
+			for i, item := range arr {
+				node, ok := item.(*YispNode)
+				if !ok {
+					return nil, fmt.Errorf("invalid item type: %T", item)
+				}
+
+				result, err := eval(node, env)
+				if err != nil {
+					return nil, err
+				}
+				results[i] = result
+			}
+			return results, nil
 		}
-		return results, nil
 
 	case KindMap:
 		m, ok := node.Body.(map[string]any)
@@ -148,8 +168,6 @@ func eval(node *YispNode, env *Environment) (any, error) {
 	}
 	return nil, nil
 }
-
-
 
 var globals = NewEnvironment()
 
@@ -220,7 +238,7 @@ func parse(node *yaml.Node, env *Environment) (*YispNode, error) {
 		}
 
 		result = &YispNode{
-			Kind: kind, 
+			Kind: kind,
 			Body: node.Value,
 			Tag:  node.Tag,
 		}
@@ -243,29 +261,42 @@ func parse(node *yaml.Node, env *Environment) (*YispNode, error) {
 
 func main() {
 
+	/*
+	   	data := `
+	   &mkpod
+	   - lambda
+	   - - !string name
+	     - !string image
+	   - apiVersion: v1
+	     kind: Pod
+	     metadata:
+	       name: *name
+	     spec:
+	       containers:
+	         - name: *name
+	           image: *image
+	   ---
+	   !eval
+	   - mkpod
+	   - mypod1
+	   - myimage1
+	   - null
+	   - true
+	   - 3
+	   `
+	*/
+
 	data := `
-&mkpod
-- lambda 
-- - !string name
-  - !string image
-- apiVersion: v1
-  kind: Pod
-  metadata:
-    name: *name
-  spec:
-    containers:
-      - name: *name
-        image: *image
+- &a first
+- second
+- *a
 ---
 !eval
-- mkpod
-- mypod1
-- myimage1
-- null
-- true
-- 3
+- join
+- 'Hello'
+- ' '
+- 'World'
 `
-
 
 	decoder := yaml.NewDecoder(strings.NewReader(data))
 	if decoder == nil {
@@ -296,11 +327,7 @@ func main() {
 		}
 
 		JsonPrint("result", result)
-
-		/*
-		JsonPrint("parsed", parsed)
-		JsonPrint("globals", globals)
-		*/
+		//JsonPrint("globals", globals)
 
 	}
 }
