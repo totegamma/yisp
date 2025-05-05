@@ -214,9 +214,11 @@ func (p *parser) document() *Node {
 func (p *parser) alias() *Node {
 	n := p.node(AliasNode, "", "", string(p.event.anchor))
 	n.Alias = p.anchors[n.Value]
+	/* // allow unresolved anchors
 	if n.Alias == nil {
 		failf("unknown anchor '%s' referenced", n.Value)
 	}
+	*/
 	p.expect(yaml_ALIAS_EVENT)
 	return n
 }

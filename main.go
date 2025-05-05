@@ -3,10 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
-	"strings"
 	"github.com/pkg/errors"
 	"github.com/totegamma/yisp/yaml"
+	"io"
+	"strings"
 )
 
 func eval(name string, arg []any) (any, error) {
@@ -76,50 +76,25 @@ func bake(node *yaml.Node) (any, error) {
 
 func main() {
 
-	/*
-	data :=`
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: example-config
-  namespace: default
-  labels:
-    app: &appname example-app
-    name: *appname
+	data := `
+&mkpod
+- lambda 
+- - !string name
+  - !string image
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    name: *name
+  spec:
+    containers:
+      - name: *name
+        image: *image
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: example-config2
-  namespace: default
-`
-*/
-
-data := `
-mystring: !eval
-  - join
-  - hello
-  - ' '
-  - world
-`
-
-/*
-data := `
 !eval
-- join
-- hello
-- ' '
-- world
+- mkpod
+- mypod1
+- myimage1
 `
-*/
-
-/*
-	fmt.Printf("DocumentNode: %v\n", yaml.DocumentNode) // 1
-	fmt.Printf("SequenceNode: %v\n", yaml.SequenceNode) // 2
-	fmt.Printf("MappingNode: %v\n", yaml.MappingNode) // 4
-	fmt.Printf("ScalarNode: %v\n", yaml.ScalarNode) // 8
-	fmt.Printf("AliasNode: %v\n", yaml.AliasNode) // 16
-*/
 
 	decoder := yaml.NewDecoder(strings.NewReader(data))
 	if decoder == nil {
@@ -137,11 +112,11 @@ data := `
 		}
 
 		/*
-		jsonData, err := json.MarshalIndent(root, "", "  ")
-		if err != nil {
-			panic(err)
-		}
-		fmt.Println(string(jsonData))
+			jsonData, err := json.MarshalIndent(root, "", "  ")
+			if err != nil {
+				panic(err)
+			}
+			fmt.Println(string(jsonData))
 		*/
 		baked, err := bake(&root)
 		if err != nil {
@@ -154,5 +129,3 @@ data := `
 		fmt.Println(string(bakedJSON))
 	}
 }
-
-
