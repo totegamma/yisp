@@ -41,9 +41,10 @@ const (
 )
 
 type YispNode struct {
-	Kind Kind
-	Tag  string
-	Body any
+	Kind   Kind
+	Tag    string
+	Body   any
+	Params []string
 }
 
 func (env *Environment) Clone() *Environment {
@@ -53,10 +54,26 @@ func (env *Environment) Clone() *Environment {
 }
 
 func eval(node *YispNode, env *Environment) (any, error) {
+
+	if node.Tag == "!noeval" {
+		return nil, nil
+	}
+
 	switch node.Kind {
 	case KindSymbol:
-		body := globals.Vars[node.Body.(string)]
-		node := body.(*YispNode)
+		var ok bool
+		var body any
+		body, ok = globals.Vars[node.Body.(string)]
+		if !ok {
+			body, ok = env.Vars[node.Body.(string)]
+			if !ok {
+				return nil, fmt.Errorf("undefined symbol: %s", node.Body)
+			}
+		}
+		node, ok := body.(*YispNode)
+		if !ok {
+			return body, nil
+		}
 
 		return eval(node, env)
 
@@ -125,6 +142,80 @@ func eval(node *YispNode, env *Environment) (any, error) {
 					result += str
 				}
 				return result, nil
+			case "lambda":
+				if len(cdr) != 2 {
+					return nil, fmt.Errorf("lambda requires 2 arguments")
+				}
+
+				paramsNode, ok := cdr[0].(*YispNode)
+				if !ok {
+					return nil, fmt.Errorf("invalid params type: %T", cdr[0])
+				}
+
+				params := make([]string, 0)
+				for _, item := range paramsNode.Body.([]any) {
+					paramNode, ok := item.(*YispNode)
+					if !ok {
+						return nil, fmt.Errorf("invalid param type: %T", item)
+					}
+					param, ok := paramNode.Body.(string)
+					if !ok {
+						return nil, fmt.Errorf("invalid param value: %T", paramNode.Body)
+					}
+					params = append(params, param)
+				}
+
+				body, ok := cdr[1].(*YispNode)
+				if !ok {
+					return nil, fmt.Errorf("invalid body type: %T", cdr[1])
+				}
+
+				body.Params = params
+
+				return body, nil
+
+			default:
+				val, ok := globals.Vars[car]
+				if !ok {
+					return nil, fmt.Errorf("unknown function: %s", car)
+				}
+
+				function, ok := val.(*YispNode)
+				if !ok {
+					return nil, fmt.Errorf("invalid function type: %T", val)
+				}
+
+				function.Tag = "!eval"
+
+				funVal, err := eval(function, env)
+				if err != nil {
+					return nil, err
+				}
+
+				funNode, ok := funVal.(*YispNode)
+				if !ok {
+					return nil, fmt.Errorf("invalid function value type: %T", funVal)
+				}
+
+				if len(funNode.Params) != len(cdr) {
+					return nil, fmt.Errorf("function %s requires %d arguments, got %d", car, len(funNode.Params), len(cdr))
+				}
+
+				newEnv := env.Clone()
+
+				for i, item := range cdr {
+					node, ok := item.(*YispNode)
+					if !ok {
+						return nil, fmt.Errorf("invalid item type: %T", item)
+					}
+					val, err := eval(node, env)
+					if err != nil {
+						return nil, err
+					}
+					newEnv.Vars[funNode.Params[i]] = val
+				}
+
+				return eval(funNode, newEnv)
 			}
 
 		} else {
@@ -261,41 +352,25 @@ func parse(node *yaml.Node, env *Environment) (*YispNode, error) {
 
 func main() {
 
-	/*
-	   	data := `
-	   &mkpod
-	   - lambda
-	   - - !string name
-	     - !string image
-	   - apiVersion: v1
-	     kind: Pod
-	     metadata:
-	       name: *name
-	     spec:
-	       containers:
-	         - name: *name
-	           image: *image
-	   ---
-	   !eval
-	   - mkpod
-	   - mypod1
-	   - myimage1
-	   - null
-	   - true
-	   - 3
-	   `
-	*/
-
 	data := `
-- &a first
-- second
-- *a
+!noeval
+&mkpod
+- lambda
+- - !string name
+  - !string image
+- apiVersion: v1
+  kind: Pod
+  metadata:
+    name: *name
+  spec:
+    containers:
+      - name: *name
+        image: *image
 ---
 !eval
-- join
-- 'Hello'
-- ' '
-- 'World'
+- mkpod
+- mypod1
+- myimage1
 `
 
 	decoder := yaml.NewDecoder(strings.NewReader(data))
@@ -319,15 +394,12 @@ func main() {
 			panic(err)
 		}
 
-		//JsonPrint("parsed", parsed)
-
 		result, err := eval(parsed, globals)
 		if err != nil {
 			panic(err)
 		}
 
 		JsonPrint("result", result)
-		//JsonPrint("globals", globals)
 
 	}
 }
