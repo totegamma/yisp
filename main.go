@@ -55,7 +55,7 @@ func (env *Environment) Clone() *Environment {
 
 func eval(node *YispNode, env *Environment) (any, error) {
 
-	if node.Tag == "!noeval" {
+	if node.Tag == "!discard" {
 		return nil, nil
 	}
 
@@ -353,7 +353,7 @@ func parse(node *yaml.Node, env *Environment) (*YispNode, error) {
 func main() {
 
 	data := `
-!noeval
+!discard
 &mkpod
 - lambda
 - - !string name
