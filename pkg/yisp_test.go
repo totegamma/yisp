@@ -1,13 +1,38 @@
 package yisp
 
 import (
+	"errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/totegamma/yisp/yaml"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
+
+func getWholeYamlDocument(str string) (any, error) {
+
+	decoder := yaml.NewDecoder(strings.NewReader(str))
+	if decoder == nil {
+		return nil, errors.New("failed to create decoder")
+	}
+
+	documents := make([]any, 0)
+	for {
+		var obj any
+		err := decoder.Decode(&obj)
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, err
+		}
+		documents = append(documents, obj)
+	}
+
+	return documents, nil
+}
 
 func TestYisp(t *testing.T) {
 
@@ -27,8 +52,7 @@ func TestYisp(t *testing.T) {
 				t.Fatalf("Error evaluating Yisp file %s: %v", file, err)
 			}
 
-			var rendered any
-			err = yaml.Unmarshal([]byte(renderedStr), &rendered)
+			rendered, err := getWholeYamlDocument(renderedStr)
 			if err != nil {
 				t.Fatalf("Error unmarshalling rendered string: %v", err)
 			}
@@ -38,8 +62,7 @@ func TestYisp(t *testing.T) {
 				t.Fatalf("Error reading expected file %s: %v", expectedFile, err)
 			}
 
-			var expected any
-			err = yaml.Unmarshal(expectedStr, &expected)
+			expected, err := getWholeYamlDocument(string(expectedStr))
 			if err != nil {
 				t.Fatalf("Error unmarshalling expected file: %v", err)
 			}
