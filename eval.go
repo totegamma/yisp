@@ -136,7 +136,11 @@ func Eval(node *YispNode, env *Env) (*YispNode, error) {
 		return node, nil
 
 	case KindNull:
-		return nil, nil
+		return &YispNode{
+			Kind:  KindNull,
+			Value: nil,
+			Tag:   node.Tag,
+		}, nil
 
 	case KindBool:
 		val := false
