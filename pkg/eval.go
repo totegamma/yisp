@@ -72,6 +72,101 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env) (*YispNode, error) {
 				Value: result,
 			}, nil
 
+		case "+":
+			sum := 0
+			for _, node := range cdr {
+				val, err := Eval(node, env)
+				if err != nil {
+					return nil, err
+				}
+				num, ok := val.Value.(int)
+				if !ok {
+					return nil, fmt.Errorf("invalid argument type for +: %T", val)
+				}
+				sum += num
+			}
+			return &YispNode{
+				Kind:  KindInt,
+				Value: sum,
+			}, nil
+
+		case "-":
+			if len(cdr) == 0 {
+				return &YispNode{
+					Kind:  KindInt,
+					Value: 0,
+				}, nil
+			}
+			firstNode, err := Eval(cdr[0], env)
+			if err != nil {
+				return nil, err
+			}
+			baseNum, ok := firstNode.Value.(int)
+			if !ok {
+				return nil, fmt.Errorf("invalid argument type for -: %T", firstNode)
+			}
+			for _, node := range cdr[1:] {
+				evaluated, err := Eval(node, env)
+				if err != nil {
+					return nil, err
+				}
+				val, ok := evaluated.Value.(int)
+				if !ok {
+					return nil, fmt.Errorf("invalid argument type for -: %T", evaluated)
+				}
+				baseNum -= val
+			}
+			return &YispNode{
+				Kind:  KindInt,
+				Value: baseNum,
+			}, nil
+
+		case "if":
+			if len(cdr) != 3 {
+				return nil, fmt.Errorf("if requires 3 arguments")
+			}
+
+			condNode, err := Eval(cdr[0], env)
+			if err != nil {
+				return nil, err
+			}
+
+			cond, ok := condNode.Value.(bool)
+			if !ok {
+				return nil, fmt.Errorf("invalid condition type: %T", condNode.Value)
+			}
+
+			if cond {
+				return Eval(cdr[1], env)
+			}
+			return Eval(cdr[2], env)
+
+		case "<=":
+			if len(cdr) != 2 {
+				return nil, fmt.Errorf("<= requires 2 arguments")
+			}
+			firstNode, err := Eval(cdr[0], env)
+			if err != nil {
+				return nil, err
+			}
+			firstNum, ok := firstNode.Value.(int)
+			if !ok {
+				return nil, fmt.Errorf("invalid argument type for <=: %T", firstNode)
+			}
+			secondNode, err := Eval(cdr[1], env)
+			if err != nil {
+				return nil, err
+			}
+			secondNum, ok := secondNode.Value.(int)
+			if !ok {
+				return nil, fmt.Errorf("invalid argument type for <=: %T", secondNode)
+			}
+
+			return &YispNode{
+				Kind:  KindBool,
+				Value: firstNum <= secondNum,
+			}, nil
+
 		case "discard":
 			for _, node := range cdr {
 				Eval(node, env)
@@ -225,14 +320,27 @@ func Eval(node *YispNode, env *Env) (*YispNode, error) {
 		return nil, fmt.Errorf("invalid float value: %s", node.Value)
 
 	case KindInt:
-		if i, err := strconv.Atoi(node.Value.(string)); err == nil {
-			return &YispNode{
-				Kind:  KindInt,
-				Value: i,
-				Tag:   node.Tag,
-			}, nil
+		var i int
+		var ok bool
+		i, ok = node.Value.(int)
+		if !ok {
+			iStr, ok := node.Value.(string)
+			if !ok {
+				return nil, fmt.Errorf("invalid int type: %T", node.Value)
+			}
+
+			var err error
+			i, err = strconv.Atoi(iStr)
+			if err != nil {
+				return nil, fmt.Errorf("invalid int value: %s", iStr)
+			}
 		}
-		return nil, fmt.Errorf("invalid int value: %s", node.Value)
+
+		return &YispNode{
+			Kind:  KindInt,
+			Value: i,
+			Tag:   node.Tag,
+		}, nil
 
 	case KindString:
 		return &YispNode{
