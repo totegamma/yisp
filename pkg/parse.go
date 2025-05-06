@@ -5,7 +5,7 @@ import (
 )
 
 // Parse converts a YAML node to a YispNode
-func Parse(filename string, node *yaml.Node, env *Env) (*YispNode, error) {
+func Parse(filename string, node *yaml.Node) (*YispNode, error) {
 	var result *YispNode
 	var err error
 
@@ -14,12 +14,12 @@ func Parse(filename string, node *yaml.Node, env *Env) (*YispNode, error) {
 		if len(node.Content) == 0 {
 			return nil, nil
 		}
-		result, err = Parse(filename, node.Content[0], env)
+		result, err = Parse(filename, node.Content[0])
 
 	case yaml.SequenceNode:
 		s := make([]any, len(node.Content))
 		for i, item := range node.Content {
-			value, err := Parse(filename, item, env)
+			value, err := Parse(filename, item)
 			if err != nil {
 				return nil, err
 			}
@@ -42,7 +42,7 @@ func Parse(filename string, node *yaml.Node, env *Env) (*YispNode, error) {
 			valueNode := node.Content[i+1]
 
 			key := keyNode.Value
-			value, err := Parse(filename, valueNode, env)
+			value, err := Parse(filename, valueNode)
 			if err != nil {
 				return nil, err
 			}
@@ -96,7 +96,7 @@ func Parse(filename string, node *yaml.Node, env *Env) (*YispNode, error) {
 	}
 
 	if node.Anchor != "" {
-		env.Set(node.Anchor, result)
+		result.Anchor = node.Anchor
 	}
 
 	return result, err

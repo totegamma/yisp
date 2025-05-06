@@ -1,0 +1,14 @@
+!yisp
+- &append
+  - lambda
+  - [a, b]
+  - - if
+    - *a
+    - - cons
+      - [car, *a]
+      - - *append
+        - [cdr, *a]
+        - *b
+    - *b
+- !quote [1, 2, 3]
+- !quote [4, 5, 6]

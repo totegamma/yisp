@@ -8,6 +8,7 @@ import (
 
 // Apply applies a function to arguments
 func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+
 	switch car.Kind {
 	case KindLambda:
 		lambda, ok := car.Value.([]*YispNode)
@@ -131,8 +132,43 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 				return nil, err
 			}
 
-			cond, ok := condNode.Value.(bool)
-			if !ok {
+			cond := false
+			switch condNode.Value.(type) {
+			case bool:
+				cond, ok = condNode.Value.(bool)
+			case int:
+				condInt, ok := condNode.Value.(int)
+				if !ok {
+					return nil, fmt.Errorf("invalid condition type: %T", condNode.Value)
+				}
+				cond = condInt != 0
+			case float64:
+				condFloat, ok := condNode.Value.(float64)
+				if !ok {
+					return nil, fmt.Errorf("invalid condition type: %T", condNode.Value)
+				}
+				cond = condFloat != 0.0
+			case string:
+				condStr, ok := condNode.Value.(string)
+				if !ok {
+					return nil, fmt.Errorf("invalid condition type: %T", condNode.Value)
+				}
+				cond = condStr != ""
+			case []any:
+				condArr, ok := condNode.Value.([]any)
+				if !ok {
+					return nil, fmt.Errorf("invalid condition type: %T", condNode.Value)
+				}
+				cond = len(condArr) != 0
+			case map[string]any:
+				condMap, ok := condNode.Value.(map[string]any)
+				if !ok {
+					return nil, fmt.Errorf("invalid condition type: %T", condNode.Value)
+				}
+				cond = len(condMap) != 0
+			case nil:
+				cond = false
+			default:
 				return nil, fmt.Errorf("invalid condition type: %T", condNode.Value)
 			}
 
@@ -153,6 +189,104 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 			return compareInts(cdr, env, mode, ">", func(a, b int) bool { return a > b })
 		case ">=":
 			return compareInts(cdr, env, mode, ">=", func(a, b int) bool { return a >= b })
+
+		case "car":
+			if len(cdr) != 1 {
+				return nil, fmt.Errorf("car requires 1 argument")
+			}
+
+			listNode, err := Eval(cdr[0], env, mode)
+			if err != nil {
+				return nil, err
+			}
+
+			if listNode.Kind != KindArray {
+				return nil, fmt.Errorf("car requires a list argument, got %v", listNode.Kind)
+			}
+
+			arr, ok := listNode.Value.([]any)
+			if !ok {
+				return nil, fmt.Errorf("invalid array value: %T", listNode.Value)
+			}
+
+			if len(arr) == 0 {
+				return nil, fmt.Errorf("car: empty list")
+			}
+
+			firstElem, ok := arr[0].(*YispNode)
+			if !ok {
+				return nil, fmt.Errorf("invalid element type: %T", arr[0])
+			}
+
+			return firstElem, nil
+
+		case "cdr":
+			if len(cdr) != 1 {
+				return nil, fmt.Errorf("cdr requires 1 argument")
+			}
+
+			listNode, err := Eval(cdr[0], env, mode)
+			if err != nil {
+				return nil, err
+			}
+
+			if listNode.Kind != KindArray {
+				return nil, fmt.Errorf("cdr requires a list argument, got %v", listNode.Kind)
+			}
+
+			arr, ok := listNode.Value.([]any)
+			if !ok {
+				return nil, fmt.Errorf("invalid array value: %T", listNode.Value)
+			}
+
+			if len(arr) == 0 {
+				return nil, fmt.Errorf("cdr: empty list")
+			}
+
+			restElements := make([]any, len(arr)-1)
+			for i, elem := range arr[1:] {
+				restElements[i] = elem
+			}
+
+			return &YispNode{
+				Kind:  KindArray,
+				Value: restElements,
+			}, nil
+
+		case "cons":
+			if len(cdr) != 2 {
+				return nil, fmt.Errorf("cons requires 2 arguments")
+			}
+
+			elemNode, err := Eval(cdr[0], env, mode)
+			if err != nil {
+				return nil, err
+			}
+
+			listNode, err := Eval(cdr[1], env, mode)
+			if err != nil {
+				return nil, err
+			}
+
+			if listNode.Kind != KindArray {
+				return nil, fmt.Errorf("cons requires a list as the second argument, got %v", listNode.Kind)
+			}
+
+			arr, ok := listNode.Value.([]any)
+			if !ok {
+				return nil, fmt.Errorf("invalid array value: %T", listNode.Value)
+			}
+
+			newArr := make([]any, len(arr)+1)
+			newArr[0] = elemNode
+			for i, elem := range arr {
+				newArr[i+1] = elem
+			}
+
+			return &YispNode{
+				Kind:  KindArray,
+				Value: newArr,
+			}, nil
 
 		case "discard":
 			for _, node := range cdr {
@@ -253,7 +387,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 			return nil, fmt.Errorf("unknown function name: %s", op)
 		}
 	default:
-		return nil, fmt.Errorf("invalid car type2: %T", car)
+		return nil, NewEvaluationError(car, fmt.Sprintf("cannot apply type %s", car.Kind))
 	}
 }
 
@@ -305,6 +439,8 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		mode = EvalModeQuote
 	}
 
+	var result *YispNode
+
 	switch node.Kind {
 	case KindSymbol:
 		var ok bool
@@ -312,6 +448,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 		body, ok = env.Get(node.Value.(string))
 		if !ok {
+			//JsonPrint("env", env)
 			return nil, fmt.Errorf("undefined symbol: %s", node.Value)
 		}
 		node, ok := body.(*YispNode)
@@ -319,38 +456,51 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			return nil, fmt.Errorf("invalid symbol type: %T", body)
 		}
 
-		return Eval(node, env, mode)
+		result = node
 
 	case KindParameter:
-		return node, nil
+		result = node
 
 	case KindNull:
-		return &YispNode{
+		result = &YispNode{
 			Kind:  KindNull,
 			Value: nil,
 			Tag:   node.Tag,
-		}, nil
+		}
 
 	case KindBool:
 		val := false
 		if node.Value == "true" {
 			val = true
 		}
-		return &YispNode{
+		result = &YispNode{
 			Kind:  KindBool,
 			Value: val,
 			Tag:   node.Tag,
-		}, nil
+		}
 
 	case KindFloat:
-		if f, err := strconv.ParseFloat(node.Value.(string), 64); err == nil {
-			return &YispNode{
-				Kind:  KindFloat,
-				Value: f,
-				Tag:   node.Tag,
-			}, nil
+		var f float64
+		var ok bool
+		f, ok = node.Value.(float64)
+		if !ok {
+			fStr, ok := node.Value.(string)
+			if !ok {
+				return nil, fmt.Errorf("invalid float type: %T", node.Value)
+			}
+			
+			var err error
+			f, err = strconv.ParseFloat(fStr, 64)
+			if err != nil {
+				return nil, fmt.Errorf("invalid float value: %s", fStr)
+			}
 		}
-		return nil, fmt.Errorf("invalid float value: %s", node.Value)
+
+		result = &YispNode{
+			Kind:  KindFloat,
+			Value: f,
+			Tag:   node.Tag,
+		}
 
 	case KindInt:
 		var i int
@@ -369,18 +519,18 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			}
 		}
 
-		return &YispNode{
+		result = &YispNode{
 			Kind:  KindInt,
 			Value: i,
 			Tag:   node.Tag,
-		}, nil
+		}
 
 	case KindString:
-		return &YispNode{
+		result = &YispNode{
 			Kind:  KindString,
 			Value: node.Value,
 			Tag:   node.Tag,
-		}, nil
+		}
 
 	case KindArray:
 		if mode == EvalModeEval {
@@ -408,7 +558,12 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 				cdr[i] = node
 			}
 
-			return Apply(car, cdr, env, mode)
+			r, err := Apply(car, cdr, env, mode)
+			if err != nil {
+				return nil, err
+			}
+			result = r
+
 		} else {
 			arr, ok := node.Value.([]any)
 			if !ok {
@@ -428,11 +583,11 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 				}
 				results[i] = result
 			}
-			return &YispNode{
+			result = &YispNode{
 				Kind:  KindArray,
 				Value: results,
 				Tag:   node.Tag,
-			}, nil
+			}
 		}
 
 	case KindMap:
@@ -454,11 +609,16 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			results[key] = val
 		}
 
-		return &YispNode{
+		result = &YispNode{
 			Kind:  KindMap,
 			Value: results,
 			Tag:   node.Tag,
-		}, nil
+		}
 	}
-	return nil, nil
+
+	if node.Anchor != "" {
+		env.Set(node.Anchor, result)
+	}
+
+	return result, nil
 }
