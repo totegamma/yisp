@@ -53,7 +53,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env) (*YispNode, error) {
 		}
 
 		switch op {
-		case "join":
+		case "concat":
 			var result string
 			for _, node := range cdr {
 				val, err := Eval(node, env)
@@ -62,7 +62,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env) (*YispNode, error) {
 				}
 				str, ok := val.Value.(string)
 				if !ok {
-					return nil, fmt.Errorf("invalid argument type for join: %T", val)
+					return nil, fmt.Errorf("invalid argument type for concat: %T", val)
 				}
 				result += str
 			}

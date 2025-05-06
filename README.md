@@ -4,11 +4,17 @@
 It allows you to embed logic, expressions, and includes within YAML files.  
 This is useful for generating structured configuration such as Kubernetes manifests, Ansible playbooks, and more.
 
+## Installation
+
+```sh
+go install github.com/totegamma/yisp@latest
+```
+
 ## Syntax
 
 Unlike traditional Lisp, where **everything is code** and you need to quote values to treat them as data,  
 **yisp takes the opposite approach**: everything is treated as plain YAML data **by default**,  
-and only expressions explicitly tagged with `!eval` will be evaluated as code.
+and only expressions explicitly tagged with `!yisp` will be evaluated as code.
 
 This allows you to embed small, functional logic in otherwise standard YAML documents—making it easy to integrate with existing tools.
 
@@ -16,7 +22,7 @@ This allows you to embed small, functional logic in otherwise standard YAML docu
 
 hello_world.yaml
 ```yaml
-mystring: !eval
+mystring: !yisp
   - concat
   - hello
   - ' '
@@ -36,7 +42,7 @@ mystring: hello world
 ### Handling multiple documents:
 
 ```yaml
-!eval
+!yisp
 - include
 - "./manifest1.yaml"
 - "./manifest2.yaml"
@@ -74,9 +80,9 @@ metadata:
 ### Define a function:
 
 ```yaml
-&mkpod
+!yisp &mkpod
 - lambda 
-- [name: !string, image: !string]
+- [!string name, !string image]
 - apiVersion: v1
   kind: Pod
   metadata:
@@ -86,14 +92,14 @@ metadata:
       - name: *name
         image: *image
 ---
-!eval
-- mkpod
+!yisp
+- *mkpod
 - mypod1
 - myimage1
 
 ---
-!eval
-- mkpod
+!yisp
+- *mkpod
 - mypod2
 - myimage2
 ```
