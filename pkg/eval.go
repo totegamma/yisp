@@ -104,6 +104,59 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env) (*YispNode, error) {
 				Tag:   "!expand",
 			}, nil
 
+		case "import":
+			for _, node := range cdr {
+
+				baseDir := filepath.Dir(node.File)
+
+				tuple, ok := node.Value.([]any)
+				if !ok {
+					return nil, fmt.Errorf("invalid tuple type: %T", node.Value)
+				}
+
+				if len(tuple) != 2 {
+					return nil, fmt.Errorf("import requires 2 arguments")
+				}
+
+				nameNode, ok := tuple[0].(*YispNode)
+				if !ok {
+					return nil, fmt.Errorf("invalid name type: %T", tuple[0])
+				}
+
+				name, ok := nameNode.Value.(string)
+				if !ok {
+					return nil, fmt.Errorf("invalid name type: %T", nameNode.Value)
+				}
+
+				relpathNode, ok := tuple[1].(*YispNode)
+				if !ok {
+					return nil, fmt.Errorf("invalid path type: %T", tuple[1])
+				}
+
+				relpath, ok := relpathNode.Value.(string)
+				if !ok {
+					return nil, fmt.Errorf("invalid path type: %T", relpathNode.Value)
+				}
+
+				joinedPath := filepath.Join(baseDir, relpath)
+				path := filepath.Clean(joinedPath)
+
+				newEnv := NewEnv()
+
+				var err error
+				_, err = evaluateYisp(path, newEnv)
+				if err != nil {
+					return nil, err
+				}
+
+				env.AddModule(name, newEnv)
+
+			}
+
+			return &YispNode{
+				Kind: KindNull,
+			}, nil
+
 		case "lambda":
 			if len(cdr) != 2 {
 				return nil, fmt.Errorf("lambda requires 2 arguments")
@@ -130,6 +183,9 @@ func Eval(node *YispNode, env *Env) (*YispNode, error) {
 		var body any
 
 		body, ok = env.Get(node.Value.(string))
+		if !ok {
+			return nil, fmt.Errorf("undefined symbol: %s", node.Value)
+		}
 		node, ok := body.(*YispNode)
 		if !ok {
 			return nil, fmt.Errorf("invalid symbol type: %T", body)

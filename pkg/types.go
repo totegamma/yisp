@@ -1,5 +1,10 @@
 package yisp
 
+import (
+	"fmt"
+	"strings"
+)
+
 type YamlDocument []any
 
 // Kind represents the type of a YispNode
@@ -38,14 +43,16 @@ type Env struct {
 // NewEnv creates a new environment with an empty variable map
 func NewEnv() *Env {
 	return &Env{
-		Vars: make(map[string]*YispNode),
+		Vars:    make(map[string]*YispNode),
+		Modules: make(map[string]*Env),
 	}
 }
 
 func (e *Env) CreateChild() *Env {
 	return &Env{
-		Parent: e,
-		Vars:   make(map[string]*YispNode),
+		Parent:  e,
+		Vars:    make(map[string]*YispNode),
+		Modules: make(map[string]*Env),
 	}
 }
 
@@ -54,6 +61,20 @@ func (e *Env) Set(key string, value *YispNode) {
 }
 
 func (e *Env) Get(key string) (*YispNode, bool) {
+
+	split := strings.Split(key, "__")
+	if len(split) > 1 {
+		moduleName := split[0]
+		resolvedName := strings.Join(split[1:], "__")
+
+		if module, ok := e.Modules[moduleName]; ok {
+			return module.Get(resolvedName)
+		} else {
+			fmt.Println("Module not found:", moduleName)
+			return nil, false
+		}
+	}
+
 	if value, ok := e.Vars[key]; ok {
 		return value, true
 	}

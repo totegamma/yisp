@@ -22,7 +22,7 @@ func EvaluateYisp(path string) (string, error) {
 	return result, nil
 }
 
-func evaluateYisp(path string, parent *Env) (*YispNode, error) {
+func evaluateYisp(path string, env *Env) (*YispNode, error) {
 	reader, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -31,8 +31,6 @@ func evaluateYisp(path string, parent *Env) (*YispNode, error) {
 	if decoder == nil {
 		return nil, errors.New("failed to create decoder")
 	}
-
-	env := parent.CreateChild()
 
 	documents := make([]*YispNode, 0)
 	for {

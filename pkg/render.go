@@ -117,6 +117,11 @@ func Render(node *YispNode) (string, error) {
 			if err != nil {
 				return "", err
 			}
+
+			if rendered == nil {
+				continue
+			}
+
 			enc.Encode(rendered)
 		}
 		enc.Close()

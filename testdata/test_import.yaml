@@ -1,0 +1,14 @@
+!yisp
+- import
+- ["podmod", "./test_template.yaml"]
+- ["svcmod", "./mksvc.yaml"]
+---
+!yisp
+- *podmod__mkpod
+- mypod1
+- myimage1
+---
+!yisp
+- *svcmod__mksvc
+- mysvc1
+
