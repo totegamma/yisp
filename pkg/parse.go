@@ -5,7 +5,7 @@ import (
 )
 
 // Parse converts a YAML node to a YispNode
-func Parse(node *yaml.Node, env *Env) (*YispNode, error) {
+func Parse(filename string, node *yaml.Node, env *Env) (*YispNode, error) {
 	var result *YispNode
 	var err error
 
@@ -14,12 +14,12 @@ func Parse(node *yaml.Node, env *Env) (*YispNode, error) {
 		if len(node.Content) == 0 {
 			return nil, nil
 		}
-		result, err = Parse(node.Content[0], env)
+		result, err = Parse(filename, node.Content[0], env)
 
 	case yaml.SequenceNode:
 		s := make([]any, len(node.Content))
 		for i, item := range node.Content {
-			value, err := Parse(item, env)
+			value, err := Parse(filename, item, env)
 			if err != nil {
 				return nil, err
 			}
@@ -27,9 +27,12 @@ func Parse(node *yaml.Node, env *Env) (*YispNode, error) {
 		}
 
 		result = &YispNode{
-			Kind:  KindArray,
-			Value: s,
-			Tag:   node.Tag,
+			Kind:   KindArray,
+			Value:  s,
+			Tag:    node.Tag,
+			File:   filename,
+			Line:   node.Line,
+			Column: node.Column,
 		}
 
 	case yaml.MappingNode:
@@ -39,7 +42,7 @@ func Parse(node *yaml.Node, env *Env) (*YispNode, error) {
 			valueNode := node.Content[i+1]
 
 			key := keyNode.Value
-			value, err := Parse(valueNode, env)
+			value, err := Parse(filename, valueNode, env)
 			if err != nil {
 				return nil, err
 			}
@@ -47,9 +50,12 @@ func Parse(node *yaml.Node, env *Env) (*YispNode, error) {
 		}
 
 		result = &YispNode{
-			Kind:  KindMap,
-			Value: m,
-			Tag:   node.Tag,
+			Kind:   KindMap,
+			Value:  m,
+			Tag:    node.Tag,
+			File:   filename,
+			Line:   node.Line,
+			Column: node.Column,
 		}
 
 	case yaml.ScalarNode:
@@ -70,16 +76,22 @@ func Parse(node *yaml.Node, env *Env) (*YispNode, error) {
 		}
 
 		result = &YispNode{
-			Kind:  kind,
-			Value: node.Value,
-			Tag:   node.Tag,
+			Kind:   kind,
+			Value:  node.Value,
+			Tag:    node.Tag,
+			File:   filename,
+			Line:   node.Line,
+			Column: node.Column,
 		}
 
 	case yaml.AliasNode:
 		result = &YispNode{
-			Kind:  KindSymbol,
-			Value: node.Value,
-			Tag:   node.Tag,
+			Kind:   KindSymbol,
+			Value:  node.Value,
+			Tag:    node.Tag,
+			File:   filename,
+			Line:   node.Line,
+			Column: node.Column,
 		}
 	}
 

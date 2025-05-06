@@ -2,6 +2,7 @@ package yisp
 
 import (
 	"fmt"
+	"path/filepath"
 	"strconv"
 )
 
@@ -81,10 +82,14 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env) (*YispNode, error) {
 		case "include":
 			results := make([]*YispNode, len(cdr))
 			for i, node := range cdr {
-				path, ok := node.Value.(string)
+				relpath, ok := node.Value.(string)
 				if !ok {
 					return nil, fmt.Errorf("invalid path type: %T", node.Value)
 				}
+
+				baseDir := filepath.Dir(node.File)
+				joinedPath := filepath.Join(baseDir, relpath)
+				path := filepath.Clean(joinedPath)
 
 				var err error
 				results[i], err = evaluateYisp(path, env.CreateChild())

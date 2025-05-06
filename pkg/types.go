@@ -20,9 +20,12 @@ const (
 
 // YispNode represents a node in the Yisp language
 type YispNode struct {
-	Kind  Kind
-	Tag   string
-	Value any
+	Kind   Kind
+	Tag    string
+	Value  any
+	File   string
+	Line   int
+	Column int
 }
 
 // Env represents the execution environment with variable bindings

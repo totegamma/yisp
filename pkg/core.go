@@ -45,7 +45,7 @@ func evaluateYisp(path string, parent *Env) (*YispNode, error) {
 			return nil, err
 		}
 
-		parsed, err := Parse(&root, env)
+		parsed, err := Parse(path, &root, env)
 		if err != nil {
 			return nil, err
 		}
