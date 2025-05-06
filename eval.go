@@ -6,7 +6,7 @@ import (
 )
 
 // Apply applies a function to arguments
-func Apply(car *YispNode, cdr []*YispNode, env *Environment) (*YispNode, error) {
+func Apply(car *YispNode, cdr []*YispNode, env *Env) (*YispNode, error) {
 	switch car.Kind {
 	case KindLambda:
 		lambda, ok := car.Value.([]*YispNode)
@@ -34,7 +34,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Environment) (*YispNode, error) 
 			params = append(params, param)
 		}
 
-		newEnv := env.Clone()
+		newEnv := env.CreateChild()
 		for i, node := range cdr {
 			val, err := Eval(node, env)
 			if err != nil {
@@ -97,18 +97,13 @@ func Apply(car *YispNode, cdr []*YispNode, env *Environment) (*YispNode, error) 
 }
 
 // Eval evaluates a YispNode in the given environment
-func Eval(node *YispNode, env *Environment) (*YispNode, error) {
+func Eval(node *YispNode, env *Env) (*YispNode, error) {
 	switch node.Kind {
 	case KindSymbol:
 		var ok bool
 		var body any
-		body, ok = globals.Vars[node.Value.(string)]
-		if !ok {
-			body, ok = env.Vars[node.Value.(string)]
-			if !ok {
-				return nil, fmt.Errorf("undefined symbol: %s", node.Value)
-			}
-		}
+
+		body, ok = env.Get(node.Value.(string))
 		node, ok := body.(*YispNode)
 		if !ok {
 			return nil, fmt.Errorf("invalid symbol type: %T", body)

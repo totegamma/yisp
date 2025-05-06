@@ -7,7 +7,7 @@ import (
 
 func main() {
 
-	env := yisp.NewEnvironment()
+	env := yisp.NewEnv()
 
 	evaluated := yisp.EvaluateYisp("./testdata/template.yaml", env)
 	result, err := yisp.Render(evaluated)

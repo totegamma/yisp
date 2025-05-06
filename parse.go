@@ -5,7 +5,7 @@ import (
 )
 
 // Parse converts a YAML node to a YispNode
-func Parse(node *yaml.Node, env *Environment) (*YispNode, error) {
+func Parse(node *yaml.Node, env *Env) (*YispNode, error) {
 	var result *YispNode
 	var err error
 
@@ -84,7 +84,7 @@ func Parse(node *yaml.Node, env *Environment) (*YispNode, error) {
 	}
 
 	if node.Anchor != "" {
-		globals.Vars[node.Anchor] = result
+		env.Set(node.Anchor, result)
 	}
 
 	return result, err

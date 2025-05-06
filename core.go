@@ -7,7 +7,7 @@ import (
 	"os"
 )
 
-func EvaluateYisp(path string, parent *Environment) *YispNode {
+func EvaluateYisp(path string, parent *Env) *YispNode {
 	reader, err := os.Open(path)
 	if err != nil {
 		panic(err)
@@ -16,6 +16,8 @@ func EvaluateYisp(path string, parent *Environment) *YispNode {
 	if decoder == nil {
 		panic("failed to create decoder")
 	}
+
+	env := parent.CreateChild()
 
 	documents := make([]*YispNode, 0)
 	for {
@@ -28,13 +30,12 @@ func EvaluateYisp(path string, parent *Environment) *YispNode {
 			panic(err)
 		}
 
-		env := parent.Clone()
 		parsed, err := Parse(&root, env)
 		if err != nil {
 			panic(err)
 		}
 
-		evaluated, err := Eval(parsed, GetGlobals())
+		evaluated, err := Eval(parsed, env)
 		if err != nil {
 			panic(err)
 		}

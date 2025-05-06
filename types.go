@@ -1,9 +1,5 @@
 package yisp
 
-import (
-	"maps"
-)
-
 type YamlDocument []any
 
 // Kind represents the type of a YispNode
@@ -29,29 +25,36 @@ type YispNode struct {
 	Value any
 }
 
-// Environment represents the execution environment with variable bindings
-type Environment struct {
-	Vars map[string]*YispNode
+// Env represents the execution environment with variable bindings
+type Env struct {
+	Parent *Env
+	Vars   map[string]*YispNode
 }
 
-// NewEnvironment creates a new environment with an empty variable map
-func NewEnvironment() *Environment {
-	return &Environment{
+// NewEnv creates a new environment with an empty variable map
+func NewEnv() *Env {
+	return &Env{
 		Vars: make(map[string]*YispNode),
 	}
 }
 
-// Clone creates a copy of the environment
-func (env *Environment) Clone() *Environment {
-	newEnv := NewEnvironment()
-	maps.Copy(newEnv.Vars, env.Vars)
-	return newEnv
+func (e *Env) CreateChild() *Env {
+	return &Env{
+		Parent: e,
+		Vars:   make(map[string]*YispNode),
+	}
 }
 
-// Globals is the global environment for storing anchors
-var globals = NewEnvironment()
+func (e *Env) Set(key string, value *YispNode) {
+	e.Vars[key] = value
+}
 
-// GetGlobals returns the global environment
-func GetGlobals() *Environment {
-	return globals
+func (e *Env) Get(key string) (*YispNode, bool) {
+	if value, ok := e.Vars[key]; ok {
+		return value, true
+	}
+	if e.Parent != nil {
+		return e.Parent.Get(key)
+	}
+	return nil, false
 }
