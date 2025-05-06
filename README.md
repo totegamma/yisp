@@ -14,12 +14,11 @@ go install github.com/totegamma/yisp@latest
 ```
 
 ## Syntax
+In yisp, YAML documents are treated as plain data by default.  
+To enable evaluation, you explicitly mark expressions using the `!yisp` tag.
 
-Unlike traditional Lisp, where **everything is code** and you need to quote values to treat them as data,  
-**yisp takes the opposite approach**: everything is treated as plain YAML data **by default**,  
-and only expressions explicitly tagged with `!yisp` will be evaluated as code.
-
-This allows you to embed small, functional logic in otherwise standard YAML documents—making it easy to integrate with existing tools.
+When a list or object is tagged with `!yisp`, its contents are recursively evaluated as yisp expressions.  
+To embed unevaluated YAML structures inside expressions, you can use the `!quote` tag to suppress evaluation.
 
 ### simple example:
 
@@ -83,17 +82,20 @@ metadata:
 ### Define a function:
 
 ```yaml
-!yisp &mkpod
-- lambda 
-- [!string name, !string image]
-- apiVersion: v1
-  kind: Pod
-  metadata:
-    name: *name
-  spec:
-    containers:
-      - name: *name
-        image: *image
+!yisp
+- discard
+- &mkpod
+  - lambda
+  - [!string name, !string image]
+  - !quote
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: *name
+    spec:
+      containers:
+        - name: *name
+          image: *image
 ---
 !yisp
 - *mkpod

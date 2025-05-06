@@ -1,7 +1,8 @@
 !yisp &mksvc
 - lambda
 - [!string name]
-- apiVersion: v1
+- !quote
+  apiVersion: v1
   kind: Service
   metadata:
     name: *name

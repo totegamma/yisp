@@ -1,14 +1,12 @@
-&fib !yisp
+!yisp &fib
 - lambda
 - [!int n]
-- !yisp
-  - if
-  - !yisp [<=, *n, 1]
+- - if
+  - [<=, *n, 1]
   - *n
-  - !yisp
-    - +
-    - !yisp [*fib, !yisp [-, *n, 1]]
-    - !yisp [*fib, !yisp [-, *n, 2]]
+  - - +
+    - [*fib, [-, *n, 1]]
+    - [*fib, [-, *n, 2]]
 ---
 !yisp
 - *fib

@@ -5,6 +5,13 @@ import (
 	"strings"
 )
 
+type EvalMode int
+
+const (
+	EvalModeQuote EvalMode = iota
+	EvalModeEval
+)
+
 type YamlDocument []any
 
 // Kind represents the type of a YispNode

@@ -7,7 +7,7 @@ import (
 )
 
 // Apply applies a function to arguments
-func Apply(car *YispNode, cdr []*YispNode, env *Env) (*YispNode, error) {
+func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	switch car.Kind {
 	case KindLambda:
 		lambda, ok := car.Value.([]*YispNode)
@@ -37,14 +37,14 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env) (*YispNode, error) {
 
 		newEnv := env.CreateChild()
 		for i, node := range cdr {
-			val, err := Eval(node, env)
+			val, err := Eval(node, env, mode)
 			if err != nil {
 				return nil, err
 			}
 			newEnv.Vars[params[i]] = val
 		}
 
-		return Eval(bodyNode, newEnv)
+		return Eval(bodyNode, newEnv, mode)
 
 	case KindString:
 		op, ok := car.Value.(string)
@@ -56,7 +56,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env) (*YispNode, error) {
 		case "concat":
 			var result string
 			for _, node := range cdr {
-				val, err := Eval(node, env)
+				val, err := Eval(node, env, mode)
 				if err != nil {
 					return nil, err
 				}
@@ -75,7 +75,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env) (*YispNode, error) {
 		case "+":
 			sum := 0
 			for _, node := range cdr {
-				val, err := Eval(node, env)
+				val, err := Eval(node, env, mode)
 				if err != nil {
 					return nil, err
 				}
@@ -97,7 +97,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env) (*YispNode, error) {
 					Value: 0,
 				}, nil
 			}
-			firstNode, err := Eval(cdr[0], env)
+			firstNode, err := Eval(cdr[0], env, mode)
 			if err != nil {
 				return nil, err
 			}
@@ -106,7 +106,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env) (*YispNode, error) {
 				return nil, fmt.Errorf("invalid argument type for -: %T", firstNode)
 			}
 			for _, node := range cdr[1:] {
-				evaluated, err := Eval(node, env)
+				evaluated, err := Eval(node, env, mode)
 				if err != nil {
 					return nil, err
 				}
@@ -126,7 +126,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env) (*YispNode, error) {
 				return nil, fmt.Errorf("if requires 3 arguments")
 			}
 
-			condNode, err := Eval(cdr[0], env)
+			condNode, err := Eval(cdr[0], env, mode)
 			if err != nil {
 				return nil, err
 			}
@@ -137,15 +137,15 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env) (*YispNode, error) {
 			}
 
 			if cond {
-				return Eval(cdr[1], env)
+				return Eval(cdr[1], env, mode)
 			}
-			return Eval(cdr[2], env)
+			return Eval(cdr[2], env, mode)
 
 		case "<=":
 			if len(cdr) != 2 {
 				return nil, fmt.Errorf("<= requires 2 arguments")
 			}
-			firstNode, err := Eval(cdr[0], env)
+			firstNode, err := Eval(cdr[0], env, mode)
 			if err != nil {
 				return nil, err
 			}
@@ -153,7 +153,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env) (*YispNode, error) {
 			if !ok {
 				return nil, fmt.Errorf("invalid argument type for <=: %T", firstNode)
 			}
-			secondNode, err := Eval(cdr[1], env)
+			secondNode, err := Eval(cdr[1], env, mode)
 			if err != nil {
 				return nil, err
 			}
@@ -169,7 +169,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env) (*YispNode, error) {
 
 		case "discard":
 			for _, node := range cdr {
-				Eval(node, env)
+				Eval(node, env, mode)
 			}
 
 			return nil, nil
@@ -266,12 +266,21 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env) (*YispNode, error) {
 			return nil, fmt.Errorf("unknown function name: %s", op)
 		}
 	default:
-		return nil, fmt.Errorf("invalid car type: %T", car)
+		return nil, fmt.Errorf("invalid car type2: %T", car)
 	}
 }
 
 // Eval evaluates a YispNode in the given environment
-func Eval(node *YispNode, env *Env) (*YispNode, error) {
+func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+
+	if node.Tag == "!yisp" {
+		mode = EvalModeEval
+	}
+
+	if node.Tag == "!quote" {
+		mode = EvalModeQuote
+	}
+
 	switch node.Kind {
 	case KindSymbol:
 		var ok bool
@@ -286,7 +295,7 @@ func Eval(node *YispNode, env *Env) (*YispNode, error) {
 			return nil, fmt.Errorf("invalid symbol type: %T", body)
 		}
 
-		return Eval(node, env)
+		return Eval(node, env, mode)
 
 	case KindParameter:
 		return node, nil
@@ -350,7 +359,7 @@ func Eval(node *YispNode, env *Env) (*YispNode, error) {
 		}, nil
 
 	case KindArray:
-		if node.Tag == "!yisp" {
+		if mode == EvalModeEval {
 			arr, ok := node.Value.([]any)
 			if !ok {
 				return nil, fmt.Errorf("invalid array type: %T", node.Value)
@@ -358,10 +367,10 @@ func Eval(node *YispNode, env *Env) (*YispNode, error) {
 
 			carNode, ok := arr[0].(*YispNode)
 			if !ok {
-				return nil, fmt.Errorf("invalid car type: %T", arr[0])
+				return nil, fmt.Errorf("invalid car type1: %T", arr[0])
 			}
 
-			car, err := Eval(carNode, env)
+			car, err := Eval(carNode, env, mode)
 			if err != nil {
 				return nil, err
 			}
@@ -375,7 +384,7 @@ func Eval(node *YispNode, env *Env) (*YispNode, error) {
 				cdr[i] = node
 			}
 
-			return Apply(car, cdr, env)
+			return Apply(car, cdr, env, mode)
 		} else {
 			arr, ok := node.Value.([]any)
 			if !ok {
@@ -389,7 +398,7 @@ func Eval(node *YispNode, env *Env) (*YispNode, error) {
 					return nil, fmt.Errorf("invalid item type: %T", item)
 				}
 
-				result, err := Eval(node, env)
+				result, err := Eval(node, env, mode)
 				if err != nil {
 					return nil, err
 				}
@@ -414,7 +423,7 @@ func Eval(node *YispNode, env *Env) (*YispNode, error) {
 				return nil, fmt.Errorf("invalid item type: %T", item)
 			}
 
-			val, err := Eval(node, env)
+			val, err := Eval(node, env, mode)
 			if err != nil {
 				return nil, err
 			}

@@ -1,9 +1,10 @@
 !yisp
 - discard
-- !yisp &mkpod
+- &mkpod
   - lambda
   - [!string name, !string image]
-  - apiVersion: v1
+  - !quote
+    apiVersion: v1
     kind: Pod
     metadata:
       name: *name
