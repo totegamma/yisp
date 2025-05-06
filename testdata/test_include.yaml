@@ -1,4 +1,4 @@
 !yisp
 - include
-- "./testdata/manifest1.yaml"
-- "./testdata/manifest2.yaml"
+- "manifest1.yaml"
+- "manifest2.yaml"

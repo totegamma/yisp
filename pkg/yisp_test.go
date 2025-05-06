@@ -11,7 +11,7 @@ import (
 
 func TestYisp(t *testing.T) {
 
-	files, err := filepath.Glob("testdata/test*")
+	files, err := filepath.Glob("../testdata/test*")
 	if err != nil {
 		t.Fatalf("Error finding test files: %v", err)
 	}
