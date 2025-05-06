@@ -141,31 +141,18 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 			}
 			return Eval(cdr[2], env, mode)
 
+		case "==":
+			return compareInts(cdr, env, mode, "==", func(a, b int) bool { return a == b })
+		case "!=":
+			return compareInts(cdr, env, mode, "!=", func(a, b int) bool { return a != b })
+		case "<":
+			return compareInts(cdr, env, mode, "<", func(a, b int) bool { return a < b })
 		case "<=":
-			if len(cdr) != 2 {
-				return nil, fmt.Errorf("<= requires 2 arguments")
-			}
-			firstNode, err := Eval(cdr[0], env, mode)
-			if err != nil {
-				return nil, err
-			}
-			firstNum, ok := firstNode.Value.(int)
-			if !ok {
-				return nil, fmt.Errorf("invalid argument type for <=: %T", firstNode)
-			}
-			secondNode, err := Eval(cdr[1], env, mode)
-			if err != nil {
-				return nil, err
-			}
-			secondNum, ok := secondNode.Value.(int)
-			if !ok {
-				return nil, fmt.Errorf("invalid argument type for <=: %T", secondNode)
-			}
-
-			return &YispNode{
-				Kind:  KindBool,
-				Value: firstNum <= secondNum,
-			}, nil
+			return compareInts(cdr, env, mode, "<=", func(a, b int) bool { return a <= b })
+		case ">":
+			return compareInts(cdr, env, mode, ">", func(a, b int) bool { return a > b })
+		case ">=":
+			return compareInts(cdr, env, mode, ">=", func(a, b int) bool { return a >= b })
 
 		case "discard":
 			for _, node := range cdr {
@@ -175,7 +162,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 			return nil, nil
 
 		case "include":
-			results := make([]*YispNode, len(cdr))
+			results := make([]any, len(cdr))
 			for i, node := range cdr {
 				relpath, ok := node.Value.(string)
 				if !ok {
@@ -268,6 +255,43 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 	default:
 		return nil, fmt.Errorf("invalid car type2: %T", car)
 	}
+}
+
+func compareInts(cdr []*YispNode, env *Env, mode EvalMode, opName string, cmp func(int, int) bool) (*YispNode, error) {
+	if len(cdr) != 2 {
+		return nil, fmt.Errorf("%s requires 2 arguments", opName)
+	}
+	firstNode, err := Eval(cdr[0], env, mode)
+	if err != nil {
+		return nil, err
+	}
+	firstNum, ok := firstNode.Value.(int)
+	if !ok {
+		// Attempt to convert float to int if applicable, or handle other types
+		if firstFloat, isFloat := firstNode.Value.(float64); isFloat {
+			firstNum = int(firstFloat) // Note: This truncates. Decide if this is the desired behavior.
+		} else {
+			return nil, fmt.Errorf("invalid first argument type for %s: %T (value: %v)", opName, firstNode.Value, firstNode.Value)
+		}
+	}
+
+	secondNode, err := Eval(cdr[1], env, mode)
+	if err != nil {
+		return nil, err
+	}
+	secondNum, ok := secondNode.Value.(int)
+	if !ok {
+		if secondFloat, isFloat := secondNode.Value.(float64); isFloat {
+			secondNum = int(secondFloat) // Note: This truncates.
+		} else {
+			return nil, fmt.Errorf("invalid second argument type for %s: %T (value: %v)", opName, secondNode.Value, secondNode.Value)
+		}
+	}
+
+	return &YispNode{
+		Kind:  KindBool,
+		Value: cmp(firstNum, secondNum),
+	}, nil
 }
 
 // Eval evaluates a YispNode in the given environment

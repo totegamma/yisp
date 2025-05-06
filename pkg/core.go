@@ -32,7 +32,7 @@ func evaluateYisp(path string, env *Env) (*YispNode, error) {
 		return nil, errors.New("failed to create decoder")
 	}
 
-	documents := make([]*YispNode, 0)
+	documents := make([]any, 0)
 	for {
 		var root yaml.Node
 		err := decoder.Decode(&root)
@@ -63,5 +63,6 @@ func evaluateYisp(path string, env *Env) (*YispNode, error) {
 	return &YispNode{
 		Kind:  KindArray,
 		Value: documents,
+		Tag:   "!expand",
 	}, nil
 }

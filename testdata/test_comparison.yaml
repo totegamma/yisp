@@ -1,0 +1,22 @@
+- !yisp ["==", 1, 1]
+- !yisp ["==", 1, 2]
+- !yisp ["==", 1.0, 1] # Test float conversion
+- !yisp ["!=", 1, 1]
+- !yisp ["!=", 1, 2]
+- !yisp ["!=", 1.0, 2] # Test float conversion
+- !yisp ["<", 1, 2]
+- !yisp ["<", 2, 1]
+- !yisp ["<", 1, 1]
+- !yisp ["<", 1.5, 2] # Test float conversion (1 < 2)
+- !yisp ["<=", 1, 2]
+- !yisp ["<=", 2, 1]
+- !yisp ["<=", 1, 1]
+- !yisp ["<=", 1.0, 1] # Test float conversion
+- !yisp [">", 2, 1]
+- !yisp [">", 1, 2]
+- !yisp [">", 1, 1]
+- !yisp [">", 2.5, 1] # Test float conversion (2 > 1)
+- !yisp [">=", 2, 1]
+- !yisp [">=", 1, 2]
+- !yisp [">=", 1, 1]
+- !yisp [">=", 1.0, 1] # Test float conversion

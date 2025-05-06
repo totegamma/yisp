@@ -59,43 +59,45 @@ func render(node *YispNode) (any, error) {
 }
 
 func Flatten(node *YispNode) (*YispNode, error) {
-	if node.Kind == KindArray && node.Tag == "!expand" {
-		arr, ok := node.Value.([]*YispNode)
+	if node.Kind != KindArray || node.Tag != "!expand" {
+		return node, nil
+	}
+
+	arr, ok := node.Value.([]any)
+	if !ok {
+		return nil, fmt.Errorf("invalid array value")
+	}
+
+	results := make([]any, 0)
+	for _, item := range arr {
+		node, ok := item.(*YispNode)
 		if !ok {
+			return nil, fmt.Errorf("invalid item type: %T", item)
+		}
+		flattened, err := Flatten(node)
+		if err != nil {
+			return nil, err
+		}
+
+		if flattened.Kind == KindArray && flattened.Tag == "!expand" {
+			if flattenedArr, ok := flattened.Value.([]any); ok {
+				results = append(results, flattenedArr...)
+				continue
+			}
 			return nil, fmt.Errorf("invalid array value")
 		}
 
-		results := make([]*YispNode, 0)
-		for _, item := range arr {
-			flattened, err := Flatten(item)
-			if err != nil {
-				return nil, err
-			}
-
-			if flattened.Kind == KindArray {
-				// Flatten the inner array
-				innerArr, ok := flattened.Value.([]*YispNode)
-				if !ok {
-					return nil, fmt.Errorf("invalid inner array value")
-				}
-				results = append(results, innerArr...)
-			} else {
-				results = append(results, flattened)
-			}
-		}
-		return &YispNode{
-			Kind:  KindArray,
-			Value: results,
-			Tag:   node.Tag,
-		}, nil
+		results = append(results, flattened)
 	}
 
-	return node, nil
+	return &YispNode{
+		Kind:  KindArray,
+		Value: results,
+		Tag:   node.Tag,
+	}, nil
 }
 
 func Render(node *YispNode) (string, error) {
-
-	node.Tag = "!expand"
 
 	var err error
 	node, err = Flatten(node)
@@ -104,7 +106,7 @@ func Render(node *YispNode) (string, error) {
 	}
 
 	if node.Kind == KindArray {
-		arr, ok := node.Value.([]*YispNode)
+		arr, ok := node.Value.([]any)
 		if !ok {
 			return "", fmt.Errorf("invalid array value(root)")
 		}
@@ -113,7 +115,11 @@ func Render(node *YispNode) (string, error) {
 		enc := yaml.NewEncoder(&buf)
 		enc.SetIndent(2)
 		for _, item := range arr {
-			rendered, err := render(item)
+			node, ok := item.(*YispNode)
+			if !ok {
+				return "", fmt.Errorf("invalid item type: %T", item)
+			}
+			rendered, err := render(node)
 			if err != nil {
 				return "", err
 			}
