@@ -78,6 +78,23 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env) (*YispNode, error) {
 
 			return nil, nil
 
+		case "include":
+			results := make([]*YispNode, len(cdr))
+			for i, node := range cdr {
+				path, ok := node.Value.(string)
+				if !ok {
+					return nil, fmt.Errorf("invalid path type: %T", node.Value)
+				}
+
+				results[i] = EvaluateYisp(path, env.CreateChild())
+			}
+
+			return &YispNode{
+				Kind:  KindArray,
+				Value: results,
+				Tag:   "!expand",
+			}, nil
+
 		case "lambda":
 			if len(cdr) != 2 {
 				return nil, fmt.Errorf("lambda requires 2 arguments")

@@ -1,0 +1,4 @@
+!yisp
+- include
+- "./testdata/manifest1.yaml"
+- "./testdata/manifest2.yaml"

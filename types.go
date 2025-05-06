@@ -27,8 +27,9 @@ type YispNode struct {
 
 // Env represents the execution environment with variable bindings
 type Env struct {
-	Parent *Env
-	Vars   map[string]*YispNode
+	Parent  *Env
+	Vars    map[string]*YispNode
+	Modules map[string]*Env
 }
 
 // NewEnv creates a new environment with an empty variable map
@@ -57,4 +58,8 @@ func (e *Env) Get(key string) (*YispNode, bool) {
 		return e.Parent.Get(key)
 	}
 	return nil, false
+}
+
+func (e *Env) AddModule(name string, module *Env) {
+	e.Modules[name] = module
 }

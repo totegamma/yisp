@@ -9,7 +9,7 @@ func main() {
 
 	env := yisp.NewEnv()
 
-	evaluated := yisp.EvaluateYisp("./testdata/template.yaml", env)
+	evaluated := yisp.EvaluateYisp("./testdata/include.yaml", env)
 	result, err := yisp.Render(evaluated)
 	if err != nil {
 		fmt.Println("Error:", err)
