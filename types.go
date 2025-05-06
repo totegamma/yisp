@@ -4,6 +4,8 @@ import (
 	"maps"
 )
 
+type YamlDocument []any
+
 // Kind represents the type of a YispNode
 type Kind int32
 
