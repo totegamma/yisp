@@ -7,14 +7,29 @@ import (
 	"os"
 )
 
-func EvaluateYisp(path string, parent *Env) *YispNode {
+func EvaluateYisp(path string) (string, error) {
+	env := NewEnv()
+	evaluated, err := evaluateYisp(path, env)
+	if err != nil {
+		return "", err
+	}
+
+	result, err := Render(evaluated)
+	if err != nil {
+		return "", err
+	}
+
+	return result, nil
+}
+
+func evaluateYisp(path string, parent *Env) (*YispNode, error) {
 	reader, err := os.Open(path)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	decoder := yaml.NewDecoder(reader)
 	if decoder == nil {
-		panic("failed to create decoder")
+		return nil, errors.New("failed to create decoder")
 	}
 
 	env := parent.CreateChild()
@@ -27,17 +42,17 @@ func EvaluateYisp(path string, parent *Env) *YispNode {
 			if errors.Is(err, io.EOF) {
 				break
 			}
-			panic(err)
+			return nil, err
 		}
 
 		parsed, err := Parse(&root, env)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 
 		evaluated, err := Eval(parsed, env)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 
 		if evaluated == nil {
@@ -50,5 +65,5 @@ func EvaluateYisp(path string, parent *Env) *YispNode {
 	return &YispNode{
 		Kind:  KindArray,
 		Value: documents,
-	}
+	}, nil
 }

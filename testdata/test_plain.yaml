@@ -1,0 +1,5 @@
+message: this is a normal yaml document
+fruits:
+  - apple
+  - banana
+  - chocolate

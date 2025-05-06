@@ -12,12 +12,16 @@ func render(node *YispNode) (any, error) {
 	case KindNull, KindBool, KindInt, KindFloat, KindString:
 		return node.Value, nil
 	case KindArray:
-		arr, ok := node.Value.([]*YispNode)
+		arr, ok := node.Value.([]any)
 		if !ok {
 			return nil, fmt.Errorf("invalid array value. Actual type: %T", node.Value)
 		}
 		results := make([]any, len(arr))
-		for i, node := range arr {
+		for i, item := range arr {
+			node, ok := item.(*YispNode)
+			if !ok {
+				return nil, fmt.Errorf("invalid item type: %T", item)
+			}
 			var err error
 			results[i], err = render(node)
 			if err != nil {

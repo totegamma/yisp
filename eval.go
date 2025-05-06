@@ -86,7 +86,11 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env) (*YispNode, error) {
 					return nil, fmt.Errorf("invalid path type: %T", node.Value)
 				}
 
-				results[i] = EvaluateYisp(path, env.CreateChild())
+				var err error
+				results[i], err = evaluateYisp(path, env.CreateChild())
+				if err != nil {
+					return nil, err
+				}
 			}
 
 			return &YispNode{
