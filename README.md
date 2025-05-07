@@ -87,8 +87,10 @@ spec:
 More examples are available in `/testfiles`.
 
 ### TODO
-- Add remote file loading
 - Add cmd operator
+- Add fancy error messages
+- Add evaluation tracing for debugging
+- Add remote file loading
 - Ability to access entire document as module
 - Add patch operator
 - ...
