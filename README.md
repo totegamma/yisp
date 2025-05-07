@@ -1,6 +1,7 @@
 # YISP - A Lisp-like evaluator for YAML documents
 
-> 🚧 Note: This project is currently under active development.
+> [!NOTE]
+> This project is currently under active development.
 > Interfaces and features may change without notice. Use with caution in production environments.
 
 **YISP** (suggested pronunciation: `/ˈjɪsp/`) is a lightweight evaluation engine for YAML, inspired by Lisp.  
@@ -41,75 +42,37 @@ result:
 mystring: hello world
 ```
 
-### Handling multiple documents:
+### Define functions and call it from another file:
 
+template.yaml:
+```yaml
+!yisp &mkpod
+- lambda
+- [!string name, !string image]
+- !quote
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: *name
+  spec:
+    containers:
+      - name: *name
+        image: *image
+```
+
+main.yaml
 ```yaml
 !yisp
-- include
-- "./manifest1.yaml"
-- "./manifest2.yaml"
-```
-
-such as:
-manifest1.yaml:
-```yaml 
-apiVersion: v1
-kind: Pod
-metadata:
-  name: mypod
-```
-manifest2.yaml:
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: myservice
-```
-
-results:
-```yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  name: mypod
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: myservice
-```
-
-### Define a function:
-
-```yaml
-!yisp
-- discard
-- &mkpod
-  - lambda
-  - [!string name, !string image]
-  - !quote
-    apiVersion: v1
-    kind: Pod
-    metadata:
-      name: *name
-    spec:
-      containers:
-        - name: *name
-          image: *image
+- import
+- ["template", "./template.yaml"]
 ---
 !yisp
-- *mkpod
+- *template__mkpod
 - mypod1
 - myimage1
-
----
-!yisp
-- *mkpod
-- mypod2
-- myimage2
 ```
 
-results:
+result:
 ```yaml
 apiVersion: v1
 kind: Pod
@@ -119,14 +82,14 @@ spec:
   containers:
     - name: mypod1
       image: myimage1
----
-apiVersion: v1
-kind: Pod
-metadata:
-  name: mypod2
-spec:
-  containers:
-    - name: mypod2
-      image: myimage2
 ```
+
+More examples are available in `/testfiles`.
+
+### TODO
+- Add remote file loading
+- Add cmd operator
+- Ability to access entire document as module
+- Add patch operator
+- ...
 
