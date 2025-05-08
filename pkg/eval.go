@@ -13,11 +13,11 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 	case KindLambda:
 		lambda, ok := car.Value.([]*YispNode)
 		if !ok {
-			return nil, fmt.Errorf("invalid lambda type: %T", car.Value)
+			return nil, NewEvaluationError(car, fmt.Sprintf("invalid lambda type: %T", car.Value))
 		}
 
 		if len(lambda) != 2 {
-			return nil, fmt.Errorf("lambda requires 2 arguments")
+			return nil, NewEvaluationError(car, fmt.Sprintf("lambda requires 2 arguments, got %d", len(lambda)))
 		}
 
 		paramsNode := lambda[0]
@@ -27,11 +27,11 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 		for _, item := range paramsNode.Value.([]any) {
 			paramNode, ok := item.(*YispNode)
 			if !ok {
-				return nil, fmt.Errorf("invalid param type: %T", item)
+				return nil, NewEvaluationError(car, fmt.Sprintf("invalid param type: %T", item))
 			}
 			param, ok := paramNode.Value.(string)
 			if !ok {
-				return nil, fmt.Errorf("invalid param value: %T", paramNode.Value)
+				return nil, NewEvaluationError(car, fmt.Sprintf("invalid param value: %T", paramNode.Value))
 			}
 			params = append(params, param)
 		}
@@ -40,7 +40,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 		for i, node := range cdr {
 			val, err := Eval(node, env, mode)
 			if err != nil {
-				return nil, err
+				return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate argument: %s", err))
 			}
 			newEnv.Vars[params[i]] = val
 		}
@@ -50,7 +50,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 	case KindString:
 		op, ok := car.Value.(string)
 		if !ok {
-			return nil, fmt.Errorf("invalid car value: %T", car.Value)
+			return nil, NewEvaluationError(car, fmt.Sprintf("invalid car value: %T", car.Value))
 		}
 
 		switch op {
@@ -59,11 +59,11 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 			for _, node := range cdr {
 				val, err := Eval(node, env, mode)
 				if err != nil {
-					return nil, err
+					return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate argument: %s", err))
 				}
 				str, ok := val.Value.(string)
 				if !ok {
-					return nil, fmt.Errorf("invalid argument type for concat: %T", val)
+					return nil, NewEvaluationError(node, fmt.Sprintf("invalid argument type for concat: %T", val))
 				}
 				result += str
 			}
@@ -78,11 +78,11 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 			for _, node := range cdr {
 				val, err := Eval(node, env, mode)
 				if err != nil {
-					return nil, err
+					return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate argument: %s", err))
 				}
 				num, ok := val.Value.(int)
 				if !ok {
-					return nil, fmt.Errorf("invalid argument type for +: %T", val)
+					return nil, NewEvaluationError(node, fmt.Sprintf("invalid argument type for +: %T", val))
 				}
 				sum += num
 			}
@@ -100,20 +100,20 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 			}
 			firstNode, err := Eval(cdr[0], env, mode)
 			if err != nil {
-				return nil, err
+				return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate first argument: %s", err))
 			}
 			baseNum, ok := firstNode.Value.(int)
 			if !ok {
-				return nil, fmt.Errorf("invalid argument type for -: %T", firstNode)
+				return nil, NewEvaluationError(firstNode, fmt.Sprintf("invalid argument type for -: %T", firstNode))
 			}
 			for _, node := range cdr[1:] {
 				evaluated, err := Eval(node, env, mode)
 				if err != nil {
-					return nil, err
+					return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate argument: %s", err))
 				}
 				val, ok := evaluated.Value.(int)
 				if !ok {
-					return nil, fmt.Errorf("invalid argument type for -: %T", evaluated)
+					return nil, NewEvaluationError(evaluated, fmt.Sprintf("invalid argument type for -: %T", evaluated))
 				}
 				baseNum -= val
 			}
@@ -124,12 +124,12 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 
 		case "if":
 			if len(cdr) != 3 {
-				return nil, fmt.Errorf("if requires 3 arguments")
+				return nil, NewEvaluationError(car, fmt.Sprintf("if requires 3 arguments, got %d", len(cdr)))
 			}
 
 			condNode, err := Eval(cdr[0], env, mode)
 			if err != nil {
-				return nil, err
+				return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate condition: %s", err))
 			}
 
 			cond := false
@@ -139,37 +139,37 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 			case int:
 				condInt, ok := condNode.Value.(int)
 				if !ok {
-					return nil, fmt.Errorf("invalid condition type: %T", condNode.Value)
+					return nil, NewEvaluationError(condNode, fmt.Sprintf("invalid condition type: %T", condNode.Value))
 				}
 				cond = condInt != 0
 			case float64:
 				condFloat, ok := condNode.Value.(float64)
 				if !ok {
-					return nil, fmt.Errorf("invalid condition type: %T", condNode.Value)
+					return nil, NewEvaluationError(condNode, fmt.Sprintf("invalid condition type: %T", condNode.Value))
 				}
 				cond = condFloat != 0.0
 			case string:
 				condStr, ok := condNode.Value.(string)
 				if !ok {
-					return nil, fmt.Errorf("invalid condition type: %T", condNode.Value)
+					return nil, NewEvaluationError(condNode, fmt.Sprintf("invalid condition type: %T", condNode.Value))
 				}
 				cond = condStr != ""
 			case []any:
 				condArr, ok := condNode.Value.([]any)
 				if !ok {
-					return nil, fmt.Errorf("invalid condition type: %T", condNode.Value)
+					return nil, NewEvaluationError(condNode, fmt.Sprintf("invalid condition type: %T", condNode.Value))
 				}
 				cond = len(condArr) != 0
 			case map[string]any:
 				condMap, ok := condNode.Value.(map[string]any)
 				if !ok {
-					return nil, fmt.Errorf("invalid condition type: %T", condNode.Value)
+					return nil, NewEvaluationError(condNode, fmt.Sprintf("invalid condition type: %T", condNode.Value))
 				}
 				cond = len(condMap) != 0
 			case nil:
 				cond = false
 			default:
-				return nil, fmt.Errorf("invalid condition type: %T", condNode.Value)
+				return nil, NewEvaluationError(condNode, fmt.Sprintf("invalid condition type: %T", condNode.Value))
 			}
 
 			if cond {
@@ -192,55 +192,55 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 
 		case "car":
 			if len(cdr) != 1 {
-				return nil, fmt.Errorf("car requires 1 argument")
+				return nil, NewEvaluationError(car, fmt.Sprintf("car requires 1 argument, got %d", len(cdr)))
 			}
 
 			listNode, err := Eval(cdr[0], env, mode)
 			if err != nil {
-				return nil, err
+				return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate car argument: %s", err))
 			}
 
 			if listNode.Kind != KindArray {
-				return nil, fmt.Errorf("car requires a list argument, got %v", listNode.Kind)
+				return nil, NewEvaluationError(listNode, fmt.Sprintf("car requires a list argument, got %v", listNode.Kind))
 			}
 
 			arr, ok := listNode.Value.([]any)
 			if !ok {
-				return nil, fmt.Errorf("invalid array value: %T", listNode.Value)
+				return nil, NewEvaluationError(listNode, fmt.Sprintf("invalid array value: %T", listNode.Value))
 			}
 
 			if len(arr) == 0 {
-				return nil, fmt.Errorf("car: empty list")
+				return nil, NewEvaluationError(listNode, "car: empty list")
 			}
 
 			firstElem, ok := arr[0].(*YispNode)
 			if !ok {
-				return nil, fmt.Errorf("invalid element type: %T", arr[0])
+				return nil, NewEvaluationError(listNode, fmt.Sprintf("invalid element type: %T", arr[0]))
 			}
 
 			return firstElem, nil
 
 		case "cdr":
 			if len(cdr) != 1 {
-				return nil, fmt.Errorf("cdr requires 1 argument")
+				return nil, NewEvaluationError(car, fmt.Sprintf("cdr requires 1 argument, got %d", len(cdr)))
 			}
 
 			listNode, err := Eval(cdr[0], env, mode)
 			if err != nil {
-				return nil, err
+				return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate cdr argument: %s", err))
 			}
 
 			if listNode.Kind != KindArray {
-				return nil, fmt.Errorf("cdr requires a list argument, got %v", listNode.Kind)
+				return nil, NewEvaluationError(listNode, fmt.Sprintf("cdr requires a list argument, got %v", listNode.Kind))
 			}
 
 			arr, ok := listNode.Value.([]any)
 			if !ok {
-				return nil, fmt.Errorf("invalid array value: %T", listNode.Value)
+				return nil, NewEvaluationError(listNode, fmt.Sprintf("invalid array value: %T", listNode.Value))
 			}
 
 			if len(arr) == 0 {
-				return nil, fmt.Errorf("cdr: empty list")
+				return nil, NewEvaluationError(listNode, "cdr: empty list")
 			}
 
 			restElements := make([]any, len(arr)-1)
@@ -255,26 +255,26 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 
 		case "cons":
 			if len(cdr) != 2 {
-				return nil, fmt.Errorf("cons requires 2 arguments")
+				return nil, NewEvaluationError(car, fmt.Sprintf("cons requires 2 arguments, got %d", len(cdr)))
 			}
 
 			elemNode, err := Eval(cdr[0], env, mode)
 			if err != nil {
-				return nil, err
+				return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate cons first argument: %s", err))
 			}
 
 			listNode, err := Eval(cdr[1], env, mode)
 			if err != nil {
-				return nil, err
+				return nil, NewEvaluationError(cdr[1], fmt.Sprintf("failed to evaluate cons second argument: %s", err))
 			}
 
 			if listNode.Kind != KindArray {
-				return nil, fmt.Errorf("cons requires a list as the second argument, got %v", listNode.Kind)
+				return nil, NewEvaluationError(listNode, fmt.Sprintf("cons requires a list as the second argument, got %v", listNode.Kind))
 			}
 
 			arr, ok := listNode.Value.([]any)
 			if !ok {
-				return nil, fmt.Errorf("invalid array value: %T", listNode.Value)
+				return nil, NewEvaluationError(listNode, fmt.Sprintf("invalid array value: %T", listNode.Value))
 			}
 
 			newArr := make([]any, len(arr)+1)
@@ -300,7 +300,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 			for i, node := range cdr {
 				relpath, ok := node.Value.(string)
 				if !ok {
-					return nil, fmt.Errorf("invalid path type: %T", node.Value)
+					return nil, NewEvaluationError(node, fmt.Sprintf("invalid path type: %T", node.Value))
 				}
 
 				baseDir := filepath.Dir(node.File)
@@ -310,7 +310,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 				var err error
 				results[i], err = evaluateYisp(path, env.CreateChild())
 				if err != nil {
-					return nil, err
+					return nil, NewEvaluationError(node, fmt.Sprintf("failed to include file: %s", err))
 				}
 			}
 
@@ -327,31 +327,31 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 
 				tuple, ok := node.Value.([]any)
 				if !ok {
-					return nil, fmt.Errorf("invalid tuple type: %T", node.Value)
+					return nil, NewEvaluationError(node, fmt.Sprintf("invalid tuple type: %T", node.Value))
 				}
 
 				if len(tuple) != 2 {
-					return nil, fmt.Errorf("import requires 2 arguments")
+					return nil, NewEvaluationError(node, fmt.Sprintf("import requires 2 arguments, got %d", len(tuple)))
 				}
 
 				nameNode, ok := tuple[0].(*YispNode)
 				if !ok {
-					return nil, fmt.Errorf("invalid name type: %T", tuple[0])
+					return nil, NewEvaluationError(node, fmt.Sprintf("invalid name type: %T", tuple[0]))
 				}
 
 				name, ok := nameNode.Value.(string)
 				if !ok {
-					return nil, fmt.Errorf("invalid name type: %T", nameNode.Value)
+					return nil, NewEvaluationError(node, fmt.Sprintf("invalid name type: %T", nameNode.Value))
 				}
 
 				relpathNode, ok := tuple[1].(*YispNode)
 				if !ok {
-					return nil, fmt.Errorf("invalid path type: %T", tuple[1])
+					return nil, NewEvaluationError(node, fmt.Sprintf("invalid path type: %T", tuple[1]))
 				}
 
 				relpath, ok := relpathNode.Value.(string)
 				if !ok {
-					return nil, fmt.Errorf("invalid path type: %T", relpathNode.Value)
+					return nil, NewEvaluationError(node, fmt.Sprintf("invalid path type: %T", relpathNode.Value))
 				}
 
 				joinedPath := filepath.Join(baseDir, relpath)
@@ -362,7 +362,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 				var err error
 				_, err = evaluateYisp(path, newEnv)
 				if err != nil {
-					return nil, err
+					return nil, NewEvaluationError(node, fmt.Sprintf("failed to include file: %s", err))
 				}
 
 				env.AddModule(name, newEnv)
@@ -375,7 +375,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 
 		case "lambda":
 			if len(cdr) != 2 {
-				return nil, fmt.Errorf("lambda requires 2 arguments")
+				return nil, NewEvaluationError(car, fmt.Sprintf("lambda requires 2 arguments, got %d", len(cdr)))
 			}
 
 			return &YispNode{
@@ -384,7 +384,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 			}, nil
 
 		default:
-			return nil, fmt.Errorf("unknown function name: %s", op)
+			return nil, NewEvaluationError(car, fmt.Sprintf("unknown function name: %s", op))
 		}
 	default:
 		return nil, NewEvaluationError(car, fmt.Sprintf("cannot apply type %s", car.Kind))
@@ -393,11 +393,11 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 
 func compareInts(cdr []*YispNode, env *Env, mode EvalMode, opName string, cmp func(int, int) bool) (*YispNode, error) {
 	if len(cdr) != 2 {
-		return nil, fmt.Errorf("%s requires 2 arguments", opName)
+		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("%s requires 2 arguments, got %d", opName, len(cdr)))
 	}
 	firstNode, err := Eval(cdr[0], env, mode)
 	if err != nil {
-		return nil, err
+		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate first argument: %s", err))
 	}
 	firstNum, ok := firstNode.Value.(int)
 	if !ok {
@@ -405,20 +405,20 @@ func compareInts(cdr []*YispNode, env *Env, mode EvalMode, opName string, cmp fu
 		if firstFloat, isFloat := firstNode.Value.(float64); isFloat {
 			firstNum = int(firstFloat) // Note: This truncates. Decide if this is the desired behavior.
 		} else {
-			return nil, fmt.Errorf("invalid first argument type for %s: %T (value: %v)", opName, firstNode.Value, firstNode.Value)
+			return nil, NewEvaluationError(firstNode, fmt.Sprintf("invalid first argument type for %s: %T (value: %v)", opName, firstNode.Value, firstNode.Value))
 		}
 	}
 
 	secondNode, err := Eval(cdr[1], env, mode)
 	if err != nil {
-		return nil, err
+		return nil, NewEvaluationError(cdr[1], fmt.Sprintf("failed to evaluate second argument: %s", err))
 	}
 	secondNum, ok := secondNode.Value.(int)
 	if !ok {
 		if secondFloat, isFloat := secondNode.Value.(float64); isFloat {
 			secondNum = int(secondFloat) // Note: This truncates.
 		} else {
-			return nil, fmt.Errorf("invalid second argument type for %s: %T (value: %v)", opName, secondNode.Value, secondNode.Value)
+			return nil, NewEvaluationError(secondNode, fmt.Sprintf("invalid second argument type for %s: %T (value: %v)", opName, secondNode.Value, secondNode.Value))
 		}
 	}
 
@@ -448,12 +448,11 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 		body, ok = env.Get(node.Value.(string))
 		if !ok {
-			//JsonPrint("env", env)
-			return nil, fmt.Errorf("undefined symbol: %s", node.Value)
+			return nil, NewEvaluationError(node, fmt.Sprintf("undefined symbol: %s", node.Value))
 		}
 		node, ok := body.(*YispNode)
 		if !ok {
-			return nil, fmt.Errorf("invalid symbol type: %T", body)
+			return nil, NewEvaluationError(node, fmt.Sprintf("invalid symbol type: %T", body))
 		}
 
 		result = node
@@ -486,13 +485,13 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		if !ok {
 			fStr, ok := node.Value.(string)
 			if !ok {
-				return nil, fmt.Errorf("invalid float type: %T", node.Value)
+				return nil, NewEvaluationError(node, fmt.Sprintf("invalid float type: %T", node.Value))
 			}
-			
+
 			var err error
 			f, err = strconv.ParseFloat(fStr, 64)
 			if err != nil {
-				return nil, fmt.Errorf("invalid float value: %s", fStr)
+				return nil, NewEvaluationError(node, fmt.Sprintf("invalid float value: %s", fStr))
 			}
 		}
 
@@ -509,13 +508,13 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		if !ok {
 			iStr, ok := node.Value.(string)
 			if !ok {
-				return nil, fmt.Errorf("invalid int type: %T", node.Value)
+				return nil, NewEvaluationError(node, fmt.Sprintf("invalid int type: %T", node.Value))
 			}
 
 			var err error
 			i, err = strconv.Atoi(iStr)
 			if err != nil {
-				return nil, fmt.Errorf("invalid int value: %s", iStr)
+				return nil, NewEvaluationError(node, fmt.Sprintf("invalid int value: %s", iStr))
 			}
 		}
 
@@ -536,50 +535,50 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		if mode == EvalModeEval {
 			arr, ok := node.Value.([]any)
 			if !ok {
-				return nil, fmt.Errorf("invalid array type: %T", node.Value)
+				return nil, NewEvaluationError(node, fmt.Sprintf("invalid array type: %T", node.Value))
 			}
 
 			carNode, ok := arr[0].(*YispNode)
 			if !ok {
-				return nil, fmt.Errorf("invalid car type1: %T", arr[0])
+				return nil, NewEvaluationError(node, fmt.Sprintf("invalid car type: %T", arr[0]))
 			}
 
 			car, err := Eval(carNode, env, mode)
 			if err != nil {
-				return nil, err
+				return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate car: %s", err))
 			}
 
 			cdr := make([]*YispNode, len(arr)-1)
 			for i, item := range arr[1:] {
 				node, ok := item.(*YispNode)
 				if !ok {
-					return nil, fmt.Errorf("invalid item type: %T", item)
+					return nil, NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
 				}
 				cdr[i] = node
 			}
 
 			r, err := Apply(car, cdr, env, mode)
 			if err != nil {
-				return nil, err
+				return nil, NewEvaluationError(node, fmt.Sprintf("failed to apply function: %s", err))
 			}
 			result = r
 
 		} else {
 			arr, ok := node.Value.([]any)
 			if !ok {
-				return nil, fmt.Errorf("invalid array type: %T", node.Value)
+				return nil, NewEvaluationError(node, fmt.Sprintf("invalid array type: %T", node.Value))
 			}
 
 			results := make([]any, len(arr))
 			for i, item := range arr {
 				node, ok := item.(*YispNode)
 				if !ok {
-					return nil, fmt.Errorf("invalid item type: %T", item)
+					return nil, NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
 				}
 
 				result, err := Eval(node, env, mode)
 				if err != nil {
-					return nil, err
+					return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate item: %s", err))
 				}
 				results[i] = result
 			}
@@ -593,18 +592,18 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	case KindMap:
 		m, ok := node.Value.(map[string]any)
 		if !ok {
-			return nil, fmt.Errorf("invalid map type: %T", node.Value)
+			return nil, NewEvaluationError(node, fmt.Sprintf("invalid map type: %T", node.Value))
 		}
 		results := make(map[string]any)
 		for key, item := range m {
 			node, ok := item.(*YispNode)
 			if !ok {
-				return nil, fmt.Errorf("invalid item type: %T", item)
+				return nil, NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
 			}
 
 			val, err := Eval(node, env, mode)
 			if err != nil {
-				return nil, err
+				return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate item: %s", err))
 			}
 			results[key] = val
 		}

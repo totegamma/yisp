@@ -44,7 +44,6 @@ func (k Kind) String() string {
 	}
 }
 
-
 const (
 	KindSymbol Kind = iota
 	KindParameter
