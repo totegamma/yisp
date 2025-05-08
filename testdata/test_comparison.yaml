@@ -31,21 +31,6 @@
 - !yisp [">=", 1.0, 1] # Float to int
 - !yisp [">=", 1.5, 1.5] # Float to float
 
-# String number comparisons
-- !yisp ["==", "1", 1] # String to int
-- !yisp ["==", 1, "1"] # Int to string
-- !yisp ["==", "1.5", 1.5] # String to float
-- !yisp ["!=", "1", 2] # String to int
-- !yisp ["!=", 1, "2"] # Int to string
-- !yisp ["<", "1", 2] # String to int
-- !yisp ["<", 1, "2"] # Int to string
-- !yisp ["<=", "1", 1] # String to int
-- !yisp ["<=", 1, "1"] # Int to string
-- !yisp [">", "2", 1] # String to int
-- !yisp [">", 2, "1"] # Int to string
-- !yisp [">=", "1", 1] # String to int
-- !yisp [">=", 1, "1"] # Int to string
-
 # String comparisons
 - !yisp ["==", "hello", "hello"] # Same strings
 - !yisp ["==", "hello", "world"] # Different strings
@@ -58,10 +43,12 @@
 - !yisp ["!=", true, true] # Same booleans
 - !yisp ["!=", true, false] # Different booleans
 
-# Mixed type comparisons
-- !yisp ["==", "true", true] # String to boolean
-- !yisp ["==", true, "true"] # Boolean to string
-- !yisp ["==", "false", false] # String to boolean
-- !yisp ["==", false, "false"] # Boolean to string
-- !yisp ["!=", "true", false] # String to boolean
-- !yisp ["!=", false, "true"] # Boolean to string
+# Different types should not be equal
+- !yisp ["==", 1, "1"] # Int and string
+- !yisp ["==", "1", 1] # String and int
+- !yisp ["==", true, 1] # Boolean and int
+- !yisp ["==", 0, false] # Int and boolean
+- !yisp ["!=", 1, "1"] # Int and string
+- !yisp ["!=", "1", 1] # String and int
+- !yisp ["!=", true, 1] # Boolean and int
+- !yisp ["!=", 0, false] # Int and boolean

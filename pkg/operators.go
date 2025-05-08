@@ -3,7 +3,6 @@ package yisp
 import (
 	"fmt"
 	"path/filepath"
-	"strconv"
 )
 
 // OperatorFunc is a function that implements a Yisp operator
@@ -186,29 +185,9 @@ func opIf(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate condition: %s", err))
 	}
 
-	cond := false
-	switch condNode.Value.(type) {
-	case bool:
-		cond, _ = condNode.Value.(bool)
-	case int:
-		condInt, _ := condNode.Value.(int)
-		cond = condInt != 0
-	case float64:
-		condFloat, _ := condNode.Value.(float64)
-		cond = condFloat != 0.0
-	case string:
-		condStr, _ := condNode.Value.(string)
-		cond = condStr != ""
-	case []any:
-		condArr, _ := condNode.Value.([]any)
-		cond = len(condArr) != 0
-	case map[string]any:
-		condMap, _ := condNode.Value.(map[string]any)
-		cond = len(condMap) != 0
-	case nil:
-		cond = false
-	default:
-		return nil, NewEvaluationError(condNode, fmt.Sprintf("invalid condition type: %T", condNode.Value))
+	cond, err := isTruthy(condNode)
+	if err != nil {
+		return nil, err
 	}
 
 	if cond {
@@ -471,186 +450,5 @@ func opLambda(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	return &YispNode{
 		Kind:  KindLambda,
 		Value: lambda,
-	}, nil
-}
-
-// compareValues compares two values of any type for equality
-// It can handle different types including numbers, strings, and booleans
-func compareValues(cdr []*YispNode, env *Env, mode EvalMode, opName string, expectEqual bool) (*YispNode, error) {
-	if len(cdr) != 2 {
-		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("%s requires 2 arguments, got %d", opName, len(cdr)))
-	}
-
-	firstNode, err := Eval(cdr[0], env, mode)
-	if err != nil {
-		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate first argument: %s", err))
-	}
-
-	secondNode, err := Eval(cdr[1], env, mode)
-	if err != nil {
-		return nil, NewEvaluationError(cdr[1], fmt.Sprintf("failed to evaluate second argument: %s", err))
-	}
-
-	// If both values are of the same type, we can compare them directly
-	equal := false
-
-	// Handle different type combinations
-	switch v1 := firstNode.Value.(type) {
-	case int:
-		switch v2 := secondNode.Value.(type) {
-		case int:
-			equal = v1 == v2
-		case float64:
-			equal = float64(v1) == v2
-		case string:
-			// Try to convert string to number
-			if f, err := strconv.ParseFloat(v2, 64); err == nil {
-				equal = float64(v1) == f
-			} else {
-				equal = false // Different types that can't be converted
-			}
-		case bool:
-			equal = false // Int and bool are not equal
-		default:
-			equal = false // Different types
-		}
-	case float64:
-		switch v2 := secondNode.Value.(type) {
-		case int:
-			equal = v1 == float64(v2)
-		case float64:
-			equal = v1 == v2
-		case string:
-			// Try to convert string to number
-			if f, err := strconv.ParseFloat(v2, 64); err == nil {
-				equal = v1 == f
-			} else {
-				equal = false // Different types that can't be converted
-			}
-		case bool:
-			equal = false // Float and bool are not equal
-		default:
-			equal = false // Different types
-		}
-	case string:
-		switch v2 := secondNode.Value.(type) {
-		case int:
-			// Try to convert string to number
-			if f, err := strconv.ParseFloat(v1, 64); err == nil {
-				equal = f == float64(v2)
-			} else {
-				equal = false // Different types that can't be converted
-			}
-		case float64:
-			// Try to convert string to number
-			if f, err := strconv.ParseFloat(v1, 64); err == nil {
-				equal = f == v2
-			} else {
-				equal = false // Different types that can't be converted
-			}
-		case string:
-			equal = v1 == v2
-		case bool:
-			// Special case for "true" and "false" strings
-			if v1 == "true" {
-				equal = v2 == true
-			} else if v1 == "false" {
-				equal = v2 == false
-			} else {
-				equal = false
-			}
-		default:
-			equal = false // Different types
-		}
-	case bool:
-		switch v2 := secondNode.Value.(type) {
-		case int:
-			equal = false // Bool and int are not equal
-		case float64:
-			equal = false // Bool and float are not equal
-		case string:
-			// Special case for "true" and "false" strings
-			if v2 == "true" {
-				equal = v1 == true
-			} else if v2 == "false" {
-				equal = v1 == false
-			} else {
-				equal = false
-			}
-		case bool:
-			equal = v1 == v2
-		default:
-			equal = false // Different types
-		}
-	default:
-		// For other types, we just check if they're the same type and value
-		equal = firstNode.Value == secondNode.Value
-	}
-
-	// For != operation, invert the result
-	if !expectEqual {
-		equal = !equal
-	}
-
-	return &YispNode{
-		Kind:  KindBool,
-		Value: equal,
-	}, nil
-}
-
-// compareNumbers compares two numbers using the provided comparison function
-// It handles both integers and floating point numbers
-func compareNumbers(cdr []*YispNode, env *Env, mode EvalMode, opName string, cmp func(float64, float64) bool) (*YispNode, error) {
-	if len(cdr) != 2 {
-		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("%s requires 2 arguments, got %d", opName, len(cdr)))
-	}
-
-	firstNode, err := Eval(cdr[0], env, mode)
-	if err != nil {
-		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate first argument: %s", err))
-	}
-
-	var firstNum float64
-	switch v := firstNode.Value.(type) {
-	case int:
-		firstNum = float64(v)
-	case float64:
-		firstNum = v
-	case string:
-		// Try to convert string to number
-		if f, err := strconv.ParseFloat(v, 64); err == nil {
-			firstNum = f
-		} else {
-			return nil, NewEvaluationError(firstNode, fmt.Sprintf("invalid first argument type for %s: %T (value: %v)", opName, firstNode.Value, firstNode.Value))
-		}
-	default:
-		return nil, NewEvaluationError(firstNode, fmt.Sprintf("invalid first argument type for %s: %T (value: %v)", opName, firstNode.Value, firstNode.Value))
-	}
-
-	secondNode, err := Eval(cdr[1], env, mode)
-	if err != nil {
-		return nil, NewEvaluationError(cdr[1], fmt.Sprintf("failed to evaluate second argument: %s", err))
-	}
-
-	var secondNum float64
-	switch v := secondNode.Value.(type) {
-	case int:
-		secondNum = float64(v)
-	case float64:
-		secondNum = v
-	case string:
-		// Try to convert string to number
-		if f, err := strconv.ParseFloat(v, 64); err == nil {
-			secondNum = f
-		} else {
-			return nil, NewEvaluationError(secondNode, fmt.Sprintf("invalid second argument type for %s: %T (value: %v)", opName, secondNode.Value, secondNode.Value))
-		}
-	default:
-		return nil, NewEvaluationError(secondNode, fmt.Sprintf("invalid second argument type for %s: %T (value: %v)", opName, secondNode.Value, secondNode.Value))
-	}
-
-	return &YispNode{
-		Kind:  KindBool,
-		Value: cmp(firstNum, secondNum),
 	}, nil
 }
