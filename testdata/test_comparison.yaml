@@ -1,22 +1,47 @@
+# Integer comparisons
 - !yisp ["==", 1, 1]
 - !yisp ["==", 1, 2]
-- !yisp ["==", 1.0, 1] # Test float conversion
 - !yisp ["!=", 1, 1]
 - !yisp ["!=", 1, 2]
-- !yisp ["!=", 1.0, 2] # Test float conversion
 - !yisp ["<", 1, 2]
 - !yisp ["<", 2, 1]
 - !yisp ["<", 1, 1]
-- !yisp ["<", 1.5, 2] # Test float conversion (1 < 2)
 - !yisp ["<=", 1, 2]
 - !yisp ["<=", 2, 1]
 - !yisp ["<=", 1, 1]
-- !yisp ["<=", 1.0, 1] # Test float conversion
 - !yisp [">", 2, 1]
 - !yisp [">", 1, 2]
 - !yisp [">", 1, 1]
-- !yisp [">", 2.5, 1] # Test float conversion (2 > 1)
 - !yisp [">=", 2, 1]
 - !yisp [">=", 1, 2]
 - !yisp [">=", 1, 1]
-- !yisp [">=", 1.0, 1] # Test float conversion
+
+# Float comparisons
+- !yisp ["==", 1.0, 1] # Float to int
+- !yisp ["==", 1, 1.0] # Int to float
+- !yisp ["==", 1.5, 1.5] # Float to float
+- !yisp ["!=", 1.0, 2] # Float to int
+- !yisp ["!=", 1, 1.5] # Int to float
+- !yisp ["<", 1.5, 2] # Float to int
+- !yisp ["<", 1, 1.5] # Int to float
+- !yisp ["<=", 1.0, 1] # Float to int
+- !yisp ["<=", 1.5, 1.5] # Float to float
+- !yisp [">", 2.5, 1] # Float to int
+- !yisp [">", 2, 1.5] # Int to float
+- !yisp [">=", 1.0, 1] # Float to int
+- !yisp [">=", 1.5, 1.5] # Float to float
+
+# String number comparisons
+- !yisp ["==", "1", 1] # String to int
+- !yisp ["==", 1, "1"] # Int to string
+- !yisp ["==", "1.5", 1.5] # String to float
+- !yisp ["!=", "1", 2] # String to int
+- !yisp ["!=", 1, "2"] # Int to string
+- !yisp ["<", "1", 2] # String to int
+- !yisp ["<", 1, "2"] # Int to string
+- !yisp ["<=", "1", 1] # String to int
+- !yisp ["<=", 1, "1"] # Int to string
+- !yisp [">", "2", 1] # String to int
+- !yisp [">", 2, "1"] # Int to string
+- !yisp [">=", "1", 1] # String to int
+- !yisp [">=", 1, "1"] # Int to string

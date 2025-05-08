@@ -3,6 +3,7 @@ package yisp
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 )
 
 // OperatorFunc is a function that implements a Yisp operator
@@ -216,34 +217,34 @@ func opIf(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	return Eval(cdr[2], env, mode)
 }
 
-// opEqual checks if two integers are equal
+// opEqual checks if two numbers are equal
 func opEqual(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
-	return compareInts(cdr, env, mode, "==", func(a, b int) bool { return a == b })
+	return compareNumbers(cdr, env, mode, "==", func(a, b float64) bool { return a == b })
 }
 
-// opNotEqual checks if two integers are not equal
+// opNotEqual checks if two numbers are not equal
 func opNotEqual(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
-	return compareInts(cdr, env, mode, "!=", func(a, b int) bool { return a != b })
+	return compareNumbers(cdr, env, mode, "!=", func(a, b float64) bool { return a != b })
 }
 
-// opLessThan checks if the first integer is less than the second
+// opLessThan checks if the first number is less than the second
 func opLessThan(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
-	return compareInts(cdr, env, mode, "<", func(a, b int) bool { return a < b })
+	return compareNumbers(cdr, env, mode, "<", func(a, b float64) bool { return a < b })
 }
 
-// opLessThanOrEqual checks if the first integer is less than or equal to the second
+// opLessThanOrEqual checks if the first number is less than or equal to the second
 func opLessThanOrEqual(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
-	return compareInts(cdr, env, mode, "<=", func(a, b int) bool { return a <= b })
+	return compareNumbers(cdr, env, mode, "<=", func(a, b float64) bool { return a <= b })
 }
 
-// opGreaterThan checks if the first integer is greater than the second
+// opGreaterThan checks if the first number is greater than the second
 func opGreaterThan(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
-	return compareInts(cdr, env, mode, ">", func(a, b int) bool { return a > b })
+	return compareNumbers(cdr, env, mode, ">", func(a, b float64) bool { return a > b })
 }
 
-// opGreaterThanOrEqual checks if the first integer is greater than or equal to the second
+// opGreaterThanOrEqual checks if the first number is greater than or equal to the second
 func opGreaterThanOrEqual(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
-	return compareInts(cdr, env, mode, ">=", func(a, b int) bool { return a >= b })
+	return compareNumbers(cdr, env, mode, ">=", func(a, b float64) bool { return a >= b })
 }
 
 // opCar returns the first element of a list
@@ -473,36 +474,55 @@ func opLambda(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	}, nil
 }
 
-// compareInts compares two integers using the provided comparison function
-func compareInts(cdr []*YispNode, env *Env, mode EvalMode, opName string, cmp func(int, int) bool) (*YispNode, error) {
+// compareNumbers compares two numbers using the provided comparison function
+// It handles both integers and floating point numbers
+func compareNumbers(cdr []*YispNode, env *Env, mode EvalMode, opName string, cmp func(float64, float64) bool) (*YispNode, error) {
 	if len(cdr) != 2 {
 		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("%s requires 2 arguments, got %d", opName, len(cdr)))
 	}
+
 	firstNode, err := Eval(cdr[0], env, mode)
 	if err != nil {
 		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate first argument: %s", err))
 	}
-	firstNum, ok := firstNode.Value.(int)
-	if !ok {
-		// Attempt to convert float to int if applicable, or handle other types
-		if firstFloat, isFloat := firstNode.Value.(float64); isFloat {
-			firstNum = int(firstFloat) // Note: This truncates. Decide if this is the desired behavior.
+
+	var firstNum float64
+	switch v := firstNode.Value.(type) {
+	case int:
+		firstNum = float64(v)
+	case float64:
+		firstNum = v
+	case string:
+		// Try to convert string to number
+		if f, err := strconv.ParseFloat(v, 64); err == nil {
+			firstNum = f
 		} else {
 			return nil, NewEvaluationError(firstNode, fmt.Sprintf("invalid first argument type for %s: %T (value: %v)", opName, firstNode.Value, firstNode.Value))
 		}
+	default:
+		return nil, NewEvaluationError(firstNode, fmt.Sprintf("invalid first argument type for %s: %T (value: %v)", opName, firstNode.Value, firstNode.Value))
 	}
 
 	secondNode, err := Eval(cdr[1], env, mode)
 	if err != nil {
 		return nil, NewEvaluationError(cdr[1], fmt.Sprintf("failed to evaluate second argument: %s", err))
 	}
-	secondNum, ok := secondNode.Value.(int)
-	if !ok {
-		if secondFloat, isFloat := secondNode.Value.(float64); isFloat {
-			secondNum = int(secondFloat) // Note: This truncates.
+
+	var secondNum float64
+	switch v := secondNode.Value.(type) {
+	case int:
+		secondNum = float64(v)
+	case float64:
+		secondNum = v
+	case string:
+		// Try to convert string to number
+		if f, err := strconv.ParseFloat(v, 64); err == nil {
+			secondNum = f
 		} else {
 			return nil, NewEvaluationError(secondNode, fmt.Sprintf("invalid second argument type for %s: %T (value: %v)", opName, secondNode.Value, secondNode.Value))
 		}
+	default:
+		return nil, NewEvaluationError(secondNode, fmt.Sprintf("invalid second argument type for %s: %T (value: %v)", opName, secondNode.Value, secondNode.Value))
 	}
 
 	return &YispNode{

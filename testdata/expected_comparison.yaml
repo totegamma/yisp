@@ -1,22 +1,47 @@
-- true
-- false
-- true
-- false
-- true
-- true
+# Integer comparisons
 - true
 - false
 - false
 - true
 - true
 - false
-- true
-- true
-- true
 - false
+- true
 - false
 - true
 - true
 - false
+- false
+- true
+- false
+- true
+
+# Float comparisons
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+
+# String number comparisons
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+- true
+- true
 - true
 - true
