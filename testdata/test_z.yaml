@@ -1,0 +1,38 @@
+!yisp
+&Z
+- lambda
+- [f]
+- - - lambda
+    - [x]
+    - - *f
+      - - lambda
+        - [v]
+        - - - *x
+            - *x
+          - *v
+  - - lambda
+    - [x]
+    - - *f
+      - - lambda
+        - [v]
+        - - - *x
+            - *x
+          - *v
+---
+!yisp
+- - *Z
+  - - lambda
+    - [self]
+    - - lambda
+      - [n]
+      - - if
+        - [<=, *n, 1]
+        - 1
+        - - "*"
+          - *n
+          - - *self
+            - - "-"
+              - *n
+              - 1
+- 5
+

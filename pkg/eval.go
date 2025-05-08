@@ -11,41 +11,21 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 
 	switch car.Kind {
 	case KindLambda:
-		lambda, ok := car.Value.([]*YispNode)
+		lambda, ok := car.Value.(*Lambda)
 		if !ok {
 			return nil, NewEvaluationError(car, fmt.Sprintf("invalid lambda type: %T", car.Value))
 		}
 
-		if len(lambda) != 2 {
-			return nil, NewEvaluationError(car, fmt.Sprintf("lambda requires 2 arguments, got %d", len(lambda)))
-		}
-
-		paramsNode := lambda[0]
-		bodyNode := lambda[1]
-
-		params := make([]string, 0)
-		for _, item := range paramsNode.Value.([]any) {
-			paramNode, ok := item.(*YispNode)
-			if !ok {
-				return nil, NewEvaluationError(car, fmt.Sprintf("invalid param type: %T", item))
-			}
-			param, ok := paramNode.Value.(string)
-			if !ok {
-				return nil, NewEvaluationError(car, fmt.Sprintf("invalid param value: %T", paramNode.Value))
-			}
-			params = append(params, param)
-		}
-
-		newEnv := env.CreateChild()
+		newEnv := lambda.Clojure.CreateChild()
 		for i, node := range cdr {
 			val, err := Eval(node, env, mode)
 			if err != nil {
 				return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate argument: %s", err))
 			}
-			newEnv.Vars[params[i]] = val
+			newEnv.Vars[lambda.Params[i]] = val
 		}
 
-		return Eval(bodyNode, newEnv, mode)
+		return Eval(lambda.Body, newEnv, mode)
 
 	case KindString:
 		op, ok := car.Value.(string)
@@ -116,6 +96,57 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 					return nil, NewEvaluationError(evaluated, fmt.Sprintf("invalid argument type for -: %T", evaluated))
 				}
 				baseNum -= val
+			}
+			return &YispNode{
+				Kind:  KindInt,
+				Value: baseNum,
+			}, nil
+
+		case "*":
+			product := 1
+			for _, node := range cdr {
+				val, err := Eval(node, env, mode)
+				if err != nil {
+					return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate argument: %s", err))
+				}
+				num, ok := val.Value.(int)
+				if !ok {
+					return nil, NewEvaluationError(node, fmt.Sprintf("invalid argument type for *: %T", val))
+				}
+				product *= num
+			}
+			return &YispNode{
+				Kind:  KindInt,
+				Value: product,
+			}, nil
+		case "/":
+			if len(cdr) == 0 {
+				return &YispNode{
+					Kind:  KindInt,
+					Value: 0,
+				}, nil
+			}
+			firstNode, err := Eval(cdr[0], env, mode)
+			if err != nil {
+				return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate first argument: %s", err))
+			}
+			baseNum, ok := firstNode.Value.(int)
+			if !ok {
+				return nil, NewEvaluationError(firstNode, fmt.Sprintf("invalid argument type for /: %T", firstNode))
+			}
+			for _, node := range cdr[1:] {
+				evaluated, err := Eval(node, env, mode)
+				if err != nil {
+					return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate argument: %s", err))
+				}
+				val, ok := evaluated.Value.(int)
+				if !ok {
+					return nil, NewEvaluationError(evaluated, fmt.Sprintf("invalid argument type for /: %T", evaluated))
+				}
+				if val == 0 {
+					return nil, NewEvaluationError(evaluated, "division by zero")
+				}
+				baseNum /= val
 			}
 			return &YispNode{
 				Kind:  KindInt,
@@ -378,12 +409,35 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 				return nil, NewEvaluationError(car, fmt.Sprintf("lambda requires 2 arguments, got %d", len(cdr)))
 			}
 
+			paramsNode := cdr[0]
+			bodyNode := cdr[1]
+
+			params := make([]string, 0)
+			for _, item := range paramsNode.Value.([]any) {
+				paramNode, ok := item.(*YispNode)
+				if !ok {
+					return nil, NewEvaluationError(car, fmt.Sprintf("invalid param type: %T", item))
+				}
+				param, ok := paramNode.Value.(string)
+				if !ok {
+					return nil, NewEvaluationError(car, fmt.Sprintf("invalid param value: %T", paramNode.Value))
+				}
+				params = append(params, param)
+			}
+
+			lambda := &Lambda{
+				Params:  params,
+				Body:    bodyNode,
+				Clojure: env,
+			}
+
 			return &YispNode{
 				Kind:  KindLambda,
-				Value: cdr,
+				Value: lambda,
 			}, nil
 
 		default:
+			JsonPrint("env", env)
 			return nil, NewEvaluationError(car, fmt.Sprintf("unknown function name: %s", op))
 		}
 	default:
@@ -448,6 +502,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 		body, ok = env.Get(node.Value.(string))
 		if !ok {
+			JsonPrint("env", env)
 			return nil, NewEvaluationError(node, fmt.Sprintf("undefined symbol: %s", node.Value))
 		}
 		node, ok := body.(*YispNode)

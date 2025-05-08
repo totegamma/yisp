@@ -2,6 +2,7 @@ package yisp
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 )
 
@@ -68,6 +69,12 @@ type YispNode struct {
 	Anchor string
 }
 
+type Lambda struct {
+	Params  []string
+	Body    *YispNode
+	Clojure *Env
+}
+
 // Env represents the execution environment with variable bindings
 type Env struct {
 	Parent  *Env
@@ -81,6 +88,25 @@ func NewEnv() *Env {
 		Vars:    make(map[string]*YispNode),
 		Modules: make(map[string]*Env),
 	}
+}
+
+func (e *Env) Depth() int {
+	depth := 0
+	for env := e; env != nil; env = env.Parent {
+		depth++
+	}
+	return depth
+}
+
+func (e *Env) Clone() *Env {
+	clone := &Env{
+		Parent:  e.Parent,
+		Vars:    make(map[string]*YispNode),
+		Modules: make(map[string]*Env),
+	}
+	maps.Copy(clone.Vars, e.Vars)
+	maps.Copy(clone.Modules, e.Modules)
+	return clone
 }
 
 func (e *Env) CreateChild() *Env {
