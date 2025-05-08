@@ -5,51 +5,43 @@ import (
 	"path/filepath"
 )
 
+// OperatorFunc is a function that implements a Yisp operator
+type OperatorFunc func([]*YispNode, *Env, EvalMode) (*YispNode, error)
+
+// operators is a map of operator names to their implementations
+var operators = make(map[string]OperatorFunc)
+
+// init initializes the operators map
+func init() {
+	operators["concat"] = opConcat
+	operators["+"] = opAdd
+	operators["-"] = opSubtract
+	operators["*"] = opMultiply
+	operators["/"] = opDivide
+	operators["if"] = opIf
+	operators["=="] = opEqual
+	operators["!="] = opNotEqual
+	operators["<"] = opLessThan
+	operators["<="] = opLessThanOrEqual
+	operators[">"] = opGreaterThan
+	operators[">="] = opGreaterThanOrEqual
+	operators["car"] = opCar
+	operators["cdr"] = opCdr
+	operators["cons"] = opCons
+	operators["discard"] = opDiscard
+	operators["include"] = opInclude
+	operators["import"] = opImport
+	operators["lambda"] = opLambda
+}
+
 // Call dispatches to the appropriate operator function based on the operator name
 func Call(op string, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
-	switch op {
-	case "concat":
-		return opConcat(cdr, env, mode)
-	case "+":
-		return opAdd(cdr, env, mode)
-	case "-":
-		return opSubtract(cdr, env, mode)
-	case "*":
-		return opMultiply(cdr, env, mode)
-	case "/":
-		return opDivide(cdr, env, mode)
-	case "if":
-		return opIf(cdr, env, mode)
-	case "==":
-		return opEqual(cdr, env, mode)
-	case "!=":
-		return opNotEqual(cdr, env, mode)
-	case "<":
-		return opLessThan(cdr, env, mode)
-	case "<=":
-		return opLessThanOrEqual(cdr, env, mode)
-	case ">":
-		return opGreaterThan(cdr, env, mode)
-	case ">=":
-		return opGreaterThanOrEqual(cdr, env, mode)
-	case "car":
-		return opCar(cdr, env, mode)
-	case "cdr":
-		return opCdr(cdr, env, mode)
-	case "cons":
-		return opCons(cdr, env, mode)
-	case "discard":
-		return opDiscard(cdr, env, mode)
-	case "include":
-		return opInclude(cdr, env, mode)
-	case "import":
-		return opImport(cdr, env, mode)
-	case "lambda":
-		return opLambda(cdr, env, mode)
-	default:
-		JsonPrint("env", env)
-		return nil, NewEvaluationError(nil, fmt.Sprintf("unknown function name: %s", op))
+	if fn, ok := operators[op]; ok {
+		return fn(cdr, env, mode)
 	}
+
+	JsonPrint("env", env)
+	return nil, NewEvaluationError(nil, fmt.Sprintf("unknown function name: %s", op))
 }
 
 // opConcat concatenates strings
