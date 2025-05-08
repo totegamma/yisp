@@ -217,14 +217,14 @@ func opIf(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	return Eval(cdr[2], env, mode)
 }
 
-// opEqual checks if two numbers are equal
+// opEqual checks if two values are equal
 func opEqual(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
-	return compareNumbers(cdr, env, mode, "==", func(a, b float64) bool { return a == b })
+	return compareValues(cdr, env, mode, "==", true)
 }
 
-// opNotEqual checks if two numbers are not equal
+// opNotEqual checks if two values are not equal
 func opNotEqual(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
-	return compareNumbers(cdr, env, mode, "!=", func(a, b float64) bool { return a != b })
+	return compareValues(cdr, env, mode, "!=", false)
 }
 
 // opLessThan checks if the first number is less than the second
@@ -471,6 +471,130 @@ func opLambda(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	return &YispNode{
 		Kind:  KindLambda,
 		Value: lambda,
+	}, nil
+}
+
+// compareValues compares two values of any type for equality
+// It can handle different types including numbers, strings, and booleans
+func compareValues(cdr []*YispNode, env *Env, mode EvalMode, opName string, expectEqual bool) (*YispNode, error) {
+	if len(cdr) != 2 {
+		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("%s requires 2 arguments, got %d", opName, len(cdr)))
+	}
+
+	firstNode, err := Eval(cdr[0], env, mode)
+	if err != nil {
+		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate first argument: %s", err))
+	}
+
+	secondNode, err := Eval(cdr[1], env, mode)
+	if err != nil {
+		return nil, NewEvaluationError(cdr[1], fmt.Sprintf("failed to evaluate second argument: %s", err))
+	}
+
+	// If both values are of the same type, we can compare them directly
+	equal := false
+
+	// Handle different type combinations
+	switch v1 := firstNode.Value.(type) {
+	case int:
+		switch v2 := secondNode.Value.(type) {
+		case int:
+			equal = v1 == v2
+		case float64:
+			equal = float64(v1) == v2
+		case string:
+			// Try to convert string to number
+			if f, err := strconv.ParseFloat(v2, 64); err == nil {
+				equal = float64(v1) == f
+			} else {
+				equal = false // Different types that can't be converted
+			}
+		case bool:
+			equal = false // Int and bool are not equal
+		default:
+			equal = false // Different types
+		}
+	case float64:
+		switch v2 := secondNode.Value.(type) {
+		case int:
+			equal = v1 == float64(v2)
+		case float64:
+			equal = v1 == v2
+		case string:
+			// Try to convert string to number
+			if f, err := strconv.ParseFloat(v2, 64); err == nil {
+				equal = v1 == f
+			} else {
+				equal = false // Different types that can't be converted
+			}
+		case bool:
+			equal = false // Float and bool are not equal
+		default:
+			equal = false // Different types
+		}
+	case string:
+		switch v2 := secondNode.Value.(type) {
+		case int:
+			// Try to convert string to number
+			if f, err := strconv.ParseFloat(v1, 64); err == nil {
+				equal = f == float64(v2)
+			} else {
+				equal = false // Different types that can't be converted
+			}
+		case float64:
+			// Try to convert string to number
+			if f, err := strconv.ParseFloat(v1, 64); err == nil {
+				equal = f == v2
+			} else {
+				equal = false // Different types that can't be converted
+			}
+		case string:
+			equal = v1 == v2
+		case bool:
+			// Special case for "true" and "false" strings
+			if v1 == "true" {
+				equal = v2 == true
+			} else if v1 == "false" {
+				equal = v2 == false
+			} else {
+				equal = false
+			}
+		default:
+			equal = false // Different types
+		}
+	case bool:
+		switch v2 := secondNode.Value.(type) {
+		case int:
+			equal = false // Bool and int are not equal
+		case float64:
+			equal = false // Bool and float are not equal
+		case string:
+			// Special case for "true" and "false" strings
+			if v2 == "true" {
+				equal = v1 == true
+			} else if v2 == "false" {
+				equal = v1 == false
+			} else {
+				equal = false
+			}
+		case bool:
+			equal = v1 == v2
+		default:
+			equal = false // Different types
+		}
+	default:
+		// For other types, we just check if they're the same type and value
+		equal = firstNode.Value == secondNode.Value
+	}
+
+	// For != operation, invert the result
+	if !expectEqual {
+		equal = !equal
+	}
+
+	return &YispNode{
+		Kind:  KindBool,
+		Value: equal,
 	}, nil
 }
 

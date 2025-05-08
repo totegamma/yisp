@@ -45,3 +45,23 @@
 - !yisp [">", 2, "1"] # Int to string
 - !yisp [">=", "1", 1] # String to int
 - !yisp [">=", 1, "1"] # Int to string
+
+# String comparisons
+- !yisp ["==", "hello", "hello"] # Same strings
+- !yisp ["==", "hello", "world"] # Different strings
+- !yisp ["!=", "hello", "hello"] # Same strings
+- !yisp ["!=", "hello", "world"] # Different strings
+
+# Boolean comparisons
+- !yisp ["==", true, true] # Same booleans
+- !yisp ["==", true, false] # Different booleans
+- !yisp ["!=", true, true] # Same booleans
+- !yisp ["!=", true, false] # Different booleans
+
+# Mixed type comparisons
+- !yisp ["==", "true", true] # String to boolean
+- !yisp ["==", true, "true"] # Boolean to string
+- !yisp ["==", "false", false] # String to boolean
+- !yisp ["==", false, "false"] # Boolean to string
+- !yisp ["!=", "true", false] # String to boolean
+- !yisp ["!=", false, "true"] # Boolean to string

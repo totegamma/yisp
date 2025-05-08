@@ -45,3 +45,23 @@
 - true
 - true
 - true
+
+# String comparisons
+- true
+- false
+- false
+- true
+
+# Boolean comparisons
+- true
+- false
+- false
+- true
+
+# Mixed type comparisons
+- true
+- true
+- true
+- true
+- true
+- true
