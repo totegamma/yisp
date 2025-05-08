@@ -68,4 +68,3 @@ type Lambda struct {
 	Body    *YispNode
 	Clojure *Env
 }
-

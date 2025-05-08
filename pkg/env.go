@@ -79,4 +79,3 @@ func (e *Env) Get(key string) (*YispNode, bool) {
 func (e *Env) AddModule(name string, module *Env) {
 	e.Modules[name] = module
 }
-
