@@ -36,14 +36,14 @@ func getWholeYamlDocument(str string) (any, error) {
 
 func TestYisp(t *testing.T) {
 
-	files, err := filepath.Glob("../testdata/test*")
+	files, err := filepath.Glob("../testdata/*.test.yaml")
 	if err != nil {
 		t.Fatalf("Error finding test files: %v", err)
 	}
 
 	for _, file := range files {
 
-		expectedFile := strings.Replace(file, "test_", "expected_", 1)
+		expectedFile := strings.Replace(file, ".test.", ".expected.", 1)
 
 		t.Run(file, func(t *testing.T) {
 

@@ -8,3 +8,7 @@ values:
   - 1.1
   - false
   - null
+anchors:
+  - &myanchor pineapple
+  - *myanchor
+  - *myanchor
