@@ -29,6 +29,7 @@ func init() {
 	operators["cdr"] = opCdr
 	operators["cons"] = opCons
 	operators["discard"] = opDiscard
+	operators["progn"] = opProgn
 	operators["include"] = opInclude
 	operators["import"] = opImport
 	operators["lambda"] = opLambda
@@ -333,10 +334,26 @@ func opCons(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 // opDiscard evaluates all arguments and returns nil
 func opDiscard(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	for _, node := range cdr {
-		Eval(node, env, mode)
+		_, err := Eval(node, env, mode)
+		if err != nil {
+			return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate discard argument: %s", err))
+		}
 	}
 
 	return nil, nil
+}
+
+func opProgn(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+	var result *YispNode
+	var err error
+	for _, node := range cdr {
+		result, err = Eval(node, env, mode)
+		if err != nil {
+			return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate progn argument: %s", err))
+		}
+	}
+
+	return result, nil
 }
 
 // opInclude includes files
