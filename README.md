@@ -1,12 +1,16 @@
-# YISP - A Lisp-like evaluator for YAML documents
-
-> [!NOTE]
-> This project is currently under active development.
-> Interfaces and features may change without notice. Use with caution in production environments.
+<div align="center">
+  <img src="./docs/assets/yisp-logo.png" alt="yisp logo" width="200px"/>
+  
+  # YISP - A Lisp-like evaluator for YAML documents
+</div>
 
 **YISP** (suggested pronunciation: `/ˈjɪsp/`) is a lightweight evaluation engine for YAML, inspired by Lisp.  
 It allows you to embed logic, expressions, and includes within YAML files.  
 This is useful for generating structured configuration such as Kubernetes manifests, Ansible playbooks, and more.
+
+> [!NOTE]
+> This project is currently under active development.
+> Interfaces and features may change without notice. Use with caution in production environments.
 
 ## Installation
 
