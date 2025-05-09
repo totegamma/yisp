@@ -230,6 +230,13 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 	if node.Anchor != "" {
 		env.Set(node.Anchor, result)
+
+		if result.Kind == KindLambda {
+			lambda, ok := result.Value.(*Lambda)
+			if ok {
+				lambda.Clojure.Set(node.Anchor, result)
+			}
+		}
 	}
 
 	return result, nil

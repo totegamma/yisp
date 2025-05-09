@@ -444,7 +444,7 @@ func opLambda(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	lambda := &Lambda{
 		Params:  params,
 		Body:    bodyNode,
-		Clojure: env,
+		Clojure: env.Clone(),
 	}
 
 	return &YispNode{
