@@ -13,6 +13,11 @@ var buildCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 
+		allowCmd, err := cmd.Flags().GetBool("allow-cmd")
+		if err == nil {
+			yisp.SetAllowCmd(allowCmd)
+		}
+
 		yamlFile := args[0]
 		if yamlFile == "" {
 			cmd.Help()
@@ -31,4 +36,5 @@ var buildCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(buildCmd)
+	buildCmd.Flags().BoolP("allow-cmd", "", false, "Allow command execution")
 }

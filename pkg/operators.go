@@ -1,7 +1,9 @@
 package yisp
 
 import (
+	"bytes"
 	"fmt"
+	"os/exec"
 	"path/filepath"
 )
 
@@ -33,6 +35,7 @@ func init() {
 	operators["include"] = opInclude
 	operators["import"] = opImport
 	operators["lambda"] = opLambda
+	operators["cmd"] = opCmd
 }
 
 // Call dispatches to the appropriate operator function based on the operator name
@@ -370,7 +373,7 @@ func opInclude(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		path := filepath.Clean(joinedPath)
 
 		var err error
-		results[i], err = evaluateYisp(path, env.CreateChild())
+		results[i], err = evaluateYispFile(path, env.CreateChild())
 		if err != nil {
 			return nil, NewEvaluationError(node, fmt.Sprintf("failed to include file: %s", err))
 		}
@@ -423,7 +426,7 @@ func opImport(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		newEnv := NewEnv()
 
 		var err error
-		_, err = evaluateYisp(path, newEnv)
+		_, err = evaluateYispFile(path, newEnv)
 		if err != nil {
 			return nil, NewEvaluationError(node, fmt.Sprintf("failed to include file: %s", err))
 		}
@@ -468,4 +471,126 @@ func opLambda(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		Kind:  KindLambda,
 		Value: lambda,
 	}, nil
+}
+
+func opCmd(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+
+	if allowCmd != true {
+		return nil, NewEvaluationError(nil, "cmdline operator is not allowed. Set --allow-cmd to enable it.")
+	}
+
+	if len(cdr) != 1 {
+		return nil, NewEvaluationError(nil, fmt.Sprintf("cmdline requires 1 argument, got %d", len(cdr)))
+	}
+
+	props := cdr[0]
+	if props.Kind != KindMap {
+		return nil, NewEvaluationError(props, fmt.Sprintf("cmdline requires a map argument, got %v", props.Kind))
+	}
+
+	propsMap, ok := props.Value.(map[string]any)
+	if !ok {
+		return nil, NewEvaluationError(props, fmt.Sprintf("invalid map type: %T", props.Value))
+	}
+
+	cmdAny, ok := propsMap["cmd"]
+	if !ok {
+		return nil, NewEvaluationError(props, "cmdline requires a 'cmd' key in the map")
+	}
+
+	cmdNode, ok := cmdAny.(*YispNode)
+	if !ok {
+		return nil, NewEvaluationError(props, fmt.Sprintf("invalid cmd type: %T", cmdAny))
+	}
+
+	cmdEval, err := Eval(cmdNode, env, mode)
+	if err != nil {
+		return nil, NewEvaluationError(cmdNode, fmt.Sprintf("failed to evaluate cmd argument: %s", err))
+	}
+
+	cmdStr, ok := cmdEval.Value.(string)
+	if !ok {
+		return nil, NewEvaluationError(cmdNode, fmt.Sprintf("invalid cmd value type: %T", cmdNode.Value))
+	}
+
+	args := make([]string, 0)
+
+	argsAny, ok := propsMap["args"]
+	if ok {
+		argsNode, ok := argsAny.(*YispNode)
+		if !ok {
+			return nil, NewEvaluationError(props, fmt.Sprintf("invalid args type: %T", argsAny))
+		}
+
+		if argsNode.Kind != KindArray {
+			return nil, NewEvaluationError(argsNode, fmt.Sprintf("args must be an array, got %v", argsNode.Kind))
+		}
+
+		arr, ok := argsNode.Value.([]any)
+		if !ok {
+			return nil, NewEvaluationError(argsNode, fmt.Sprintf("invalid array value: %T", argsNode.Value))
+		}
+
+		for _, item := range arr {
+			argNode, ok := item.(*YispNode)
+			if !ok {
+				return nil, NewEvaluationError(argsNode, fmt.Sprintf("invalid arg type: %T", item))
+			}
+			argEval, err := Eval(argNode, env, mode)
+			if err != nil {
+				return nil, NewEvaluationError(argNode, fmt.Sprintf("failed to evaluate arg: %s", err))
+			}
+			argStr, ok := argEval.Value.(string)
+			if !ok {
+				return nil, NewEvaluationError(argNode, fmt.Sprintf("invalid arg value type: %T", argNode.Value))
+			}
+			args = append(args, argStr)
+		}
+	}
+
+	asString := false
+	asStringAny, ok := propsMap["asString"]
+	if ok {
+		asStringNode, ok := asStringAny.(*YispNode)
+		if !ok {
+			return nil, NewEvaluationError(props, fmt.Sprintf("invalid asString type: %T", asStringAny))
+		}
+		asStringNodeEval, err := Eval(asStringNode, env, mode)
+		if err != nil {
+			return nil, NewEvaluationError(asStringNode, fmt.Sprintf("failed to evaluate asString argument: %s", err))
+		}
+		asStringVal, ok := asStringNodeEval.Value.(bool)
+		if !ok {
+			JsonPrint("asStringNode", asStringNode)
+			return nil, NewEvaluationError(asStringNode, fmt.Sprintf("invalid asString value type: %T", asStringNode.Value))
+		}
+		asString = asStringVal
+	}
+
+	stdout := new(bytes.Buffer)
+	stderr := new(bytes.Buffer)
+	cmd := exec.Command(cmdStr, args...)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+
+	err = cmd.Run()
+	errorOutput := stderr.String()
+	if err != nil {
+		return nil, NewEvaluationError(cmdNode, fmt.Sprintf("command execution error: %s", errorOutput))
+	}
+
+	if asString {
+		return &YispNode{
+			Kind:  KindString,
+			Value: stdout.String(),
+		}, nil
+	} else {
+
+		result, err := evaluateYisp(stdout, env, cmdNode.File)
+		if err != nil {
+			return nil, NewEvaluationError(cmdNode, fmt.Sprintf("failed to evaluate command output: %s", err))
+		}
+
+		return result, nil
+	}
 }

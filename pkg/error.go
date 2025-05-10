@@ -21,5 +21,15 @@ func NewEvaluationError(node *YispNode, message string) *ErrorTypeEvaluation {
 }
 
 func (e *ErrorTypeEvaluation) Error() string {
-	return fmt.Sprintf("\nEvaluation error at %s:%d:%d %s", e.Node.File, e.Node.Line, e.Node.Column, e.Message)
+	file := ""
+	line := 0
+	column := 0
+
+	if e.Node != nil {
+		file = e.Node.File
+		line = e.Node.Line
+		column = e.Node.Column
+	}
+
+	return fmt.Sprintf("\nEvaluation error at %s:%d:%d %s", file, line, column, e.Message)
 }

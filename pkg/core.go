@@ -7,9 +7,17 @@ import (
 	"os"
 )
 
+var (
+	allowCmd = false
+)
+
+func SetAllowCmd(allow bool) {
+	allowCmd = allow
+}
+
 func EvaluateYisp(path string) (string, error) {
 	env := NewEnv()
-	evaluated, err := evaluateYisp(path, env)
+	evaluated, err := evaluateYispFile(path, env)
 	if err != nil {
 		return "", err
 	}
@@ -22,12 +30,18 @@ func EvaluateYisp(path string) (string, error) {
 	return result, nil
 }
 
-func evaluateYisp(path string, env *Env) (*YispNode, error) {
+func evaluateYispFile(path string, env *Env) (*YispNode, error) {
 	reader, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
-	decoder := yaml.NewDecoder(reader)
+
+	return evaluateYisp(reader, env, path)
+}
+
+func evaluateYisp(document io.Reader, env *Env, location string) (*YispNode, error) {
+
+	decoder := yaml.NewDecoder(document)
 	if decoder == nil {
 		return nil, errors.New("failed to create decoder")
 	}
@@ -43,7 +57,7 @@ func evaluateYisp(path string, env *Env) (*YispNode, error) {
 			return nil, err
 		}
 
-		parsed, err := Parse(path, &root)
+		parsed, err := Parse(location, &root)
 		if err != nil {
 			return nil, err
 		}
