@@ -46,7 +46,6 @@ func Call(op string, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error
 		return fn(cdr, env, mode)
 	}
 
-	JsonPrint("env", env)
 	return nil, NewEvaluationError(nil, fmt.Sprintf("unknown function name: %s", op))
 }
 

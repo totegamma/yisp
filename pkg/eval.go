@@ -60,7 +60,6 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 		body, ok = env.Get(node.Value.(string))
 		if !ok {
-			JsonPrint("env", env)
 			return nil, NewEvaluationError(node, fmt.Sprintf("undefined symbol: %s", node.Value))
 		}
 		node, ok := body.(*YispNode)
