@@ -4,11 +4,11 @@
 - ["svcmod", "./mksvc.yaml"]
 ---
 !yisp
-- *podmod__mkpod
+- *podmod.mkpod
 - mypod1
 - myimage1
 ---
 !yisp
-- *svcmod__mksvc
+- *svcmod.mksvc
 - mysvc1
 

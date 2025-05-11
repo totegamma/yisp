@@ -54,10 +54,10 @@ func (e *Env) Set(key string, value *YispNode) {
 
 func (e *Env) Get(key string) (*YispNode, bool) {
 
-	split := strings.Split(key, "__")
+	split := strings.Split(key, ".")
 	if len(split) > 1 {
 		moduleName := split[0]
-		resolvedName := strings.Join(split[1:], "__")
+		resolvedName := strings.Join(split[1:], ".")
 
 		if module, ok := e.Modules[moduleName]; ok {
 			return module.Get(resolvedName)

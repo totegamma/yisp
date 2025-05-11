@@ -49,6 +49,10 @@ func is_alpha(b []byte, i int) bool {
 	return b[i] >= '0' && b[i] <= '9' || b[i] >= 'A' && b[i] <= 'Z' || b[i] >= 'a' && b[i] <= 'z' || b[i] == '_' || b[i] == '-'
 }
 
+func is_alphaWithDot(b []byte, i int) bool {
+	return b[i] >= '0' && b[i] <= '9' || b[i] >= 'A' && b[i] <= 'Z' || b[i] >= 'a' && b[i] <= 'z' || b[i] == '_' || b[i] == '-' || b[i] == '.'
+}
+
 // Check if the character at the specified position is a digit.
 func is_digit(b []byte, i int) bool {
 	return b[i] >= '0' && b[i] <= '9'
