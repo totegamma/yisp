@@ -41,12 +41,18 @@ func init() {
 }
 
 // Call dispatches to the appropriate operator function based on the operator name
-func Call(op string, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+func Call(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+
+	op, ok := car.Value.(string)
+	if !ok {
+		return nil, NewEvaluationError(car, fmt.Sprintf("invalid car value: %T", car.Value))
+	}
+
 	if fn, ok := operators[op]; ok {
 		return fn(cdr, env, mode)
 	}
 
-	return nil, NewEvaluationError(nil, fmt.Sprintf("unknown function name: %s", op))
+	return nil, NewEvaluationError(car, fmt.Sprintf("unknown function name: %s", op))
 }
 
 // opConcat concatenates strings
@@ -55,7 +61,7 @@ func opConcat(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	for _, node := range cdr {
 		val, err := Eval(node, env, mode)
 		if err != nil {
-			return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate argument: %s", err))
+			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
 		}
 		str, ok := val.Value.(string)
 		if !ok {
@@ -76,7 +82,7 @@ func opAdd(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	for _, node := range cdr {
 		val, err := Eval(node, env, mode)
 		if err != nil {
-			return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate argument: %s", err))
+			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
 		}
 		num, ok := val.Value.(int)
 		if !ok {
@@ -100,7 +106,7 @@ func opSubtract(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	}
 	firstNode, err := Eval(cdr[0], env, mode)
 	if err != nil {
-		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate first argument: %s", err))
+		return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate first argument"), err)
 	}
 	baseNum, ok := firstNode.Value.(int)
 	if !ok {
@@ -109,7 +115,7 @@ func opSubtract(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	for _, node := range cdr[1:] {
 		evaluated, err := Eval(node, env, mode)
 		if err != nil {
-			return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate argument: %s", err))
+			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
 		}
 		val, ok := evaluated.Value.(int)
 		if !ok {
@@ -129,7 +135,7 @@ func opMultiply(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	for _, node := range cdr {
 		val, err := Eval(node, env, mode)
 		if err != nil {
-			return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate argument: %s", err))
+			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
 		}
 		num, ok := val.Value.(int)
 		if !ok {
@@ -153,7 +159,7 @@ func opDivide(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	}
 	firstNode, err := Eval(cdr[0], env, mode)
 	if err != nil {
-		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate first argument: %s", err))
+		return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate first argument"), err)
 	}
 	baseNum, ok := firstNode.Value.(int)
 	if !ok {
@@ -162,7 +168,7 @@ func opDivide(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	for _, node := range cdr[1:] {
 		evaluated, err := Eval(node, env, mode)
 		if err != nil {
-			return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate argument: %s", err))
+			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
 		}
 		val, ok := evaluated.Value.(int)
 		if !ok {
@@ -187,7 +193,7 @@ func opIf(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 	condNode, err := Eval(cdr[0], env, mode)
 	if err != nil {
-		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate condition: %s", err))
+		return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate condition"), err)
 	}
 
 	cond, err := isTruthy(condNode)
@@ -239,7 +245,7 @@ func opCar(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 	listNode, err := Eval(cdr[0], env, mode)
 	if err != nil {
-		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate car argument: %s", err))
+		return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate car argument"), err)
 	}
 
 	if listNode.Kind != KindArray {
@@ -271,7 +277,7 @@ func opCdr(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 	listNode, err := Eval(cdr[0], env, mode)
 	if err != nil {
-		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate cdr argument: %s", err))
+		return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate cdr argument"), err)
 	}
 
 	if listNode.Kind != KindArray {
@@ -306,12 +312,12 @@ func opCons(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 	elemNode, err := Eval(cdr[0], env, mode)
 	if err != nil {
-		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate cons first argument: %s", err))
+		return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate cons first argument"), err)
 	}
 
 	listNode, err := Eval(cdr[1], env, mode)
 	if err != nil {
-		return nil, NewEvaluationError(cdr[1], fmt.Sprintf("failed to evaluate cons second argument: %s", err))
+		return nil, NewEvaluationErrorWithParent(cdr[1], fmt.Sprintf("failed to evaluate cons second argument"), err)
 	}
 
 	if listNode.Kind != KindArray {
@@ -340,7 +346,7 @@ func opDiscard(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	for _, node := range cdr {
 		_, err := Eval(node, env, mode)
 		if err != nil {
-			return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate discard argument: %s", err))
+			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate discard argument"), err)
 		}
 	}
 
@@ -353,7 +359,7 @@ func opProgn(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	for _, node := range cdr {
 		result, err = Eval(node, env, mode)
 		if err != nil {
-			return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate progn argument: %s", err))
+			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate progn argument"), err)
 		}
 	}
 
@@ -369,14 +375,14 @@ func opInclude(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			return nil, NewEvaluationError(node, fmt.Sprintf("invalid path type: %T", node.Value))
 		}
 
-		baseDir := filepath.Dir(node.File)
+		baseDir := filepath.Dir(node.Pos.File)
 		joinedPath := filepath.Join(baseDir, relpath)
 		path := filepath.Clean(joinedPath)
 
 		var err error
 		results[i], err = evaluateYispFile(path, env.CreateChild())
 		if err != nil {
-			return nil, NewEvaluationError(node, fmt.Sprintf("failed to include file: %s", err))
+			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to include file"), err)
 		}
 	}
 
@@ -390,7 +396,7 @@ func opInclude(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 // opImport imports modules
 func opImport(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	for _, node := range cdr {
-		baseDir := filepath.Dir(node.File)
+		baseDir := filepath.Dir(node.Pos.File)
 
 		tuple, ok := node.Value.([]any)
 		if !ok {
@@ -429,7 +435,7 @@ func opImport(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		var err error
 		_, err = evaluateYispFile(path, newEnv)
 		if err != nil {
-			return nil, NewEvaluationError(node, fmt.Sprintf("failed to include file: %s", err))
+			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to include file"), err)
 		}
 
 		env.Set(name, &YispNode{
@@ -450,12 +456,12 @@ func opGetMap(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 	mapValue, err := EvalAndCastAny[map[string]any](cdr[0], env, mode)
 	if err != nil {
-		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate map argument: %s", err))
+		return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate map argument"), err)
 	}
 
 	keyValue, err := EvalAndCastAny[string](cdr[1], env, mode)
 	if err != nil {
-		return nil, NewEvaluationError(cdr[1], fmt.Sprintf("failed to evaluate key argument: %s", err))
+		return nil, NewEvaluationErrorWithParent(cdr[1], fmt.Sprintf("failed to evaluate key argument"), err)
 	}
 
 	value, ok := mapValue[keyValue]
@@ -476,7 +482,7 @@ func opMerge(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	for _, node := range cdr {
 		mapValue, err := EvalAndCastAny[map[string]any](node, env, mode)
 		if err != nil {
-			return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate map argument: %s", err))
+			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate map argument"), err)
 		}
 
 		mergedMap = DeepMerge(mergedMap, mapValue)
@@ -549,7 +555,7 @@ func opCmd(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 	cmdStr, err := EvalAndCastAny[string](cmdAny, env, mode)
 	if err != nil {
-		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate cmd argument: %s", err))
+		return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate cmd argument"), err)
 	}
 
 	args := make([]string, 0)
@@ -573,7 +579,7 @@ func opCmd(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		for _, item := range arr {
 			arg, err := EvalAndCastAny[string](item, env, mode)
 			if err != nil {
-				return nil, NewEvaluationError(argsNode, fmt.Sprintf("invalid arg value: %s", err))
+				return nil, NewEvaluationErrorWithParent(argsNode, fmt.Sprintf("failed to evaluate arg"), err)
 			}
 			args = append(args, arg)
 		}
@@ -604,9 +610,9 @@ func opCmd(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		}, nil
 	} else {
 
-		result, err := evaluateYisp(stdout, env, cdr[0].File)
+		result, err := evaluateYisp(stdout, env, cdr[0].Pos.File)
 		if err != nil {
-			return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate command output: %s", err))
+			return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate command output"), err)
 		}
 
 		return result, nil

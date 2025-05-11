@@ -19,7 +19,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 		for i, node := range cdr {
 			val, err := Eval(node, env, mode)
 			if err != nil {
-				return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate argument: %s", err))
+				return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
 			}
 			newEnv.Vars[lambda.Params[i]] = val
 		}
@@ -27,13 +27,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 		return Eval(lambda.Body, newEnv, mode)
 
 	case KindString:
-		op, ok := car.Value.(string)
-		if !ok {
-			return nil, NewEvaluationError(car, fmt.Sprintf("invalid car value: %T", car.Value))
-		}
-
-		// Delegate to the Call function in operators.go
-		return Call(op, cdr, env, mode)
+		return Call(car, cdr, env, mode)
 
 	default:
 		return nil, NewEvaluationError(car, fmt.Sprintf("cannot apply type %s", car.Kind))
@@ -77,6 +71,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			Kind:  KindNull,
 			Value: nil,
 			Tag:   node.Tag,
+			Pos:   node.Pos,
 		}
 
 	case KindBool:
@@ -88,6 +83,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			Kind:  KindBool,
 			Value: val,
 			Tag:   node.Tag,
+			Pos:   node.Pos,
 		}
 
 	case KindFloat:
@@ -111,6 +107,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			Kind:  KindFloat,
 			Value: f,
 			Tag:   node.Tag,
+			Pos:   node.Pos,
 		}
 
 	case KindInt:
@@ -134,6 +131,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			Kind:  KindInt,
 			Value: i,
 			Tag:   node.Tag,
+			Pos:   node.Pos,
 		}
 
 	case KindString:
@@ -141,6 +139,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			Kind:  KindString,
 			Value: node.Value,
 			Tag:   node.Tag,
+			Pos:   node.Pos,
 		}
 
 	case KindArray:
@@ -157,7 +156,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 			car, err := Eval(carNode, env, mode)
 			if err != nil {
-				return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate car: %s", err))
+				return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate car"), err)
 			}
 
 			cdr := make([]*YispNode, len(arr)-1)
@@ -171,7 +170,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 			r, err := Apply(car, cdr, env, mode)
 			if err != nil {
-				return nil, NewEvaluationError(node, fmt.Sprintf("failed to apply function: %s", err))
+				return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to apply function"), err)
 			}
 			result = r
 
@@ -190,7 +189,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 				result, err := Eval(node, env, mode)
 				if err != nil {
-					return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate item: %s", err))
+					return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate item"), err)
 				}
 				results[i] = result
 			}
@@ -198,6 +197,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 				Kind:  KindArray,
 				Value: results,
 				Tag:   node.Tag,
+				Pos:   node.Pos,
 			}
 		}
 
@@ -215,7 +215,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 			val, err := Eval(node, env, mode)
 			if err != nil {
-				return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate item: %s", err))
+				return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate item"), err)
 			}
 			results[key] = val
 		}
@@ -224,6 +224,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			Kind:  KindMap,
 			Value: results,
 			Tag:   node.Tag,
+			Pos:   node.Pos,
 		}
 	}
 

@@ -1,8 +1,10 @@
 package yisp
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/totegamma/yisp/yaml"
 )
@@ -52,12 +54,12 @@ func compareValues(cdr []*YispNode, env *Env, mode EvalMode, opName string, expe
 
 	firstNode, err := Eval(cdr[0], env, mode)
 	if err != nil {
-		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate first argument: %s", err))
+		return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate first argument"), err)
 	}
 
 	secondNode, err := Eval(cdr[1], env, mode)
 	if err != nil {
-		return nil, NewEvaluationError(cdr[1], fmt.Sprintf("failed to evaluate second argument: %s", err))
+		return nil, NewEvaluationErrorWithParent(cdr[1], fmt.Sprintf("failed to evaluate second argument"), err)
 	}
 
 	// Only compare values of the same type
@@ -122,7 +124,7 @@ func compareNumbers(cdr []*YispNode, env *Env, mode EvalMode, opName string, cmp
 
 	firstNode, err := Eval(cdr[0], env, mode)
 	if err != nil {
-		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate first argument: %s", err))
+		return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate first argument"), err)
 	}
 
 	var firstNum float64
@@ -137,7 +139,7 @@ func compareNumbers(cdr []*YispNode, env *Env, mode EvalMode, opName string, cmp
 
 	secondNode, err := Eval(cdr[1], env, mode)
 	if err != nil {
-		return nil, NewEvaluationError(cdr[1], fmt.Sprintf("failed to evaluate second argument: %s", err))
+		return nil, NewEvaluationErrorWithParent(cdr[1], fmt.Sprintf("failed to evaluate second argument"), err)
 	}
 
 	var secondNum float64
@@ -196,4 +198,60 @@ func DeepMerge(dst, src map[string]any) map[string]any {
 		dst[key] = value
 	}
 	return dst
+}
+
+func RenderCode(file string, line, after, before int, comments []Comment) (string, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	if line-before < 1 {
+		before = line
+	}
+
+	scanner := bufio.NewScanner(f)
+	for range line - before - 1 {
+		if !scanner.Scan() {
+			break
+		}
+	}
+	result := ""
+
+	result += file + "\n"
+	for range len(file) {
+		result += "="
+	}
+	result += "\n"
+
+	lnFormat := "%d |"
+	maxLineNumberLen := len(fmt.Sprintf(lnFormat, line+after))
+
+	for i := range after + before {
+		if !scanner.Scan() {
+			break
+		}
+
+		ln := fmt.Sprintf(lnFormat, line+i-before)
+		for range maxLineNumberLen - len(ln) {
+			ln = " " + ln
+		}
+
+		result += fmt.Sprintf("%s%s\n", ln, scanner.Text())
+		for _, comment := range comments {
+			if comment.Line == line+i-before {
+				for range comment.Column - 1 + len(ln) {
+					result += " "
+				}
+				result += "\x1b[31m^ " + comment.Text + "\x1b[0m\n"
+			}
+		}
+
+	}
+	if err := scanner.Err(); err != nil {
+		return "", err
+	}
+
+	return result, nil
 }

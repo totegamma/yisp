@@ -27,12 +27,14 @@ func Parse(filename string, node *yaml.Node) (*YispNode, error) {
 		}
 
 		result = &YispNode{
-			Kind:   KindArray,
-			Value:  s,
-			Tag:    node.Tag,
-			File:   filename,
-			Line:   node.Line,
-			Column: node.Column,
+			Kind:  KindArray,
+			Value: s,
+			Tag:   node.Tag,
+			Pos: Position{
+				File:   filename,
+				Line:   node.Line,
+				Column: node.Column,
+			},
 		}
 
 	case yaml.MappingNode:
@@ -50,12 +52,14 @@ func Parse(filename string, node *yaml.Node) (*YispNode, error) {
 		}
 
 		result = &YispNode{
-			Kind:   KindMap,
-			Value:  m,
-			Tag:    node.Tag,
-			File:   filename,
-			Line:   node.Line,
-			Column: node.Column,
+			Kind:  KindMap,
+			Value: m,
+			Tag:   node.Tag,
+			Pos: Position{
+				File:   filename,
+				Line:   node.Line,
+				Column: node.Column,
+			},
 		}
 
 	case yaml.ScalarNode:
@@ -76,22 +80,26 @@ func Parse(filename string, node *yaml.Node) (*YispNode, error) {
 		}
 
 		result = &YispNode{
-			Kind:   kind,
-			Value:  node.Value,
-			Tag:    node.Tag,
-			File:   filename,
-			Line:   node.Line,
-			Column: node.Column,
+			Kind:  kind,
+			Value: node.Value,
+			Tag:   node.Tag,
+			Pos: Position{
+				File:   filename,
+				Line:   node.Line,
+				Column: node.Column,
+			},
 		}
 
 	case yaml.AliasNode:
 		result = &YispNode{
-			Kind:   KindSymbol,
-			Value:  node.Value,
-			Tag:    node.Tag,
-			File:   filename,
-			Line:   node.Line,
-			Column: node.Column,
+			Kind:  KindSymbol,
+			Value: node.Value,
+			Tag:   node.Tag,
+			Pos: Position{
+				File:   filename,
+				Line:   node.Line,
+				Column: node.Column,
+			},
 		}
 	}
 

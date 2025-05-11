@@ -52,15 +52,19 @@ const (
 	KindLambda
 )
 
+type Position struct {
+	File   string
+	Line   int
+	Column int
+}
+
 // YispNode represents a node in the Yisp language
 type YispNode struct {
 	Kind   Kind
 	Tag    string
 	Value  any
-	File   string
-	Line   int
-	Column int
 	Anchor string
+	Pos    Position
 }
 
 type Lambda struct {
