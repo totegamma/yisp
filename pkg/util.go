@@ -19,6 +19,30 @@ func YamlPrint(obj any) {
 	fmt.Println(string(b))
 }
 
+func EvalAndCastNode[T any](node *YispNode, env *Env, mode EvalMode) (T, error) {
+	evaluated, err := Eval(node, env, mode)
+	if err != nil {
+		return *new(T), err
+	}
+
+	castedValue, ok := evaluated.Value.(T)
+	if !ok {
+		return *new(T), fmt.Errorf("expected value of type %T but got %T", new(T), evaluated.Value)
+	}
+
+	return castedValue, nil
+}
+
+func EvalAndCastAny[T any](value any, env *Env, mode EvalMode) (T, error) {
+
+	node, ok := value.(*YispNode)
+	if !ok {
+		return *new(T), fmt.Errorf("expected YispNode but got %T", value)
+	}
+
+	return EvalAndCastNode[T](node, env, mode)
+}
+
 // compareValues compares two values of any type for equality
 // It only compares values of the same type
 func compareValues(cdr []*YispNode, env *Env, mode EvalMode, opName string, expectEqual bool) (*YispNode, error) {

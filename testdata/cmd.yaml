@@ -1,0 +1,17 @@
+!yisp
+- cmd
+- cmd: date
+---
+!yisp
+- cmd
+- cmd: echo
+  args:
+    - "hogehoge"
+---
+!yisp
+- cmd
+- cmd: echo
+  args:
+    - "-n"
+    - "\a"
+  asString: true
