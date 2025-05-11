@@ -162,7 +162,7 @@ The `import` operator imports modules, making their definitions available in the
 - ["utils", "./utils.yaml"]
 ---
 result: !yisp
-  - *utils__some_function
+  - *utils.some_function
   - arg1
   - arg2
 ```

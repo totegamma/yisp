@@ -71,7 +71,7 @@ main.yaml
 - ["template", "./template.yaml"]
 ---
 !yisp
-- *template__mkpod
+- *template.mkpod
 - mypod1
 - myimage1
 ```
@@ -91,11 +91,8 @@ spec:
 More examples are available in `/testfiles`.
 
 ### TODO
-- Add cmd operator
 - Add fancy error messages
 - Add evaluation tracing for debugging
 - Add remote file loading
-- Ability to access entire document as module
-- Add patch operator
-- ...
+- Add map/filter/reduce functions
 
