@@ -37,6 +37,7 @@ func init() {
 	operators["lambda"] = opLambda
 	operators["cmd"] = opCmd
 	operators["getmap"] = opGetMap
+	operators["merge"] = opMerge
 }
 
 // Call dispatches to the appropriate operator function based on the operator name
@@ -466,6 +467,23 @@ func opGetMap(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	}
 
 	return valueNode, nil
+}
+
+func opMerge(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+	mergedMap := make(map[string]any)
+	for _, node := range cdr {
+		mapValue, err := EvalAndCastAny[map[string]any](node, env, mode)
+		if err != nil {
+			return nil, NewEvaluationError(node, fmt.Sprintf("failed to evaluate map argument: %s", err))
+		}
+
+		mergedMap = DeepMerge(mergedMap, mapValue)
+	}
+
+	return &YispNode{
+		Kind:  KindMap,
+		Value: mergedMap,
+	}, nil
 }
 
 // opLambda creates a lambda function

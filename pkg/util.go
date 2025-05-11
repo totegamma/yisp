@@ -182,3 +182,18 @@ func isTruthy(node *YispNode) (bool, error) {
 		return true, nil
 	}
 }
+
+func DeepMerge(dst, src map[string]any) map[string]any {
+	for key, value := range src {
+		if dstValue, ok := dst[key]; ok {
+			if dstMap, ok := dstValue.(map[string]any); ok {
+				if srcMap, ok := value.(map[string]any); ok {
+					dst[key] = DeepMerge(dstMap, srcMap)
+					continue
+				}
+			}
+		}
+		dst[key] = value
+	}
+	return dst
+}

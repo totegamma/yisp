@@ -1,0 +1,11 @@
+!yisp
+- merge
+- map1: hogehoge
+  override: 1
+  sub:
+    override: 1
+- map2: piyopiyo
+- map3: fugafuga
+  override: 3
+  sub:
+    override: 3

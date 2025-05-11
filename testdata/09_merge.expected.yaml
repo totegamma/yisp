@@ -1,0 +1,6 @@
+map1: hogehoge
+map2: piyopiyo
+map3: fugafuga
+override: 3
+sub:
+  override: 3
