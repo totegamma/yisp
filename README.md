@@ -93,5 +93,5 @@ More examples are available in `/testfiles`.
 ### TODO
 - Add evaluation tracing for debugging
 - Add remote file loading
-- Add map/filter/reduce functions
+- Add filter/reduce functions
 

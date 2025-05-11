@@ -1,0 +1,17 @@
+!yisp
+- import
+- ["f", "./04_fibonacci.test.yaml"]
+---
+!yisp
+&num
+- map
+- +
+- !quote [1, 2, 3]
+- !quote [4, 5, 6]
+# -> [5, 7, 9]
+---
+!yisp
+- map
+- *f.fib
+- *num
+# -> [5, 13, 34]

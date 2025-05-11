@@ -38,6 +38,7 @@ func init() {
 	operators["cmd"] = opCmd
 	operators["getmap"] = opGetMap
 	operators["merge"] = opMerge
+	operators["map"] = opMap
 }
 
 // Call dispatches to the appropriate operator function based on the operator name
@@ -446,6 +447,70 @@ func opImport(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 	return &YispNode{
 		Kind: KindNull,
+	}, nil
+}
+
+func opMap(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+	if len(cdr) < 2 {
+		return nil, NewEvaluationError(nil, fmt.Sprintf("map requires more than 1 argument, got %d", len(cdr)))
+	}
+
+	fnNode := cdr[0]
+
+	argList := make([][]any, len(cdr)-1)
+	for i, node := range cdr[1:] {
+		argEvaluated, err := Eval(node, env, mode)
+		if err != nil {
+			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate map argument"), err)
+		}
+
+		if argEvaluated.Kind != KindArray {
+			return nil, NewEvaluationError(node, fmt.Sprintf("map requires an array argument, got %v", argEvaluated.Kind))
+		}
+
+		arg, ok := argEvaluated.Value.([]any)
+		if !ok {
+			return nil, NewEvaluationError(node, fmt.Sprintf("invalid argument type: %T", node.Value))
+		}
+		yispList := make([]any, len(arg))
+		for j, item := range arg {
+			itemNode, ok := item.(*YispNode)
+			if !ok {
+				return nil, NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
+			}
+			yispList[j] = itemNode
+		}
+
+		if i > 0 {
+			if len(yispList) != len(argList[0]) {
+				return nil, NewEvaluationError(node, fmt.Sprintf("map requires all arguments to have the same length"))
+			}
+		}
+
+		argList[i] = yispList
+	}
+
+	results := make([]any, len(argList[0]))
+	for i := range len(argList[0]) {
+		code := []any{fnNode}
+		for j := range argList {
+			code = append(code, argList[j][i])
+		}
+		result, err := Eval(&YispNode{
+			Kind:  KindArray,
+			Value: code,
+			Pos:   fnNode.Pos,
+		}, env, mode)
+		if err != nil {
+			return nil, NewEvaluationErrorWithParent(fnNode, fmt.Sprintf("failed to evaluate map argument"), err)
+		}
+		results[i] = result
+	}
+
+	return &YispNode{
+		Kind:  KindArray,
+		Value: results,
+		Pos:   fnNode.Pos,
 	}, nil
 }
 
