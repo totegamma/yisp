@@ -36,6 +36,7 @@ func init() {
 	operators["import"] = opImport
 	operators["lambda"] = opLambda
 	operators["cmd"] = opCmd
+	operators["getmap"] = opGetMap
 }
 
 // Call dispatches to the appropriate operator function based on the operator name
@@ -437,6 +438,34 @@ func opImport(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	return &YispNode{
 		Kind: KindNull,
 	}, nil
+}
+
+func opGetMap(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+	if len(cdr) != 2 {
+		return nil, NewEvaluationError(nil, fmt.Sprintf("map requires 1 argument, got %d", len(cdr)))
+	}
+
+	mapValue, err := EvalAndCastAny[map[string]any](cdr[0], env, mode)
+	if err != nil {
+		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to evaluate map argument: %s", err))
+	}
+
+	keyValue, err := EvalAndCastAny[string](cdr[1], env, mode)
+	if err != nil {
+		return nil, NewEvaluationError(cdr[1], fmt.Sprintf("failed to evaluate key argument: %s", err))
+	}
+
+	value, ok := mapValue[keyValue]
+	if !ok {
+		return nil, NewEvaluationError(cdr[1], fmt.Sprintf("key %s not found in map", keyValue))
+	}
+
+	valueNode, ok := value.(*YispNode)
+	if !ok {
+		return nil, NewEvaluationError(cdr[1], fmt.Sprintf("invalid value type: %T", value))
+	}
+
+	return valueNode, nil
 }
 
 // opLambda creates a lambda function
