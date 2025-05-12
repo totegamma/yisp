@@ -369,8 +369,8 @@ func opProgn(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 // opInclude includes files
 func opInclude(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
-	results := make([]any, len(cdr))
-	for i, node := range cdr {
+	results := make([]any, 0)
+	for _, node := range cdr {
 		relpath, ok := node.Value.(string)
 		if !ok {
 			return nil, NewEvaluationError(node, fmt.Sprintf("invalid path type: %T", node.Value))
@@ -381,9 +381,25 @@ func opInclude(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		path := filepath.Clean(joinedPath)
 
 		var err error
-		results[i], err = evaluateYispFile(path, env.CreateChild())
+		evaluated, err := evaluateYispFile(path, env.CreateChild())
 		if err != nil {
 			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to include file"), err)
+		}
+
+		if evaluated.Kind != KindArray {
+			return nil, NewEvaluationError(node, fmt.Sprintf("include requires an array result, got %v", evaluated.Kind))
+		}
+		arr, ok := evaluated.Value.([]any)
+		if !ok {
+			return nil, NewEvaluationError(node, fmt.Sprintf("invalid array value: %T", evaluated.Value))
+		}
+
+		for _, item := range arr {
+			itemNode, ok := item.(*YispNode)
+			if !ok {
+				return nil, NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
+			}
+			results = append(results, itemNode)
 		}
 	}
 
