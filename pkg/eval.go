@@ -168,10 +168,27 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 				cdr[i] = node
 			}
 
+			if showTrace {
+				if car.Kind == KindLambda {
+					fmt.Printf("%s->%s\n", pad(env.Depth()), car)
+				} else {
+					fmt.Printf("%s->%s\n", pad(env.Depth()), car.Value)
+				}
+			}
+
 			r, err := Apply(car, cdr, env, mode)
 			if err != nil {
 				return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to apply function"), err)
 			}
+
+			if showTrace {
+				if r.Kind == KindLambda {
+					fmt.Printf("%s<-%s\n", pad(env.Depth()), r)
+				} else {
+					fmt.Printf("%s<-%s\n", pad(env.Depth()), r.Value)
+				}
+			}
+
 			result = r
 
 		} else {

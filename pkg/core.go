@@ -8,11 +8,16 @@ import (
 )
 
 var (
-	allowCmd = false
+	allowCmd  = false
+	showTrace = false
 )
 
 func SetAllowCmd(allow bool) {
 	allowCmd = allow
+}
+
+func SetShowTrace(show bool) {
+	showTrace = show
 }
 
 func EvaluateYisp(path string) (string, error) {

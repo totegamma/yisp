@@ -1,5 +1,9 @@
 package yisp
 
+import (
+	"fmt"
+)
+
 type EvalMode int
 
 const (
@@ -65,6 +69,10 @@ type YispNode struct {
 	Value  any
 	Anchor string
 	Pos    Position
+}
+
+func (n *YispNode) String() string {
+	return fmt.Sprintf("%s | %s:%d:%d", n.Kind, n.Pos.File, n.Pos.Line, n.Pos.Column)
 }
 
 type Lambda struct {

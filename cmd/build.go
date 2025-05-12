@@ -18,6 +18,11 @@ var buildCmd = &cobra.Command{
 			yisp.SetAllowCmd(allowCmd)
 		}
 
+		showTrace, err := cmd.Flags().GetBool("show-trace")
+		if err == nil {
+			yisp.SetShowTrace(showTrace)
+		}
+
 		yamlFile := args[0]
 		if yamlFile == "" {
 			cmd.Help()
@@ -37,4 +42,5 @@ var buildCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(buildCmd)
 	buildCmd.Flags().BoolP("allow-cmd", "", false, "Allow command execution")
+	buildCmd.Flags().BoolP("show-trace", "", false, "Show trace")
 }

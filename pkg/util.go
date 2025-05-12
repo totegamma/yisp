@@ -255,3 +255,11 @@ func RenderCode(file string, line, after, before int, comments []Comment) (strin
 
 	return result, nil
 }
+
+func pad(length int) string {
+	result := ""
+	for range length {
+		result += "  "
+	}
+	return result
+}
