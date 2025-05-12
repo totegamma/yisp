@@ -71,6 +71,10 @@ func evaluateYisp(document io.Reader, env *Env, location string) (*YispNode, err
 			continue
 		}
 
+		if evaluated.Kind == KindNull {
+			continue
+		}
+
 		documents = append(documents, evaluated)
 	}
 
