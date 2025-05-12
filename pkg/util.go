@@ -207,12 +207,10 @@ func RenderCode(file string, line, after, before int, comments []Comment) (strin
 	}
 	defer f.Close()
 
-	if line-before < 1 {
-		before = line
-	}
+	startLine := max(line-before, 1)
 
 	scanner := bufio.NewScanner(f)
-	for range line - before - 1 {
+	for range startLine - 1 {
 		if !scanner.Scan() {
 			break
 		}
@@ -228,19 +226,21 @@ func RenderCode(file string, line, after, before int, comments []Comment) (strin
 	lnFormat := "%d |"
 	maxLineNumberLen := len(fmt.Sprintf(lnFormat, line+after))
 
-	for i := range after + before {
+	for i := range after + before + 1 {
 		if !scanner.Scan() {
 			break
 		}
 
-		ln := fmt.Sprintf(lnFormat, line+i-before)
+		currentLine := startLine + i
+
+		ln := fmt.Sprintf(lnFormat, currentLine)
 		for range maxLineNumberLen - len(ln) {
 			ln = " " + ln
 		}
 
 		result += fmt.Sprintf("%s%s\n", ln, scanner.Text())
 		for _, comment := range comments {
-			if comment.Line == line+i-before {
+			if comment.Line == currentLine {
 				for range comment.Column - 1 + len(ln) {
 					result += " "
 				}
