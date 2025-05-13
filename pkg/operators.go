@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"os/exec"
-	"path/filepath"
 )
 
 // OperatorFunc is a function that implements a Yisp operator
@@ -376,12 +375,8 @@ func opInclude(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			return nil, NewEvaluationError(node, fmt.Sprintf("invalid path type: %T", node.Value))
 		}
 
-		baseDir := filepath.Dir(node.Pos.File)
-		joinedPath := filepath.Join(baseDir, relpath)
-		path := filepath.Clean(joinedPath)
-
 		var err error
-		evaluated, err := evaluateYispFile(path, env.CreateChild())
+		evaluated, err := evaluateYispFile(relpath, node.Pos.File, env.CreateChild())
 		if err != nil {
 			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to include file"), err)
 		}
@@ -413,7 +408,6 @@ func opInclude(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 // opImport imports modules
 func opImport(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	for _, node := range cdr {
-		baseDir := filepath.Dir(node.Pos.File)
 
 		tuple, ok := node.Value.([]any)
 		if !ok {
@@ -444,13 +438,10 @@ func opImport(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			return nil, NewEvaluationError(node, fmt.Sprintf("invalid path type: %T", relpathNode.Value))
 		}
 
-		joinedPath := filepath.Join(baseDir, relpath)
-		path := filepath.Clean(joinedPath)
-
 		newEnv := NewEnv()
 
 		var err error
-		_, err = evaluateYispFile(path, newEnv)
+		_, err = evaluateYispFile(relpath, node.Pos.File, newEnv)
 		if err != nil {
 			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to include file"), err)
 		}

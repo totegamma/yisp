@@ -90,6 +90,3 @@ spec:
 
 More examples are available in `/testfiles`.
 
-### TODO
-- Add remote file loading
-

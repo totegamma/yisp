@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/totegamma/yisp/pkg"
+	"path/filepath"
+	"strings"
 )
 
 var buildCmd = &cobra.Command{
@@ -27,6 +29,14 @@ var buildCmd = &cobra.Command{
 		if yamlFile == "" {
 			cmd.Help()
 			return
+		}
+
+		if !strings.HasPrefix(yamlFile, "http://") && !strings.HasPrefix(yamlFile, "https://") {
+			yamlFile, err = filepath.Abs(yamlFile)
+			if err != nil {
+				fmt.Println("Error:", err)
+				return
+			}
 		}
 
 		result, err := yisp.EvaluateYisp(yamlFile)

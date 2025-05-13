@@ -47,7 +47,12 @@ func TestYisp(t *testing.T) {
 
 		t.Run(file, func(t *testing.T) {
 
-			renderedStr, err := EvaluateYisp(file)
+			abspath, err := filepath.Abs(file)
+			if err != nil {
+				t.Fatalf("Error getting absolute path for file %s: %v", file, err)
+			}
+
+			renderedStr, err := EvaluateYisp(abspath)
 			if err != nil {
 				t.Fatalf("Error evaluating Yisp file %s: %v", file, err)
 			}

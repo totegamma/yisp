@@ -2,8 +2,11 @@ package yisp
 
 import (
 	"errors"
+	"fmt"
 	"github.com/totegamma/yisp/yaml"
 	"io"
+	"net/http"
+	"net/url"
 	"os"
 )
 
@@ -22,7 +25,7 @@ func SetShowTrace(show bool) {
 
 func EvaluateYisp(path string) (string, error) {
 	env := NewEnv()
-	evaluated, err := evaluateYispFile(path, env)
+	evaluated, err := evaluateYispFile(path, "", env)
 	if err != nil {
 		return "", err
 	}
@@ -35,13 +38,49 @@ func EvaluateYisp(path string) (string, error) {
 	return result, nil
 }
 
-func evaluateYispFile(path string, env *Env) (*YispNode, error) {
-	reader, err := os.Open(path)
+func evaluateYispFile(path, base string, env *Env) (*YispNode, error) {
+
+	var reader io.Reader
+	var err error
+
+	targetURL, err := url.Parse(path)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to parse URL: %v", err)
 	}
 
-	return evaluateYisp(reader, env, path)
+	if base != "" {
+		baseURL, err := url.Parse(base)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse base URL: %v", err)
+		}
+		targetURL = baseURL.ResolveReference(targetURL)
+	}
+
+	if targetURL.Scheme == "http" || targetURL.Scheme == "https" {
+		reader, err = fetchRemote(targetURL.String())
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch remote file: %v", err)
+		}
+	} else {
+		reader, err = os.Open(targetURL.Path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open file: %v", err)
+		}
+	}
+
+	return evaluateYisp(reader, env, targetURL.String())
+}
+
+func fetchRemote(rawURL string) (io.ReadCloser, error) {
+	resp, err := http.Get(rawURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch remote file: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
+		return nil, fmt.Errorf("failed to fetch remote file: %s", resp.Status)
+	}
+	return resp.Body, nil
 }
 
 func evaluateYisp(document io.Reader, env *Env, location string) (*YispNode, error) {

@@ -76,13 +76,3 @@ The typical workflow for using YISP is:
 
 This workflow allows you to maintain the simplicity and readability of YAML while adding the power and flexibility of a programming language.
 
-## Future Development
-
-YISP is under active development, with several planned features:
-
-- Add cmd operator for executing shell commands
-- Improve error messages for better debugging
-- Add evaluation tracing
-- Support for remote file loading
-- Ability to access the entire document as a module
-- Add patch operator for modifying YAML structures
