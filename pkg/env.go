@@ -61,12 +61,18 @@ func (e *Env) Get(key string) (*YispNode, bool) {
 
 		maps, ok := value.Value.(map[string]*YispNode)
 		if !ok {
-			return nil, false
-		}
-
-		moduleVars := make(map[string]any)
-		for k, v := range e.Vars {
-			moduleVars[k] = v
+			anyMaps, ok := value.Value.(map[string]any)
+			if !ok {
+				return nil, false
+			}
+			maps = make(map[string]*YispNode)
+			for key, item := range anyMaps {
+				node, ok := item.(*YispNode)
+				if !ok {
+					continue
+				}
+				maps[key] = node
+			}
 		}
 
 		value, ok = maps[key]
