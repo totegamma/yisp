@@ -1,0 +1,6 @@
+!yisp
+- fromEntries
+- - toEntries
+  - apple: りんご
+    banana: バナナ
+    chocolate: チョコレート

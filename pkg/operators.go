@@ -3,7 +3,9 @@ package yisp
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 )
 
 // OperatorFunc is a function that implements a Yisp operator
@@ -39,6 +41,9 @@ func init() {
 	operators["merge"] = opMerge
 	operators["map"] = opMap
 	operators["flatten"] = opFlatten
+	operators["open"] = opOpen
+	operators["toEntries"] = opToEntries
+	operators["fromEntries"] = opFromEntries
 }
 
 // Call dispatches to the appropriate operator function based on the operator name
@@ -722,5 +727,135 @@ func opFlatten(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		Kind:  KindArray,
 		Value: flattened,
 		Tag:   "!expand",
+	}, nil
+}
+
+func opOpen(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+
+	result := make([]any, 0)
+
+	for _, node := range cdr {
+		val, err := Eval(node, env, mode)
+		if err != nil {
+			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
+		}
+		str, ok := val.Value.(string)
+		if !ok {
+			return nil, NewEvaluationError(node, fmt.Sprintf("invalid argument type for open: %T", val))
+		}
+
+		files, err := filepath.Glob(str)
+		if err != nil {
+			return nil, NewEvaluationError(node, fmt.Sprintf("failed to glob path: %s", str))
+		}
+
+		for _, file := range files {
+
+			filename := filepath.Base(file)
+			body, err := os.ReadFile(file)
+			if err != nil {
+				return nil, NewEvaluationError(node, fmt.Sprintf("failed to read file: %s", file))
+			}
+
+			value := map[string]any{
+				"path": &YispNode{
+					Kind:  KindString,
+					Value: file,
+				},
+				"name": &YispNode{
+					Kind:  KindString,
+					Value: filename,
+				},
+				"body": &YispNode{
+					Kind:  KindString,
+					Value: string(body),
+				},
+			}
+
+			result = append(result, &YispNode{
+				Kind:  KindMap,
+				Value: value,
+			})
+
+		}
+
+	}
+
+	return &YispNode{
+		Kind:  KindArray,
+		Value: result,
+	}, nil
+}
+
+func opToEntries(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+	if len(cdr) != 1 {
+		return nil, NewEvaluationError(nil, fmt.Sprintf("toEntries requires 1 argument, got %d", len(cdr)))
+	}
+	node := cdr[0]
+	mapValue, err := EvalAndCastAny[map[string]any](node, env, mode)
+	if err != nil {
+		return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
+	}
+	result := make([]any, 0)
+	for key, value := range mapValue {
+		tuple := &YispNode{
+			Kind: KindArray,
+			Value: []any{
+				&YispNode{
+					Kind:  KindString,
+					Value: key,
+					Pos:   node.Pos,
+				},
+				value,
+			},
+		}
+		result = append(result, tuple)
+	}
+	return &YispNode{
+		Kind:  KindArray,
+		Value: result,
+		Pos:   node.Pos,
+	}, nil
+}
+
+func opFromEntries(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+
+	node := cdr[0]
+	arr, err := EvalAndCastAny[[]any](node, env, mode)
+	if err != nil {
+		return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
+	}
+
+	result := make(map[string]any)
+	for _, item := range arr {
+		tupleNode, ok := item.(*YispNode)
+		if !ok {
+			return nil, NewEvaluationError(node, fmt.Sprintf("invalid tuple type: %T", item))
+		}
+
+		tupleArr, ok := tupleNode.Value.([]any)
+		if !ok {
+			return nil, NewEvaluationError(node, fmt.Sprintf("invalid tuple value: %T", tupleNode.Value))
+		}
+
+		if len(tupleArr) != 2 {
+			return nil, NewEvaluationError(node, fmt.Sprintf("tuple must have exactly 2 elements"))
+		}
+
+		keyNode := tupleArr[0]
+		valueNode := tupleArr[1]
+
+		keyStr, err := EvalAndCastAny[string](keyNode, env, mode)
+		if err != nil {
+			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate key"), err)
+		}
+
+		result[keyStr] = valueNode
+	}
+
+	return &YispNode{
+		Kind:  KindMap,
+		Value: result,
+		Pos:   node.Pos,
 	}, nil
 }
