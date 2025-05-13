@@ -37,13 +37,13 @@ func init() {
 	operators["import"] = opImport
 	operators["lambda"] = opLambda
 	operators["cmd"] = opCmd
-	operators["getmap"] = opGetMap
+	operators["mapping-get"] = opMappingGet
 	operators["merge"] = opMerge
 	operators["map"] = opMap
 	operators["flatten"] = opFlatten
-	operators["open"] = opOpen
-	operators["toEntries"] = opToEntries
-	operators["fromEntries"] = opFromEntries
+	operators["read-files"] = opReadFiles
+	operators["to-entries"] = opToEntries
+	operators["from-entries"] = opFromEntries
 }
 
 // Call dispatches to the appropriate operator function based on the operator name
@@ -527,7 +527,7 @@ func opMap(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	}, nil
 }
 
-func opGetMap(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+func opMappingGet(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	if len(cdr) != 2 {
 		return nil, NewEvaluationError(nil, fmt.Sprintf("map requires 1 argument, got %d", len(cdr)))
 	}
@@ -730,7 +730,7 @@ func opFlatten(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	}, nil
 }
 
-func opOpen(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+func opReadFiles(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 	result := make([]any, 0)
 
