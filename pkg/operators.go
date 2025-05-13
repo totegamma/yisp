@@ -38,6 +38,7 @@ func init() {
 	operators["getmap"] = opGetMap
 	operators["merge"] = opMerge
 	operators["map"] = opMap
+	operators["flatten"] = opFlatten
 }
 
 // Call dispatches to the appropriate operator function based on the operator name
@@ -689,4 +690,37 @@ func opCmd(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 		return result, nil
 	}
+}
+
+func opFlatten(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+
+	flattened := make([]any, 0)
+
+	for _, node := range cdr {
+		val, err := Eval(node, env, mode)
+		if err != nil {
+			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
+		}
+		if val.Kind == KindArray {
+			arr, ok := val.Value.([]any)
+			if !ok {
+				return nil, NewEvaluationError(node, fmt.Sprintf("invalid argument type for flatten: %T", val))
+			}
+			for _, item := range arr {
+				itemNode, ok := item.(*YispNode)
+				if !ok {
+					return nil, NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
+				}
+				flattened = append(flattened, itemNode)
+			}
+		} else {
+			flattened = append(flattened, val)
+		}
+	}
+
+	return &YispNode{
+		Kind:  KindArray,
+		Value: flattened,
+		Tag:   "!expand",
+	}, nil
 }

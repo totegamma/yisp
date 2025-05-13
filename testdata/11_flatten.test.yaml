@@ -1,0 +1,4 @@
+!yisp
+- flatten
+- !quote [a, b, c]
+- !quote [d, e, f]
