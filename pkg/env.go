@@ -61,12 +61,12 @@ func (e *Env) Get(key string) (*YispNode, bool) {
 
 		maps, ok := value.Value.(map[string]*YispNode)
 		if !ok {
-			anyMaps, ok := value.Value.(map[string]any)
+			anyMaps, ok := value.Value.(*YispMap)
 			if !ok {
 				return nil, false
 			}
 			maps = make(map[string]*YispNode)
-			for key, item := range anyMaps {
+			for key, item := range anyMaps.AllFromFront() {
 				node, ok := item.(*YispNode)
 				if !ok {
 					continue

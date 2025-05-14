@@ -7,16 +7,25 @@ import (
 )
 
 // Render converts a YispNode to a native Go value
-func render(node *YispNode) (any, error) {
+func render(node *YispNode) (*yaml.Node, error) {
 	switch node.Kind {
-	case KindNull, KindBool, KindInt, KindFloat, KindString:
-		return node.Value, nil
+	case KindNull:
+		return &yaml.Node{
+			Kind:  yaml.ScalarNode,
+			Value: "null",
+		}, nil
+
+	case KindBool, KindInt, KindFloat, KindString:
+		return &yaml.Node{
+			Kind:  yaml.ScalarNode,
+			Value: fmt.Sprintf("%v", node.Value),
+		}, nil
 	case KindArray:
 		arr, ok := node.Value.([]any)
 		if !ok {
 			return nil, fmt.Errorf("invalid array value. Actual type: %T", node.Value)
 		}
-		results := make([]any, len(arr))
+		results := make([]*yaml.Node, len(arr))
 		for i, item := range arr {
 			node, ok := item.(*YispNode)
 			if !ok {
@@ -28,33 +37,60 @@ func render(node *YispNode) (any, error) {
 				return nil, err
 			}
 		}
-		return results, nil
+		return &yaml.Node{
+			Kind:    yaml.SequenceNode,
+			Content: results,
+		}, nil
 	case KindMap:
-		m, ok := node.Value.(map[string]any)
+		m, ok := node.Value.(*YispMap)
 		if !ok {
 			return nil, fmt.Errorf("invalid map value")
 		}
-		results := make(map[string]any)
-		for key, item := range m {
+		results := make([]*yaml.Node, 0)
+		for key, item := range m.AllFromFront() {
 			node, ok := item.(*YispNode)
 			if !ok {
 				return nil, fmt.Errorf("invalid item type: %T", item)
 			}
-			var err error
-			results[key], err = render(node)
+
+			content, err := render(node)
 			if err != nil {
 				return nil, err
 			}
+
+			results = append(results, &yaml.Node{
+				Kind:  yaml.ScalarNode,
+				Value: key,
+			})
+
+			results = append(results, content)
+
 		}
-		return results, nil
+		return &yaml.Node{
+			Kind:    yaml.MappingNode,
+			Content: results,
+		}, nil
+
 	case KindLambda:
-		return "(lambda)", nil
+		return &yaml.Node{
+			Kind:  yaml.ScalarNode,
+			Value: "(lambda)",
+		}, nil
 	case KindParameter:
-		return "(parameter)", nil
+		return &yaml.Node{
+			Kind:  yaml.ScalarNode,
+			Value: "(parameter)",
+		}, nil
 	case KindSymbol:
-		return "(symbol)", nil
+		return &yaml.Node{
+			Kind:  yaml.ScalarNode,
+			Value: "(symbol)",
+		}, nil
 	default:
-		return "(unknown)", nil
+		return &yaml.Node{
+			Kind:  yaml.ScalarNode,
+			Value: "(unknown)",
+		}, nil
 	}
 }
 

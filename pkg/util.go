@@ -172,8 +172,8 @@ func isTruthy(node *YispNode) (bool, error) {
 		return v != "", nil
 	case []any:
 		return len(v) != 0, nil
-	case map[string]any:
-		return len(v) != 0, nil
+	case *YispMap:
+		return v.Len() != 0, nil
 	case *Lambda:
 		// Lambda functions are always truthy
 		return true, nil
@@ -185,17 +185,17 @@ func isTruthy(node *YispNode) (bool, error) {
 	}
 }
 
-func DeepMerge(dst, src map[string]any) map[string]any {
-	for key, value := range src {
-		if dstValue, ok := dst[key]; ok {
-			if dstMap, ok := dstValue.(map[string]any); ok {
-				if srcMap, ok := value.(map[string]any); ok {
-					dst[key] = DeepMerge(dstMap, srcMap)
+func DeepMerge(dst, src *YispMap) *YispMap {
+	for key, value := range src.AllFromFront() {
+		if dstValue, ok := dst.Get(key); ok {
+			if dstMap, ok := dstValue.(*YispMap); ok {
+				if srcMap, ok := value.(*YispMap); ok {
+					dst.Set(key, DeepMerge(dstMap, srcMap))
 					continue
 				}
 			}
 		}
-		dst[key] = value
+		dst.Set(key, value)
 	}
 	return dst
 }

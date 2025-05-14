@@ -532,7 +532,7 @@ func opMappingGet(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		return nil, NewEvaluationError(nil, fmt.Sprintf("map requires 1 argument, got %d", len(cdr)))
 	}
 
-	mapValue, err := EvalAndCastAny[map[string]any](cdr[0], env, mode)
+	mapValue, err := EvalAndCastAny[*YispMap](cdr[0], env, mode)
 	if err != nil {
 		return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate map argument"), err)
 	}
@@ -542,7 +542,7 @@ func opMappingGet(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		return nil, NewEvaluationErrorWithParent(cdr[1], fmt.Sprintf("failed to evaluate key argument"), err)
 	}
 
-	value, ok := mapValue[keyValue]
+	value, ok := mapValue.Get(keyValue)
 	if !ok {
 		return nil, NewEvaluationError(cdr[1], fmt.Sprintf("key %s not found in map", keyValue))
 	}
@@ -556,9 +556,9 @@ func opMappingGet(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 }
 
 func opMerge(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
-	mergedMap := make(map[string]any)
+	mergedMap := NewYispMap()
 	for _, node := range cdr {
-		mapValue, err := EvalAndCastAny[map[string]any](node, env, mode)
+		mapValue, err := EvalAndCastAny[*YispMap](node, env, mode)
 		if err != nil {
 			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate map argument"), err)
 		}
@@ -621,12 +621,12 @@ func opCmd(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		return nil, NewEvaluationError(props, fmt.Sprintf("cmdline requires a map argument, got %v", props.Kind))
 	}
 
-	propsMap, ok := props.Value.(map[string]any)
+	propsMap, ok := props.Value.(*YispMap)
 	if !ok {
 		return nil, NewEvaluationError(props, fmt.Sprintf("invalid map type: %T", props.Value))
 	}
 
-	cmdAny, ok := propsMap["cmd"]
+	cmdAny, ok := propsMap.Get("cmd")
 	if !ok {
 		return nil, NewEvaluationError(props, "cmdline requires a 'cmd' key in the map")
 	}
@@ -638,7 +638,7 @@ func opCmd(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 	args := make([]string, 0)
 
-	argsAny, ok := propsMap["args"]
+	argsAny, ok := propsMap.Get("args")
 	if ok {
 		argsNode, ok := argsAny.(*YispNode)
 		if !ok {
@@ -664,7 +664,7 @@ func opCmd(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	}
 
 	asString := false
-	asStringAny, ok := propsMap["asString"]
+	asStringAny, ok := propsMap.Get("asString")
 	if ok {
 		asString, err = EvalAndCastAny[bool](asStringAny, env, mode)
 	}
@@ -757,20 +757,19 @@ func opReadFiles(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 				return nil, NewEvaluationError(node, fmt.Sprintf("failed to read file: %s", file))
 			}
 
-			value := map[string]any{
-				"path": &YispNode{
-					Kind:  KindString,
-					Value: file,
-				},
-				"name": &YispNode{
-					Kind:  KindString,
-					Value: filename,
-				},
-				"body": &YispNode{
-					Kind:  KindString,
-					Value: string(body),
-				},
-			}
+			value := NewYispMap()
+			value.Set("path", &YispNode{
+				Kind:  KindString,
+				Value: file,
+			})
+			value.Set("name", &YispNode{
+				Kind:  KindString,
+				Value: filename,
+			})
+			value.Set("body", &YispNode{
+				Kind:  KindString,
+				Value: string(body),
+			})
 
 			result = append(result, &YispNode{
 				Kind:  KindMap,
@@ -792,12 +791,12 @@ func opToEntries(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		return nil, NewEvaluationError(nil, fmt.Sprintf("toEntries requires 1 argument, got %d", len(cdr)))
 	}
 	node := cdr[0]
-	mapValue, err := EvalAndCastAny[map[string]any](node, env, mode)
+	mapValue, err := EvalAndCastAny[*YispMap](node, env, mode)
 	if err != nil {
 		return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
 	}
 	result := make([]any, 0)
-	for key, value := range mapValue {
+	for key, value := range mapValue.AllFromFront() {
 		tuple := &YispNode{
 			Kind: KindArray,
 			Value: []any{
@@ -826,7 +825,7 @@ func opFromEntries(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) 
 		return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
 	}
 
-	result := make(map[string]any)
+	result := NewYispMap()
 	for _, item := range arr {
 		tupleNode, ok := item.(*YispNode)
 		if !ok {
@@ -850,7 +849,7 @@ func opFromEntries(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) 
 			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate key"), err)
 		}
 
-		result[keyStr] = valueNode
+		result.Set(keyStr, valueNode)
 	}
 
 	return &YispNode{

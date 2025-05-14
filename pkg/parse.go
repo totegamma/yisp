@@ -39,7 +39,7 @@ func Parse(filename string, node *yaml.Node) (*YispNode, error) {
 		}
 
 	case yaml.MappingNode:
-		m := make(map[string]any)
+		m := NewYispMap()
 		for i := 0; i < len(node.Content); i += 2 {
 			keyNode := node.Content[i]
 			valueNode := node.Content[i+1]
@@ -53,7 +53,7 @@ func Parse(filename string, node *yaml.Node) (*YispNode, error) {
 			if err != nil {
 				return nil, err
 			}
-			m[key] = value
+			m.Set(key, value)
 		}
 
 		result = &YispNode{

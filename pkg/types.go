@@ -2,7 +2,14 @@ package yisp
 
 import (
 	"fmt"
+	"github.com/elliotchance/orderedmap/v3"
 )
+
+type YispMap = orderedmap.OrderedMap[string, any]
+
+func NewYispMap() *YispMap {
+	return orderedmap.NewOrderedMap[string, any]()
+}
 
 type EvalMode int
 

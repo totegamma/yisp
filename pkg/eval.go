@@ -2,7 +2,6 @@ package yisp
 
 import (
 	"fmt"
-	"maps"
 	"strconv"
 	"strings"
 )
@@ -221,12 +220,12 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		}
 
 	case KindMap:
-		m, ok := node.Value.(map[string]any)
+		m, ok := node.Value.(*YispMap)
 		if !ok {
 			return nil, NewEvaluationError(node, fmt.Sprintf("invalid map type: %T", node.Value))
 		}
-		results := make(map[string]any)
-		for key, item := range m {
+		results := NewYispMap()
+		for key, item := range m.AllFromFront() {
 			node, ok := item.(*YispNode)
 			if !ok {
 				return nil, NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
@@ -239,7 +238,13 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 			if strings.HasPrefix(key, YISP_SPECIAL_MERGE_KEY) {
 				if val.Kind == KindMap {
-					maps.Copy(results, val.Value.(map[string]any))
+					innerMap, ok := val.Value.(*YispMap)
+					if !ok {
+						return nil, NewEvaluationError(node, fmt.Sprintf("invalid merge item type: %T", val.Value))
+					}
+					for k, v := range innerMap.AllFromFront() {
+						results.Set(k, v)
+					}
 				} else if val.Kind == KindArray {
 					for _, item := range val.Value.([]any) {
 						node, ok := item.(*YispNode)
@@ -247,7 +252,13 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 							return nil, NewEvaluationError(node, fmt.Sprintf("invalid merge item type: %T", item))
 						}
 						if node.Kind == KindMap {
-							maps.Copy(results, node.Value.(map[string]any))
+							innerMap, ok := node.Value.(*YispMap)
+							if !ok {
+								return nil, NewEvaluationError(node, fmt.Sprintf("invalid merge item type: %T", node.Value))
+							}
+							for innerK, innerV := range innerMap.AllFromFront() {
+								results.Set(innerK, innerV)
+							}
 						} else if node.Kind == KindNull {
 							continue
 						} else {
@@ -260,7 +271,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 					return nil, NewEvaluationError(node, fmt.Sprintf("invalid merge item type: %T", val))
 				}
 			} else {
-				results[key] = val
+				results.Set(key, val)
 			}
 
 		}
