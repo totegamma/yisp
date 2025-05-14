@@ -13,6 +13,10 @@ const (
 
 type YamlDocument []any
 
+const (
+	YISP_SPECIAL_MERGE_KEY = "__YISP_MERGE_KEY__"
+)
+
 // Kind represents the type of a YispNode
 type Kind int32
 

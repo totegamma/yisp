@@ -1,0 +1,28 @@
+&map1
+a: 1
+b: 2
+
+---
+&map2
+c: 3
+d: 4
+
+---
+merged:
+  <<: *map1
+  <<: *map2
+  e: 5
+
+---
+merged2:
+  <<: [*map1, *map2]
+  e: 5
+
+---
+nilmerge:
+  <<: null
+  <<: *map1
+  <<: *map2
+  e: 5
+
+

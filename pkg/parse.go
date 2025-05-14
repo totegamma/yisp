@@ -1,6 +1,7 @@
 package yisp
 
 import (
+	"github.com/rs/xid"
 	"github.com/totegamma/yisp/yaml"
 )
 
@@ -44,6 +45,10 @@ func Parse(filename string, node *yaml.Node) (*YispNode, error) {
 			valueNode := node.Content[i+1]
 
 			key := keyNode.Value
+			if key == "<<" {
+				key = YISP_SPECIAL_MERGE_KEY + xid.New().String()
+			}
+
 			value, err := Parse(filename, valueNode)
 			if err != nil {
 				return nil, err

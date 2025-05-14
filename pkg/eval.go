@@ -2,7 +2,9 @@ package yisp
 
 import (
 	"fmt"
+	"maps"
 	"strconv"
+	"strings"
 )
 
 // Apply applies a function to arguments
@@ -234,7 +236,33 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			if err != nil {
 				return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate item"), err)
 			}
-			results[key] = val
+
+			if strings.HasPrefix(key, YISP_SPECIAL_MERGE_KEY) {
+				if val.Kind == KindMap {
+					maps.Copy(results, val.Value.(map[string]any))
+				} else if val.Kind == KindArray {
+					for _, item := range val.Value.([]any) {
+						node, ok := item.(*YispNode)
+						if !ok {
+							return nil, NewEvaluationError(node, fmt.Sprintf("invalid merge item type: %T", item))
+						}
+						if node.Kind == KindMap {
+							maps.Copy(results, node.Value.(map[string]any))
+						} else if node.Kind == KindNull {
+							continue
+						} else {
+							return nil, NewEvaluationError(node, fmt.Sprintf("invalid merge item type: %T", item))
+						}
+					}
+				} else if val.Kind == KindNull {
+					continue
+				} else {
+					return nil, NewEvaluationError(node, fmt.Sprintf("invalid merge item type: %T", val))
+				}
+			} else {
+				results[key] = val
+			}
+
 		}
 
 		result = &YispNode{
