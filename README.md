@@ -1,7 +1,7 @@
 <div align="center">
   <img src="./docs/assets/yisp-logo.png" alt="yisp logo" width="200px"/>
   
-  # YISP - A Lisp-like evaluator for YAML documents
+  # YISP - A Lisp-inspired Functional Engine for YAML
   [![Test](https://github.com/totegamma/yisp/actions/workflows/test.yaml/badge.svg)](https://github.com/totegamma/yisp/actions/workflows/test.yaml)
 </div>
 
