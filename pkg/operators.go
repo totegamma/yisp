@@ -2,6 +2,7 @@ package yisp
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"os/exec"
@@ -44,6 +45,8 @@ func init() {
 	operators["read-files"] = opReadFiles
 	operators["to-entries"] = opToEntries
 	operators["from-entries"] = opFromEntries
+	operators["to-yaml"] = opToYaml
+	operators["sha256"] = opSha256
 }
 
 // Call dispatches to the appropriate operator function based on the operator name
@@ -855,6 +858,57 @@ func opFromEntries(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) 
 	return &YispNode{
 		Kind:  KindMap,
 		Value: result,
+		Pos:   node.Pos,
+	}, nil
+}
+
+func opToYaml(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+	if len(cdr) != 1 {
+		return nil, NewEvaluationError(nil, fmt.Sprintf("toYaml requires 1 argument, got %d", len(cdr)))
+	}
+	node := cdr[0]
+	evaluated, err := Eval(node, env, mode)
+	if err != nil {
+		return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
+	}
+
+	yamlBytes, err := Render(evaluated)
+	if err != nil {
+		return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to render yaml"), err)
+	}
+	yamlStr := string(yamlBytes)
+
+	return &YispNode{
+		Kind:  KindString,
+		Value: yamlStr,
+		Pos:   node.Pos,
+	}, nil
+}
+
+func opSha256(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+	if len(cdr) != 1 {
+		return nil, NewEvaluationError(nil, fmt.Sprintf("sha256 requires 1 argument, got %d", len(cdr)))
+	}
+	node := cdr[0]
+	evaluated, err := Eval(node, env, mode)
+	if err != nil {
+		return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
+	}
+
+	if evaluated.Kind != KindString {
+		return nil, NewEvaluationError(node, fmt.Sprintf("sha256 requires a string argument, got %v", evaluated.Kind))
+	}
+
+	str, ok := evaluated.Value.(string)
+	if !ok {
+		return nil, NewEvaluationError(node, fmt.Sprintf("invalid argument type for sha256: %T", evaluated.Value))
+	}
+
+	hash := sha256.Sum256([]byte(str))
+
+	return &YispNode{
+		Kind:  KindString,
+		Value: fmt.Sprintf("%x", hash),
 		Pos:   node.Pos,
 	}, nil
 }
