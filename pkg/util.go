@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/totegamma/yisp/yaml"
 )
@@ -19,6 +20,16 @@ func JsonPrint(tag string, obj any) {
 func YamlPrint(obj any) {
 	b, _ := yaml.Marshal(obj)
 	fmt.Println(string(b))
+}
+
+func PrintYispNode(tag string, node *YispNode) {
+	native, err := ToNative(node)
+	if err != nil {
+		fmt.Println("Error converting to native:", err)
+		return
+	}
+	b, _ := json.MarshalIndent(native, "", "  ")
+	fmt.Println(tag, string(b))
 }
 
 func EvalAndCastNode[T any](node *YispNode, env *Env, mode EvalMode) (T, error) {
@@ -185,19 +196,86 @@ func isTruthy(node *YispNode) (bool, error) {
 	}
 }
 
-func DeepMerge(dst, src *YispMap) *YispMap {
-	for key, value := range src.AllFromFront() {
-		if dstValue, ok := dst.Get(key); ok {
-			if dstMap, ok := dstValue.(*YispMap); ok {
-				if srcMap, ok := value.(*YispMap); ok {
-					dst.Set(key, DeepMerge(dstMap, srcMap))
-					continue
-				}
+/*
+func cloneMap(m *YispMap) *YispMap {
+	cloned := NewYispMap()
+	for key, value := range m.AllFromFront() {
+		if nested, ok := value.(*YispMap); ok {
+			cloned.Set(key, cloneMap(nested))
+		} else {
+			cloned.Set(key, value)
+		}
+	}
+	return cloned
+}
+*/
+
+func DeepMergeYispNode(dst, src *YispNode) (*YispNode, error) {
+	if dst.Kind == KindMap && src.Kind == KindMap {
+
+		dstMap, dstOK := dst.Value.(*YispMap)
+		srcMap, srcOK := src.Value.(*YispMap)
+		if !dstOK || !srcOK {
+			return nil, fmt.Errorf("invalid map value. Actual type: %T", dst.Value)
+		}
+
+		allKeys := make([]string, 0)
+		for key := range dstMap.Keys() {
+			if !slices.Contains(allKeys, key) {
+				allKeys = append(allKeys, key)
 			}
 		}
-		dst.Set(key, value)
+		for key := range srcMap.Keys() {
+			if !slices.Contains(allKeys, key) {
+				allKeys = append(allKeys, key)
+			}
+		}
+		result := NewYispMap()
+		for _, key := range allKeys {
+			dstVal, dstOK := dstMap.Get(key)
+			srcVal, srcOK := srcMap.Get(key)
+
+			if dstOK && srcOK {
+				dstNode, dstNodeOK := dstVal.(*YispNode)
+				srcNode, srcNodeOK := srcVal.(*YispNode)
+
+				if dstNodeOK && srcNodeOK {
+					mergedNode, err := DeepMergeYispNode(dstNode, srcNode)
+					if err != nil {
+						return nil, err
+					}
+					result.Set(key, mergedNode)
+				}
+			} else if dstOK {
+				result.Set(key, dstVal)
+			} else if srcOK {
+				result.Set(key, srcVal)
+			}
+		}
+
+		return &YispNode{
+			Kind:  KindMap,
+			Value: result,
+		}, nil
+
+	} else if dst.Kind == KindArray && src.Kind == KindArray {
+
+		dstArray, dstOK := dst.Value.([]any)
+		srcArray, srcOK := src.Value.([]any)
+		if !dstOK || !srcOK {
+			return nil, fmt.Errorf("invalid array value. Actual type: %T", dst.Value)
+		}
+		result := make([]any, len(dstArray)+len(srcArray))
+		copy(result, dstArray)
+		copy(result[len(dstArray):], srcArray)
+		return &YispNode{
+			Kind:  KindArray,
+			Value: result,
+		}, nil
+
+	} else {
+		return src, nil
 	}
-	return dst
 }
 
 func RenderCode(file string, line, after, before int, comments []Comment) (string, error) {
@@ -262,4 +340,59 @@ func pad(length int) string {
 		result += "  "
 	}
 	return result
+}
+
+func ToNative(node *YispNode) (any, error) {
+	switch node.Kind {
+	case KindNull, KindBool, KindInt, KindFloat, KindString:
+		return node.Value, nil
+	case KindArray:
+		arr, ok := node.Value.([]any)
+		if !ok {
+			return nil, fmt.Errorf("invalid array value. Actual type: %T", node.Value)
+		}
+		results := make([]any, len(arr))
+		for i, item := range arr {
+			node, ok := item.(*YispNode)
+			if !ok {
+				return nil, fmt.Errorf("invalid item type: %T", item)
+			}
+			var err error
+			results[i], err = ToNative(node)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return results, nil
+	case KindMap:
+		m, ok := node.Value.(*YispMap)
+		if !ok {
+			return nil, fmt.Errorf("invalid map value")
+		}
+		results := map[string]any{}
+		for key, item := range m.AllFromFront() {
+			node, ok := item.(*YispNode)
+			if !ok {
+				return nil, fmt.Errorf("invalid item type: %T", item)
+			}
+
+			content, err := ToNative(node)
+			if err != nil {
+				return nil, err
+			}
+
+			results[key] = content
+
+		}
+		return results, nil
+
+	case KindLambda:
+		return "(lambda)", nil
+	case KindParameter:
+		return "(parameter)", nil
+	case KindSymbol:
+		return "(symbol)", nil
+	default:
+		return "(unknown)", nil
+	}
 }

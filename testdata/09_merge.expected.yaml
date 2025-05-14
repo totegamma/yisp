@@ -1,6 +1,25 @@
-map1: hogehoge
-map2: piyopiyo
-map3: fugafuga
-override: 3
-sub:
-  override: 3
+app:
+  name: myapp               # input1 にしかないので残る
+  version: 1.1              # input2 で上書き
+  metadata:
+    maintainers:
+      - alice@example.com   # input1
+      - bob@example.com     # input1
+      - carol@example.com   # input2 追加
+    labels:
+      tier: frontend        # input1
+      region: eu-central    # input2 で上書き
+      env: production       # input2 新規
+  features:
+    login: true             # input1
+    payments: true          # input2 で上書き
+    analytics: true         # input2 新規
+servers:
+  - host: db1.example.com   # input1
+    port: 5432
+  - host: db2.example.com   # input1
+    port: 5432
+  - host: cache1.example.com # input2 追加
+    port: 6379
+newSection:
+  enabled: true             # input2 新規

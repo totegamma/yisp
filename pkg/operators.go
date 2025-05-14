@@ -559,20 +559,22 @@ func opMappingGet(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 }
 
 func opMerge(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
-	mergedMap := NewYispMap()
+	result := &YispNode{
+		Kind: KindNull,
+	}
 	for _, node := range cdr {
-		mapValue, err := EvalAndCastAny[*YispMap](node, env, mode)
+		value, err := Eval(node, env, mode)
 		if err != nil {
 			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate map argument"), err)
 		}
 
-		mergedMap = DeepMerge(mergedMap, mapValue)
+		result, err = DeepMergeYispNode(result, value)
+		if err != nil {
+			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to merge map"), err)
+		}
 	}
 
-	return &YispNode{
-		Kind:  KindMap,
-		Value: mergedMap,
-	}, nil
+	return result, nil
 }
 
 // opLambda creates a lambda function

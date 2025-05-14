@@ -1,11 +1,38 @@
 !yisp
 - merge
-- map1: hogehoge
-  override: 1
-  sub:
-    override: 1
-- map2: piyopiyo
-- map3: fugafuga
-  override: 3
-  sub:
-    override: 3
+- !quote
+  app:
+    name: myapp
+    version: 1.0
+    metadata:
+      maintainers:
+        - alice@example.com
+        - bob@example.com
+      labels:
+        tier: frontend
+        region: us-west
+    features:
+      login: true
+      payments: false
+  servers:
+    - host: db1.example.com
+      port: 5432
+    - host: db2.example.com
+      port: 5432
+- !quote
+  app:
+    version: 1.1              # 上書き
+    metadata:
+      maintainers:
+        - carol@example.com   # 追加
+      labels:
+        region: eu-central    # 上書き
+        env: production       # 新規
+    features:
+      payments: true          # 上書き
+      analytics: true         # 新規
+  servers:
+    - host: cache1.example.com
+      port: 6379
+  newSection:
+    enabled: true
