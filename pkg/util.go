@@ -196,20 +196,6 @@ func isTruthy(node *YispNode) (bool, error) {
 	}
 }
 
-/*
-func cloneMap(m *YispMap) *YispMap {
-	cloned := NewYispMap()
-	for key, value := range m.AllFromFront() {
-		if nested, ok := value.(*YispMap); ok {
-			cloned.Set(key, cloneMap(nested))
-		} else {
-			cloned.Set(key, value)
-		}
-	}
-	return cloned
-}
-*/
-
 func DeepMergeYispNode(dst, src *YispNode) (*YispNode, error) {
 	if dst.Kind == KindMap && src.Kind == KindMap {
 
