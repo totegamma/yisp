@@ -753,7 +753,12 @@ func opReadFiles(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			return nil, NewEvaluationError(node, fmt.Sprintf("invalid argument type for open: %T", val))
 		}
 
-		files, err := filepath.Glob(str)
+		path := str
+		if val.Pos.File != "" {
+			path = filepath.Clean(filepath.Join(val.Pos.File, str))
+		}
+
+		files, err := filepath.Glob(path)
 		if err != nil {
 			return nil, NewEvaluationError(node, fmt.Sprintf("failed to glob path: %s", str))
 		}
@@ -783,15 +788,19 @@ func opReadFiles(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			result = append(result, &YispNode{
 				Kind:  KindMap,
 				Value: value,
+				Pos: Position{
+					File:   file,
+					Line:   node.Pos.Line,
+					Column: node.Pos.Column,
+				},
 			})
-
 		}
-
 	}
 
 	return &YispNode{
 		Kind:  KindArray,
 		Value: result,
+		Pos:   cdr[0].Pos,
 	}, nil
 }
 
