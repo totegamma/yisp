@@ -755,7 +755,7 @@ func opReadFiles(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 		path := str
 		if val.Pos.File != "" {
-			path = filepath.Clean(filepath.Join(val.Pos.File, str))
+			path = filepath.Clean(filepath.Join(filepath.Dir(val.Pos.File), str))
 		}
 
 		files, err := filepath.Glob(path)
