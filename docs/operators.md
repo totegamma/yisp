@@ -126,7 +126,7 @@ greeting: !yisp
 
 ### `==` (Equal)
 
-Checks if two values are equal.
+Checks if two values are equal. Works with numbers, strings, and booleans. Different types are never considered equal.
 
 **Syntax:**
 ```yaml
@@ -147,7 +147,7 @@ isEqual: !yisp
 
 ### `!=` (Not Equal)
 
-Checks if two values are not equal.
+Checks if two values are not equal. Works with numbers, strings, and booleans. Different types are always considered not equal.
 
 **Syntax:**
 ```yaml
@@ -168,7 +168,7 @@ isNotEqual: !yisp
 
 ### `<` (Less Than)
 
-Checks if the first value is less than the second.
+Checks if the first value is less than the second. Works with numbers.
 
 **Syntax:**
 ```yaml
@@ -189,7 +189,7 @@ isLess: !yisp
 
 ### `<=` (Less Than or Equal)
 
-Checks if the first value is less than or equal to the second.
+Checks if the first value is less than or equal to the second. Works with numbers.
 
 **Syntax:**
 ```yaml
@@ -210,7 +210,7 @@ isLessOrEqual: !yisp
 
 ### `>` (Greater Than)
 
-Checks if the first value is greater than the second.
+Checks if the first value is greater than the second. Works with numbers.
 
 **Syntax:**
 ```yaml
@@ -231,7 +231,7 @@ isGreater: !yisp
 
 ### `>=` (Greater Than or Equal)
 
-Checks if the first value is greater than or equal to the second.
+Checks if the first value is greater than or equal to the second. Works with numbers.
 
 **Syntax:**
 ```yaml
@@ -347,6 +347,145 @@ newList: !yisp
 # Evaluates to: newList: [0, 1, 2, 3]
 ```
 
+### `flatten`
+
+Flattens multiple lists into a single list.
+
+**Syntax:**
+```yaml
+!yisp
+- flatten
+- list1
+- list2
+- ...
+```
+
+**Example:**
+```yaml
+result: !yisp
+  - flatten
+  - !quote [a, b, c]
+  - !quote [d, e, f]
+# Evaluates to: result: [a, b, c, d, e, f]
+```
+
+### `map`
+
+Applies a function to each element of one or more lists.
+
+**Syntax:**
+```yaml
+!yisp
+- map
+- function
+- list1
+- list2
+- ...
+```
+
+**Example:**
+```yaml
+result: !yisp
+  - map
+  - +
+  - !quote [1, 2, 3]
+  - !quote [4, 5, 6]
+# Evaluates to: result: [5, 7, 9]
+```
+
+## Map Operators
+
+### `mapping-get`
+
+Gets a value from a map by key.
+
+**Syntax:**
+```yaml
+!yisp
+- mapping-get
+- map
+- key
+```
+
+**Example:**
+```yaml
+result: !yisp
+  - mapping-get
+  - hoge: piyo
+    fuga: miyo
+  - hoge
+# Evaluates to: result: piyo
+```
+
+### `merge`
+
+Merges multiple maps together. When keys conflict, later maps override earlier ones.
+
+**Syntax:**
+```yaml
+!yisp
+- merge
+- map1
+- map2
+- ...
+```
+
+**Example:**
+```yaml
+result: !yisp
+  - merge
+  - !quote
+      app:
+        name: myapp
+        version: 1.0
+  - !quote
+      app:
+        version: 1.1
+        description: "Updated app"
+# Evaluates to: result: {app: {name: myapp, version: 1.1, description: "Updated app"}}
+```
+
+### `to-entries`
+
+Converts a map to an array of key-value pairs.
+
+**Syntax:**
+```yaml
+!yisp
+- to-entries
+- map
+```
+
+**Example:**
+```yaml
+entries: !yisp
+  - to-entries
+  - a: 1
+    b: 2
+# Evaluates to: entries: [["a", 1], ["b", 2]]
+```
+
+### `from-entries`
+
+Converts an array of key-value pairs to a map.
+
+**Syntax:**
+```yaml
+!yisp
+- from-entries
+- array_of_pairs
+```
+
+**Example:**
+```yaml
+map: !yisp
+  - from-entries
+  - !quote
+    - ["a", 1]
+    - ["b", 2]
+# Evaluates to: map: {a: 1, b: 2}
+```
+
 ## Miscellaneous Operators
 
 ### `discard`
@@ -368,6 +507,68 @@ Evaluates all arguments and returns nil. Useful for side effects.
 - discard
 - some_operation
 - with_side_effects
+```
+
+### `progn`
+
+Evaluates all arguments in sequence and returns the value of the last one.
+
+**Syntax:**
+```yaml
+!yisp
+- progn
+- expr1
+- expr2
+- ...
+```
+
+**Example:**
+```yaml
+result: !yisp
+  - progn
+  - some_operation
+  - another_operation
+  - final_result
+# Evaluates to: result: final_result
+```
+
+### `to-yaml`
+
+Converts a YISP value to a YAML string.
+
+**Syntax:**
+```yaml
+!yisp
+- to-yaml
+- value
+```
+
+**Example:**
+```yaml
+yaml: !yisp
+  - to-yaml
+  - hoge: piyo
+    a: 1
+# Evaluates to: yaml: "hoge: piyo\na: 1\n"
+```
+
+### `sha256`
+
+Calculates the SHA-256 hash of a string.
+
+**Syntax:**
+```yaml
+!yisp
+- sha256
+- string
+```
+
+**Example:**
+```yaml
+hash: !yisp
+  - sha256
+  - "hello world"
+# Evaluates to: hash: "b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9"
 ```
 
 ## File and Module Operators
@@ -410,6 +611,59 @@ Imports modules, making their definitions available in the current environment.
 !yisp
 - import
 - ["utils", "./utils.yaml"]
+```
+
+### `read-files`
+
+Reads files matching a glob pattern and returns information about them.
+
+**Syntax:**
+```yaml
+!yisp
+- read-files
+- "glob/pattern/*.yaml"
+- ...
+```
+
+**Example:**
+```yaml
+files: !yisp
+  - read-files
+  - "config/*.yaml"
+# Returns an array of maps with path, name, and body keys
+```
+
+## Command Execution
+
+### `cmd`
+
+Executes a command and returns its output. Requires the `--allow-cmd` flag to be enabled.
+
+**Syntax:**
+```yaml
+!yisp
+- cmd
+- cmd: "command"
+  args:
+    - "arg1"
+    - "arg2"
+  asString: true/false
+```
+
+**Example:**
+```yaml
+date: !yisp
+  - cmd
+  - cmd: date
+# Evaluates to: date: <current date>
+
+output: !yisp
+  - cmd
+  - cmd: echo
+    args:
+      - "Hello, world!"
+    asString: true
+# Evaluates to: output: "Hello, world!"
 ```
 
 ## Function Operators
