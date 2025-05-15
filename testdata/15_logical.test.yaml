@@ -1,0 +1,33 @@
+# Logical AND operator
+- !yisp ["and", true, true]
+- !yisp ["and", true, false]
+- !yisp ["and", false, true]
+- !yisp ["and", false, false]
+- !yisp ["and", true, true, true]
+- !yisp ["and", true, true, false]
+- !yisp ["and"] # Empty AND should return true
+
+# Logical OR operator
+- !yisp ["or", true, true]
+- !yisp ["or", true, false]
+- !yisp ["or", false, true]
+- !yisp ["or", false, false]
+- !yisp ["or", false, false, true]
+- !yisp ["or", false, false, false]
+- !yisp ["or"] # Empty OR should return false
+
+# Logical NOT operator
+- !yisp ["not", true]
+- !yisp ["not", false]
+- !yisp ["not", 0]
+- !yisp ["not", 1]
+- !yisp ["not", ""]
+- !yisp ["not", "hello"]
+
+# Combining logical operators
+- !yisp ["and", ["or", true, false], true]
+- !yisp ["or", ["and", true, false], true]
+- !yisp ["not", ["and", true, true]]
+- !yisp ["not", ["or", false, false]]
+- !yisp ["and", ["not", false], ["not", false]]
+- !yisp ["or", ["not", true], ["not", true]]

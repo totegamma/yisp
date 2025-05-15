@@ -122,6 +122,90 @@ greeting: !yisp
 # Evaluates to: greeting: "Hello, world!"
 ```
 
+## Logical Operators
+
+### `and`
+
+Performs a logical AND operation on all arguments. Returns true if all arguments are truthy, otherwise returns false. If no arguments are provided, returns true.
+
+**Syntax:**
+```yaml
+!yisp
+- and
+- arg1
+- arg2
+- ...
+```
+
+**Example:**
+```yaml
+result: !yisp
+  - and
+  - true
+  - true
+  - true
+# Evaluates to: result: true
+
+result: !yisp
+  - and
+  - true
+  - false
+# Evaluates to: result: false
+```
+
+### `or`
+
+Performs a logical OR operation on all arguments. Returns true if any argument is truthy, otherwise returns false. If no arguments are provided, returns false.
+
+**Syntax:**
+```yaml
+!yisp
+- or
+- arg1
+- arg2
+- ...
+```
+
+**Example:**
+```yaml
+result: !yisp
+  - or
+  - false
+  - true
+  - false
+# Evaluates to: result: true
+
+result: !yisp
+  - or
+  - false
+  - false
+# Evaluates to: result: false
+```
+
+### `not`
+
+Performs a logical NOT operation on the argument. Returns true if the argument is falsy, otherwise returns false.
+
+**Syntax:**
+```yaml
+!yisp
+- not
+- arg
+```
+
+**Example:**
+```yaml
+result: !yisp
+  - not
+  - false
+# Evaluates to: result: true
+
+result: !yisp
+  - not
+  - true
+# Evaluates to: result: false
+```
+
 ## Comparison Operators
 
 ### `==` (Equal)

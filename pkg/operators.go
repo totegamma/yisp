@@ -29,6 +29,9 @@ func init() {
 	operators["<="] = opLessThanOrEqual
 	operators[">"] = opGreaterThan
 	operators[">="] = opGreaterThanOrEqual
+	operators["and"] = opAnd
+	operators["or"] = opOr
+	operators["not"] = opNot
 	operators["car"] = opCar
 	operators["cdr"] = opCdr
 	operators["cons"] = opCons
@@ -885,6 +888,97 @@ func opToYaml(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		Kind:  KindString,
 		Value: yamlStr,
 		Pos:   node.Pos,
+	}, nil
+}
+
+// opAnd implements logical AND operation
+func opAnd(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+	if len(cdr) == 0 {
+		return &YispNode{
+			Kind:  KindBool,
+			Value: true,
+		}, nil
+	}
+
+	for _, node := range cdr {
+		evaluated, err := Eval(node, env, mode)
+		if err != nil {
+			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
+		}
+
+		truthy, err := isTruthy(evaluated)
+		if err != nil {
+			return nil, err
+		}
+
+		if !truthy {
+			return &YispNode{
+				Kind:  KindBool,
+				Value: false,
+			}, nil
+		}
+	}
+
+	return &YispNode{
+		Kind:  KindBool,
+		Value: true,
+	}, nil
+}
+
+// opOr implements logical OR operation
+func opOr(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+	if len(cdr) == 0 {
+		return &YispNode{
+			Kind:  KindBool,
+			Value: false,
+		}, nil
+	}
+
+	for _, node := range cdr {
+		evaluated, err := Eval(node, env, mode)
+		if err != nil {
+			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
+		}
+
+		truthy, err := isTruthy(evaluated)
+		if err != nil {
+			return nil, err
+		}
+
+		if truthy {
+			return &YispNode{
+				Kind:  KindBool,
+				Value: true,
+			}, nil
+		}
+	}
+
+	return &YispNode{
+		Kind:  KindBool,
+		Value: false,
+	}, nil
+}
+
+// opNot implements logical NOT operation
+func opNot(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+	if len(cdr) != 1 {
+		return nil, NewEvaluationError(nil, fmt.Sprintf("not requires 1 argument, got %d", len(cdr)))
+	}
+
+	node := cdr[0]
+	evaluated, err := Eval(node, env, mode)
+	if err != nil {
+		return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
+	}
+
+	truthy, err := isTruthy(evaluated)
+	if err != nil {
+		return nil, err
+	}
+
+	return &YispNode{
+		Kind:  KindBool,
+		Value: !truthy,
 	}, nil
 }
 

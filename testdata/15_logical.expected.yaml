@@ -1,0 +1,33 @@
+# Logical AND operator
+- true
+- false
+- false
+- false
+- true
+- false
+- true
+
+# Logical OR operator
+- true
+- true
+- true
+- false
+- true
+- false
+- false
+
+# Logical NOT operator
+- false
+- true
+- true
+- false
+- true
+- false
+
+# Combining logical operators
+- true
+- true
+- false
+- true
+- true
+- false
