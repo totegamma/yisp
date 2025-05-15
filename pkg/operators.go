@@ -403,6 +403,7 @@ func opInclude(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			if !ok {
 				return nil, NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
 			}
+			itemNode.Tag = "!quote"
 			results = append(results, itemNode)
 		}
 	}
