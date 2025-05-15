@@ -1,0 +1,13 @@
+!yisp &greet
+- lambda
+- [name]
+- - concat
+  - "Hello, "
+  - *name
+  - "!"
+
+---
+
+greeting: !yisp
+  - *greet
+  - "World"

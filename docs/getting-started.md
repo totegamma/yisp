@@ -46,9 +46,9 @@ calculation: !yisp
 
 conditional: !yisp
   - if
-  - <
-  - 5
-  - 10
+  - - <
+    - 5
+    - 10
   - "5 is less than 10"
   - "5 is not less than 10"
 ```
@@ -106,9 +106,11 @@ YISP supports YAML anchors (`&name`) and references (`*name`) for defining and r
 !yisp &add_five
 - lambda
 - [x]
-- +
-- *x
-- 5
+- - +
+  - *x
+  - 5
+
+---
 
 result: !yisp
   - *add_five
@@ -128,6 +130,8 @@ You can define functions using the `lambda` operator:
   - "Hello, "
   - *name
   - "!"
+
+---
 
 greeting: !yisp
   - *greet
@@ -173,6 +177,5 @@ Now that you understand the basics of YISP, you can:
 
 - Explore the [Operators](operators.md) documentation to learn about all available operators
 - Check out the [Examples](examples.md) for real-world use cases
-- Dive into [Advanced Usage](advanced-usage.md) for more complex techniques
 
 Happy coding with YISP!
