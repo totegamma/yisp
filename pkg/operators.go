@@ -3,10 +3,12 @@ package yisp
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 // OperatorFunc is a function that implements a Yisp operator
@@ -50,6 +52,7 @@ func init() {
 	operators["from-entries"] = opFromEntries
 	operators["to-yaml"] = opToYaml
 	operators["sha256"] = opSha256
+	operators["schema"] = opSchema
 }
 
 // Call dispatches to the appropriate operator function based on the operator name
@@ -590,7 +593,7 @@ func opLambda(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	paramsNode := cdr[0]
 	bodyNode := cdr[1]
 
-	params := make([]string, 0)
+	params := make([]TypedSymbol, 0)
 	for _, item := range paramsNode.Value.([]any) {
 		paramNode, ok := item.(*YispNode)
 		if !ok {
@@ -600,13 +603,52 @@ func opLambda(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		if !ok {
 			return nil, NewEvaluationError(nil, fmt.Sprintf("invalid param value: %T", paramNode.Value))
 		}
-		params = append(params, param)
+
+		var schema *Schema
+		tag := paramNode.Tag
+		typeName := strings.TrimPrefix(tag, "!")
+		if typeName != "" && !strings.HasPrefix(typeName, "!") {
+			typeNode, ok := env.Get(typeName)
+			if !ok {
+				return nil, NewEvaluationError(nil, fmt.Sprintf("undefined type: %s", typeName))
+			}
+			if typeNode.Kind != KindType {
+				return nil, NewEvaluationError(nil, fmt.Sprintf("%s is not a type. actual: %s", typeName, typeNode.Kind))
+			}
+			schema, ok = typeNode.Value.(*Schema)
+			if !ok {
+				return nil, NewEvaluationError(nil, fmt.Sprintf("invalid type value: %T", typeNode.Value))
+			}
+		}
+
+		params = append(params, TypedSymbol{
+			Name:   param,
+			Schema: schema,
+		})
+	}
+
+	var schema *Schema
+	tag := paramsNode.Tag
+	typeName := strings.TrimPrefix(tag, "!")
+	if typeName != "" && !strings.HasPrefix(typeName, "!") {
+		typeNode, ok := env.Get(typeName)
+		if !ok {
+			return nil, NewEvaluationError(nil, fmt.Sprintf("undefined type: %s", typeName))
+		}
+		if typeNode.Kind != KindType {
+			return nil, NewEvaluationError(nil, fmt.Sprintf("%s is not a type. actual: %s", typeName, typeNode.Kind))
+		}
+		schema, ok = typeNode.Value.(*Schema)
+		if !ok {
+			return nil, NewEvaluationError(nil, fmt.Sprintf("invalid type value: %T", typeNode.Value))
+		}
 	}
 
 	lambda := &Lambda{
-		Params:  params,
-		Body:    bodyNode,
-		Clojure: env.Clone(),
+		Arguments: params,
+		Returns:   schema,
+		Body:      bodyNode,
+		Clojure:   env.Clone(),
 	}
 
 	return &YispNode{
@@ -1017,4 +1059,41 @@ func opSha256(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		Value: fmt.Sprintf("%x", hash),
 		Pos:   node.Pos,
 	}, nil
+}
+
+func opSchema(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+	if len(cdr) != 1 {
+		return nil, NewEvaluationError(nil, fmt.Sprintf("sha256 requires 1 argument, got %d", len(cdr)))
+	}
+	node := cdr[0]
+	evaluated, err := Eval(node, env, mode)
+	if err != nil {
+		return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
+	}
+
+	if evaluated.Kind != KindMap {
+		return nil, NewEvaluationError(node, fmt.Sprintf("schema requires a map argument, got %v", evaluated.Kind))
+	}
+
+	rendered, err := ToNative(evaluated)
+	if err != nil {
+		return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to render schema"), err)
+	}
+	schemaBytes, err := json.Marshal(rendered)
+	if err != nil {
+		return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to marshal schema"), err)
+	}
+
+	var schema Schema
+	err = json.Unmarshal(schemaBytes, &schema)
+	if err != nil {
+		return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to unmarshal schema"), err)
+	}
+
+	return &YispNode{
+		Kind:  KindType,
+		Value: &schema,
+		Pos:   node.Pos,
+	}, nil
+
 }

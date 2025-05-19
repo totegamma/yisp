@@ -378,6 +378,8 @@ func ToNative(node *YispNode) (any, error) {
 		return "(parameter)", nil
 	case KindSymbol:
 		return "(symbol)", nil
+	case KindType:
+		return "(type)", nil
 	default:
 		return "(unknown)", nil
 	}

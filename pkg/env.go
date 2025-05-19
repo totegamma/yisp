@@ -14,7 +14,38 @@ type Env struct {
 // NewEnv creates a new environment with an empty variable map
 func NewEnv() *Env {
 	return &Env{
-		Vars: make(map[string]*YispNode),
+		Vars: map[string]*YispNode{
+			"null": {
+				Kind: KindType,
+				Value: &Schema{
+					Type: "null",
+				},
+			},
+			"bool": {
+				Kind: KindType,
+				Value: &Schema{
+					Type: "boolean",
+				},
+			},
+			"int": {
+				Kind: KindType,
+				Value: &Schema{
+					Type: "integer",
+				},
+			},
+			"float": {
+				Kind: KindType,
+				Value: &Schema{
+					Type: "float",
+				},
+			},
+			"string": {
+				Kind: KindType,
+				Value: &Schema{
+					Type: "string",
+				},
+			},
+		},
 	}
 }
 

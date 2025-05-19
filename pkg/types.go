@@ -49,6 +49,8 @@ func (k Kind) String() string {
 		return "map"
 	case KindLambda:
 		return "lambda"
+	case KindType:
+		return "type"
 	default:
 		return "unknown"
 	}
@@ -65,6 +67,7 @@ const (
 	KindArray
 	KindMap
 	KindLambda
+	KindType
 )
 
 type Position struct {
@@ -86,8 +89,14 @@ func (n *YispNode) String() string {
 	return fmt.Sprintf("%s | %s:%d:%d", n.Kind, n.Pos.File, n.Pos.Line, n.Pos.Column)
 }
 
+type TypedSymbol struct {
+	Name   string
+	Schema *Schema
+}
+
 type Lambda struct {
-	Params  []string
-	Body    *YispNode
-	Clojure *Env
+	Arguments []TypedSymbol
+	Returns   *Schema
+	Body      *YispNode
+	Clojure   *Env
 }

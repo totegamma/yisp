@@ -86,6 +86,11 @@ func render(node *YispNode) (*yaml.Node, error) {
 			Kind:  yaml.ScalarNode,
 			Value: "(symbol)",
 		}, nil
+	case KindType:
+		return &yaml.Node{
+			Kind:  yaml.ScalarNode,
+			Value: "(type)",
+		}, nil
 	default:
 		return &yaml.Node{
 			Kind:  yaml.ScalarNode,

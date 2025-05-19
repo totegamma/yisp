@@ -22,7 +22,15 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 			if err != nil {
 				return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
 			}
-			newEnv.Vars[lambda.Params[i]] = val
+
+			if lambda.Arguments[i].Schema != nil {
+				err := lambda.Arguments[i].Schema.Validate(val)
+				if err != nil {
+					return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("object does not satisfy type"), err)
+				}
+			}
+
+			newEnv.Vars[lambda.Arguments[i].Name] = val
 		}
 
 		return Eval(lambda.Body, newEnv, mode)
