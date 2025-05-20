@@ -11,8 +11,9 @@ import (
 )
 
 var (
-	allowCmd  = false
-	showTrace = false
+	allowCmd      = false
+	showTrace     = false
+	allowedGoPkgs = []string{}
 )
 
 func SetAllowCmd(allow bool) {
@@ -21,6 +22,10 @@ func SetAllowCmd(allow bool) {
 
 func SetShowTrace(show bool) {
 	showTrace = show
+}
+
+func SetAllowedPkgs(pkgs []string) {
+	allowedGoPkgs = pkgs
 }
 
 func EvaluateYisp(path string) (string, error) {

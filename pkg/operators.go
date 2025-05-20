@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -53,6 +54,7 @@ func init() {
 	operators["to-yaml"] = opToYaml
 	operators["sha256"] = opSha256
 	operators["schema"] = opSchema
+	operators["go-run"] = opGoRun
 }
 
 // Call dispatches to the appropriate operator function based on the operator name
@@ -686,8 +688,7 @@ func opCmd(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	if err != nil {
 		return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate cmd argument"), err)
 	}
-
-	args := make([]string, 0)
+	cmd := exec.Command(cmdStr)
 
 	argsAny, ok := propsMap.Get("args")
 	if ok {
@@ -710,8 +711,27 @@ func opCmd(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			if err != nil {
 				return nil, NewEvaluationErrorWithParent(argsNode, fmt.Sprintf("failed to evaluate arg"), err)
 			}
-			args = append(args, arg)
+			cmd.Args = append(cmd.Args, arg)
 		}
+	}
+
+	stdinAny, ok := propsMap.Get("stdin")
+	if ok {
+		stdinNode, ok := stdinAny.(*YispNode)
+		if !ok {
+			return nil, NewEvaluationError(props, fmt.Sprintf("invalid stdin type: %T", stdinAny))
+		}
+
+		if stdinNode.Kind != KindString {
+			return nil, NewEvaluationError(stdinNode, fmt.Sprintf("stdin must be a string, got %v", stdinNode.Kind))
+		}
+
+		str, ok := stdinNode.Value.(string)
+		if !ok {
+			return nil, NewEvaluationError(stdinNode, fmt.Sprintf("invalid string value: %T", stdinNode.Value))
+		}
+		stdin := bytes.NewBufferString(str)
+		cmd.Stdin = stdin
 	}
 
 	asString := false
@@ -722,7 +742,6 @@ func opCmd(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 	stdout := new(bytes.Buffer)
 	stderr := new(bytes.Buffer)
-	cmd := exec.Command(cmdStr, args...)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 
@@ -746,6 +765,109 @@ func opCmd(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 		return result, nil
 	}
+}
+
+func opGoRun(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+	if len(cdr) != 1 {
+		return nil, NewEvaluationError(nil, fmt.Sprintf("gorun requires 1 argument, got %d", len(cdr)))
+	}
+	props := cdr[0]
+	if props.Kind != KindMap {
+		return nil, NewEvaluationError(props, fmt.Sprintf("gorun requires a map argument, got %v", props.Kind))
+	}
+	propsMap, ok := props.Value.(*YispMap)
+	if !ok {
+		return nil, NewEvaluationError(props, fmt.Sprintf("invalid map type: %T", props.Value))
+	}
+
+	pkgAny, ok := propsMap.Get("pkg")
+	if !ok {
+		return nil, NewEvaluationError(props, "gorun requires a 'pkg' key in the map")
+	}
+	pkgStr, err := EvalAndCastAny[string](pkgAny, env, mode)
+	if err != nil {
+		return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate pkg argument"), err)
+	}
+
+	allowed := false
+	for _, stmt := range allowedGoPkgs {
+		regex := "^" + strings.ReplaceAll(regexp.QuoteMeta(stmt), "\\*", ".*") + "$"
+		matched, err := regexp.MatchString(regex, pkgStr)
+		if err != nil {
+			return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to match package %s with regex %s: %v", pkgStr, regex, err))
+		}
+		if matched {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("package %s is not allowed. Run command below to allow it:\n\nyisp allow %s", pkgStr, pkgStr))
+	}
+
+	cmd := exec.Command("go", "run", pkgStr)
+
+	argsAny, ok := propsMap.Get("args")
+	if ok {
+		argsNode, ok := argsAny.(*YispNode)
+		if !ok {
+			return nil, NewEvaluationError(props, fmt.Sprintf("invalid args type: %T", argsAny))
+		}
+
+		if argsNode.Kind != KindArray {
+			return nil, NewEvaluationError(argsNode, fmt.Sprintf("args must be an array, got %v", argsNode.Kind))
+		}
+
+		arr, ok := argsNode.Value.([]any)
+		if !ok {
+			return nil, NewEvaluationError(argsNode, fmt.Sprintf("invalid array value: %T", argsNode.Value))
+		}
+
+		for _, item := range arr {
+			arg, err := EvalAndCastAny[string](item, env, mode)
+			if err != nil {
+				return nil, NewEvaluationErrorWithParent(argsNode, fmt.Sprintf("failed to evaluate arg"), err)
+			}
+			cmd.Args = append(cmd.Args, arg)
+		}
+	}
+
+	stdinAny, ok := propsMap.Get("stdin")
+	if ok {
+		stdinNode, ok := stdinAny.(*YispNode)
+		if !ok {
+			return nil, NewEvaluationError(props, fmt.Sprintf("invalid stdin type: %T", stdinAny))
+		}
+
+		if stdinNode.Kind != KindString {
+			return nil, NewEvaluationError(stdinNode, fmt.Sprintf("stdin must be a string, got %v", stdinNode.Kind))
+		}
+
+		str, ok := stdinNode.Value.(string)
+		if !ok {
+			return nil, NewEvaluationError(stdinNode, fmt.Sprintf("invalid string value: %T", stdinNode.Value))
+		}
+		stdin := bytes.NewBufferString(str)
+		cmd.Stdin = stdin
+	}
+
+	stdout := new(bytes.Buffer)
+	stderr := new(bytes.Buffer)
+	cmd.Stdout = stdout
+	cmd.Stderr = stderr
+
+	err = cmd.Run()
+	errorOutput := stderr.String()
+	if err != nil {
+		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("command execution error: %s", errorOutput))
+	}
+
+	result, err := evaluateYisp(stdout, env, cdr[0].Pos.File)
+	if err != nil {
+		return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate command output"), err)
+	}
+
+	return result, nil
 }
 
 func opFlatten(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {

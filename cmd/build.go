@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/totegamma/yisp/pkg"
 	"path/filepath"
 	"strings"
@@ -24,6 +25,9 @@ var buildCmd = &cobra.Command{
 		if err == nil {
 			yisp.SetShowTrace(showTrace)
 		}
+
+		allowedGoPkgs := viper.GetStringSlice("AllowedGoPkgs")
+		yisp.SetAllowedPkgs(allowedGoPkgs)
 
 		yamlFile := args[0]
 		if yamlFile == "" {

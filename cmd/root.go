@@ -37,12 +37,11 @@ func initConfig() {
 		}
 	}
 
-	viper.SetConfigFile("config.yaml")
+	viper.SetConfigFile(filepath.Join(configPath, "config.yaml"))
 
 	err = viper.ReadInConfig()
 	if err != nil {
-		viper.Set("allowedRepos", []string{})
-		_ = viper.WriteConfigAs(filepath.Join(configPath, "config.yaml"))
+		viper.SetDefault("AllowedGoPkgs", []string{})
+		_ = viper.WriteConfig()
 	}
-
 }
