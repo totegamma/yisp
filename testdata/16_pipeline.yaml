@@ -1,0 +1,13 @@
+!yisp
+- pipeline
+- 1
+- - lambda
+  - [a]
+  - - '+'
+    - *a
+    - 1
+- - lambda
+  - [a]
+  - - '*'
+    - *a
+    - 2

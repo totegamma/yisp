@@ -54,7 +54,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		mode = EvalModeQuote
 	}
 
-	var result *YispNode
+	result := node
 
 	switch node.Kind {
 	case KindSymbol:

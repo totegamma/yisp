@@ -55,6 +55,7 @@ func init() {
 	operators["sha256"] = opSha256
 	operators["schema"] = opSchema
 	operators["go-run"] = opGoRun
+	operators["pipeline"] = opPipeline
 }
 
 // Call dispatches to the appropriate operator function based on the operator name
@@ -1223,4 +1224,37 @@ func opSchema(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		Pos:   node.Pos,
 	}, nil
 
+}
+
+func opPipeline(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+
+	value := cdr[0]
+	functions := cdr[1:]
+
+	for _, rawfn := range functions {
+		fn, err := Eval(rawfn, env, mode)
+		if err != nil {
+			return nil, NewEvaluationErrorWithParent(rawfn, fmt.Sprintf("failed to evaluate function"), err)
+		}
+		if fn.Kind != KindLambda {
+			return nil, NewEvaluationError(rawfn, fmt.Sprintf("pipeline requires a function, got %v", fn.Kind))
+		}
+
+		code := []any{
+			fn,
+			value,
+		}
+
+		value, err = Eval(&YispNode{
+			Kind:  KindArray,
+			Value: code,
+			Pos:   rawfn.Pos,
+		}, env, mode)
+
+		if err != nil {
+			return nil, NewEvaluationErrorWithParent(rawfn, fmt.Sprintf("failed to evaluate pipeline"), err)
+		}
+	}
+
+	return value, nil
 }
