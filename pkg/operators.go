@@ -834,18 +834,9 @@ func opGoRun(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 	stdinAny, ok := propsMap.Get("stdin")
 	if ok {
-		stdinNode, ok := stdinAny.(*YispNode)
-		if !ok {
-			return nil, NewEvaluationError(props, fmt.Sprintf("invalid stdin type: %T", stdinAny))
-		}
-
-		if stdinNode.Kind != KindString {
-			return nil, NewEvaluationError(stdinNode, fmt.Sprintf("stdin must be a string, got %v", stdinNode.Kind))
-		}
-
-		str, ok := stdinNode.Value.(string)
-		if !ok {
-			return nil, NewEvaluationError(stdinNode, fmt.Sprintf("invalid string value: %T", stdinNode.Value))
+		str, err := EvalAndCastAny[string](stdinAny, env, mode)
+		if err != nil {
+			return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate stdin argument"), err)
 		}
 		stdin := bytes.NewBufferString(str)
 		cmd.Stdin = stdin
@@ -862,12 +853,26 @@ func opGoRun(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("command execution error: %s", errorOutput))
 	}
 
-	result, err := evaluateYisp(stdout, env, cdr[0].Pos.File)
-	if err != nil {
-		return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate command output"), err)
+	asString := false
+	asStringAny, ok := propsMap.Get("asString")
+	if ok {
+		asString, err = EvalAndCastAny[bool](asStringAny, env, mode)
 	}
 
-	return result, nil
+	if asString {
+		return &YispNode{
+			Kind:  KindString,
+			Value: stdout.String(),
+		}, nil
+	} else {
+
+		result, err := evaluateYisp(stdout, env, cdr[0].Pos.File)
+		if err != nil {
+			return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate command output"), err)
+		}
+
+		return result, nil
+	}
 }
 
 func opFlatten(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
