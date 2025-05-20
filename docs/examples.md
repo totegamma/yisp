@@ -224,6 +224,42 @@ This pattern allows you to:
 - Toggle between different configuration approaches based on conditions
 - Keep related configuration options together for better readability
 
+### Calling external tools
+
+#### go package
+
+The package to be executed must be listed in Yisp's config file at ~/.config/yisp/config.yaml.
+You can edit this file directly or use the yisp allow <pkgname> command to add an entry.
+Wildcard patterns (*) are supported in the allowlist.
+
+```yaml
+!yisp &helm-chart
+- lambda
+- [!helm-chart-props props]
+- - go-run
+  - pkg: github.com/totegamma/yisp-helm-adapter@v0.1.0
+    args:
+      - *props.repo
+      - *props.release
+      - *props.version
+    stdin:
+      - to-yaml
+      - *props.values
+```
+
+#### command
+
+Requires `--allow-cmd` flag
+
+```yaml
+!yisp
+- cmd
+- cmd: date
+```
+
+By default, the output of the command is interpreted as YAML.
+To interpret the output as a plain string, set `asString: true`.
+
 ## Working with Data Transformations
 
 YISP's functional approach makes it well-suited for data transformation tasks. Here are some examples of common data manipulation patterns.
