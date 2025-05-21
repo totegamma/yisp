@@ -127,9 +127,53 @@ func evaluateYisp(document io.Reader, env *Env, location string) (*YispNode, err
 		documents = append(documents, evaluated)
 	}
 
-	return &YispNode{
+	result, err := flatten(&YispNode{
 		Kind:  KindArray,
 		Value: documents,
 		Tag:   "!expand",
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+
+}
+
+func flatten(node *YispNode) (*YispNode, error) {
+	if node.Kind != KindArray || node.Tag != "!expand" {
+		return node, nil
+	}
+
+	arr, ok := node.Value.([]any)
+	if !ok {
+		return nil, fmt.Errorf("invalid array value")
+	}
+
+	results := make([]any, 0)
+	for _, item := range arr {
+		node, ok := item.(*YispNode)
+		if !ok {
+			return nil, fmt.Errorf("invalid item type: %T", item)
+		}
+		flattened, err := flatten(node)
+		if err != nil {
+			return nil, err
+		}
+
+		if flattened.Kind == KindArray && flattened.Tag == "!expand" {
+			if flattenedArr, ok := flattened.Value.([]any); ok {
+				results = append(results, flattenedArr...)
+				continue
+			}
+			return nil, fmt.Errorf("invalid array value")
+		}
+
+		results = append(results, flattened)
+	}
+
+	return &YispNode{
+		Kind:  KindArray,
+		Value: results,
+		Tag:   node.Tag,
 	}, nil
 }

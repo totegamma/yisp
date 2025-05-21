@@ -99,52 +99,7 @@ func render(node *YispNode) (*yaml.Node, error) {
 	}
 }
 
-func Flatten(node *YispNode) (*YispNode, error) {
-	if node.Kind != KindArray || node.Tag != "!expand" {
-		return node, nil
-	}
-
-	arr, ok := node.Value.([]any)
-	if !ok {
-		return nil, fmt.Errorf("invalid array value")
-	}
-
-	results := make([]any, 0)
-	for _, item := range arr {
-		node, ok := item.(*YispNode)
-		if !ok {
-			return nil, fmt.Errorf("invalid item type: %T", item)
-		}
-		flattened, err := Flatten(node)
-		if err != nil {
-			return nil, err
-		}
-
-		if flattened.Kind == KindArray && flattened.Tag == "!expand" {
-			if flattenedArr, ok := flattened.Value.([]any); ok {
-				results = append(results, flattenedArr...)
-				continue
-			}
-			return nil, fmt.Errorf("invalid array value")
-		}
-
-		results = append(results, flattened)
-	}
-
-	return &YispNode{
-		Kind:  KindArray,
-		Value: results,
-		Tag:   node.Tag,
-	}, nil
-}
-
 func Render(node *YispNode) (string, error) {
-
-	var err error
-	node, err = Flatten(node)
-	if err != nil {
-		return "", err
-	}
 
 	if node.Kind == KindArray {
 		arr, ok := node.Value.([]any)

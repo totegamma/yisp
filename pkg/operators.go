@@ -1228,7 +1228,11 @@ func opSchema(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 func opPipeline(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
-	value := cdr[0]
+	value, err := Eval(cdr[0], env, mode)
+	if err != nil {
+		return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate pipeline"), err)
+	}
+
 	functions := cdr[1:]
 
 	for _, rawfn := range functions {
