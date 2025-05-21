@@ -504,6 +504,7 @@ func opMap(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			if !ok {
 				return nil, NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
 			}
+			itemNode.Tag = "!quote"
 			yispList[j] = itemNode
 		}
 
@@ -1233,16 +1234,8 @@ func opPipeline(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate pipeline"), err)
 	}
 
-	functions := cdr[1:]
-
-	for _, rawfn := range functions {
-		fn, err := Eval(rawfn, env, mode)
-		if err != nil {
-			return nil, NewEvaluationErrorWithParent(rawfn, fmt.Sprintf("failed to evaluate function"), err)
-		}
-		if fn.Kind != KindLambda {
-			return nil, NewEvaluationError(rawfn, fmt.Sprintf("pipeline requires a function, got %v", fn.Kind))
-		}
+	for _, fn := range cdr[1:] {
+		value.Tag = "!quote"
 
 		code := []any{
 			fn,
@@ -1252,11 +1245,11 @@ func opPipeline(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		value, err = Eval(&YispNode{
 			Kind:  KindArray,
 			Value: code,
-			Pos:   rawfn.Pos,
+			Pos:   fn.Pos,
 		}, env, mode)
 
 		if err != nil {
-			return nil, NewEvaluationErrorWithParent(rawfn, fmt.Sprintf("failed to evaluate pipeline"), err)
+			return nil, NewEvaluationErrorWithParent(fn, fmt.Sprintf("failed to evaluate pipeline"), err)
 		}
 	}
 
