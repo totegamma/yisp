@@ -56,6 +56,7 @@ func init() {
 	operators["schema"] = opSchema
 	operators["go-run"] = opGoRun
 	operators["pipeline"] = opPipeline
+	operators["format"] = opFormat
 }
 
 // Call dispatches to the appropriate operator function based on the operator name
@@ -1270,4 +1271,31 @@ func opPipeline(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	value.IsDocumentRoot = isDocumentRoot
 
 	return value, nil
+}
+
+func opFormat(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+
+	formatNode := cdr[0]
+	argsNode := cdr[1:]
+
+	formatStr, err := EvalAndCastAny[string](formatNode, env, mode)
+	if err != nil {
+		return nil, NewEvaluationErrorWithParent(formatNode, fmt.Sprintf("failed to evaluate format argument"), err)
+	}
+
+	args := make([]any, len(argsNode))
+	for i, argNode := range argsNode {
+		arg, err := Eval(argNode, env, mode)
+		if err != nil {
+			return nil, NewEvaluationErrorWithParent(argNode, fmt.Sprintf("failed to evaluate format argument"), err)
+		}
+		args[i] = arg.Value
+	}
+
+	return &YispNode{
+		Kind:  KindString,
+		Value: fmt.Sprintf(formatStr, args...),
+		Pos:   formatNode.Pos,
+	}, nil
+
 }
