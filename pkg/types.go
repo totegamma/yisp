@@ -78,11 +78,12 @@ type Position struct {
 
 // YispNode represents a node in the Yisp language
 type YispNode struct {
-	Kind   Kind
-	Tag    string
-	Value  any
-	Anchor string
-	Pos    Position
+	Kind           Kind
+	Tag            string
+	Value          any
+	Anchor         string
+	Pos            Position
+	IsDocumentRoot bool
 }
 
 func (n *YispNode) String() string {

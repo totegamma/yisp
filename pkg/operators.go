@@ -418,9 +418,9 @@ func opInclude(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	}
 
 	return &YispNode{
-		Kind:  KindArray,
-		Value: results,
-		Tag:   "!expand",
+		Kind:           KindArray,
+		Value:          results,
+		IsDocumentRoot: true,
 	}, nil
 }
 
@@ -483,11 +483,16 @@ func opMap(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 	fnNode := cdr[0]
 
+	isDocumentRoot := true
 	argList := make([][]any, len(cdr)-1)
 	for i, node := range cdr[1:] {
 		argEvaluated, err := Eval(node, env, mode)
 		if err != nil {
 			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate map argument"), err)
+		}
+
+		if !argEvaluated.IsDocumentRoot {
+			isDocumentRoot = false
 		}
 
 		if argEvaluated.Kind != KindArray {
@@ -535,9 +540,10 @@ func opMap(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	}
 
 	return &YispNode{
-		Kind:  KindArray,
-		Value: results,
-		Pos:   fnNode.Pos,
+		Kind:           KindArray,
+		Value:          results,
+		Pos:            fnNode.Pos,
+		IsDocumentRoot: isDocumentRoot,
 	}, nil
 }
 
@@ -880,12 +886,18 @@ func opGoRun(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 func opFlatten(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 	flattened := make([]any, 0)
+	isDocumentRoot := true
 
 	for _, node := range cdr {
 		val, err := Eval(node, env, mode)
 		if err != nil {
 			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
 		}
+
+		if !val.IsDocumentRoot {
+			isDocumentRoot = false
+		}
+
 		if val.Kind == KindArray {
 			arr, ok := val.Value.([]any)
 			if !ok {
@@ -904,9 +916,9 @@ func opFlatten(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	}
 
 	return &YispNode{
-		Kind:  KindArray,
-		Value: flattened,
-		Tag:   "!expand",
+		Kind:           KindArray,
+		Value:          flattened,
+		IsDocumentRoot: isDocumentRoot,
 	}, nil
 }
 
@@ -1234,6 +1246,8 @@ func opPipeline(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate pipeline"), err)
 	}
 
+	isDocumentRoot := value.IsDocumentRoot
+
 	for _, fn := range cdr[1:] {
 		value.Tag = "!quote"
 
@@ -1252,6 +1266,8 @@ func opPipeline(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			return nil, NewEvaluationErrorWithParent(fn, fmt.Sprintf("failed to evaluate pipeline"), err)
 		}
 	}
+
+	value.IsDocumentRoot = isDocumentRoot
 
 	return value, nil
 }
