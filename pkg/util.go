@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strings"
 
 	"github.com/totegamma/yisp/internal/k8stypes"
 	"github.com/totegamma/yisp/internal/yaml"
@@ -500,4 +501,78 @@ func GetK8sSchema(group, version, kind string) (*Schema, error) {
 	}
 
 	return &schema, nil
+}
+
+type GVK struct {
+	Group   string `json:"group"`
+	Version string `json:"version"`
+	Kind    string `json:"kind"`
+}
+
+func (gvk *GVK) String() string {
+	if gvk.Group == "" {
+		return fmt.Sprintf("%s/%s", gvk.Kind, gvk.Version)
+	}
+	return fmt.Sprintf("%s/%s/%s", gvk.Group, gvk.Version, gvk.Kind)
+}
+
+func (gvk *GVK) Equal(other *GVK) bool {
+	if gvk == nil || other == nil {
+		return gvk == other
+	}
+	return gvk.Group == other.Group && gvk.Version == other.Version && gvk.Kind == other.Kind
+}
+
+func GetGVK(node *YispNode) (*GVK, error) {
+	if node.Kind != KindMap {
+		return nil, fmt.Errorf("expected KindMap for GVK, got %s", node.Kind)
+	}
+
+	m, ok := node.Value.(*YispMap)
+	if !ok {
+		return nil, fmt.Errorf("expected YispMap for GVK, got %T", node.Value)
+	}
+
+	apiVersionAny, ok := m.Get("apiVersion")
+	if !ok {
+		return nil, fmt.Errorf("apiVersion not found in GVK map")
+	}
+	apiVersionNode, ok := apiVersionAny.(*YispNode)
+	if !ok {
+		return nil, fmt.Errorf("expected YispNode for apiVersion, got %T", apiVersionAny)
+	}
+	apiVersion, ok := apiVersionNode.Value.(string)
+	if !ok {
+		return nil, fmt.Errorf("expected string for apiVersion, got %T", apiVersionNode.Value)
+	}
+
+	kindAny, ok := m.Get("kind")
+	if !ok {
+		return nil, fmt.Errorf("kind not found in GVK map")
+	}
+	kindNode, ok := kindAny.(*YispNode)
+	if !ok {
+		return nil, fmt.Errorf("expected YispNode for kind, got %T", kindAny)
+	}
+	kind, ok := kindNode.Value.(string)
+	if !ok {
+		return nil, fmt.Errorf("expected string for kind, got %T", kindNode.Value)
+	}
+
+	group := ""
+	version := ""
+	split := strings.Split(apiVersion, "/")
+
+	if len(split) == 2 {
+		group = split[0]
+		version = split[1]
+	} else if len(split) == 1 {
+		version = split[0]
+	}
+
+	return &GVK{
+		Group:   group,
+		Version: version,
+		Kind:    kind,
+	}, nil
 }
