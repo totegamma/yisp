@@ -303,5 +303,22 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		}
 	}
 
+	if node.Tag != "" && node.Tag != "!quote" && node.Tag != "!yisp" {
+		typeName := strings.TrimPrefix(node.Tag, "!")
+		if typeName != "" && !strings.HasPrefix(typeName, "!") {
+			typeNode, ok := env.Get(typeName)
+			if ok && typeNode.Kind == KindType {
+				schema, ok := typeNode.Value.(*Schema)
+				if ok {
+					casted, err := schema.Cast(result)
+					if err != nil {
+						return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to cast to type %s", typeName), err)
+					}
+					result = casted
+				}
+			}
+		}
+	}
+
 	return result, nil
 }

@@ -588,7 +588,7 @@ func opMerge(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate map argument"), err)
 		}
 
-		result, err = DeepMergeYispNode(result, value, nil)
+		result, err = DeepMergeYispNode(result, value, value.Type)
 		if err != nil {
 			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to merge map"), err)
 		}

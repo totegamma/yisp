@@ -1,0 +1,35 @@
+!yisp &namedItems
+- schema
+- type: object
+  properties:
+    items:
+      type: array
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+          value:
+            type: integer
+          memo:
+            type: string
+            default: "No memo provided"
+      patchStrategy: merge
+      patchMergeKey: name
+
+---
+!yisp
+- merge
+- !namedItems
+  items: !quote
+    - name: item1
+      value: 10
+    - name: item2
+      value: 20
+- !namedItems
+  items: !quote
+    - name: item1
+      value: 30
+    - name: item3
+      value: 40
+      memo: "New item added"

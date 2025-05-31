@@ -3,6 +3,7 @@ package yisp
 import (
 	"fmt"
 	"slices"
+	"strconv"
 )
 
 type Schema struct {
@@ -17,6 +18,17 @@ type Schema struct {
 	Default              any                `json:"default,omitempty"`
 	PatchStrategy        string             `json:"patchStrategy,omitempty"`
 	PatchMergeKey        string             `json:"patchMergeKey,omitempty"`
+}
+
+var schemaTypeToKind = map[string]Kind{
+	"null":     KindNull,
+	"boolean":  KindBool,
+	"integer":  KindInt,
+	"float":    KindFloat,
+	"string":   KindString,
+	"array":    KindArray,
+	"object":   KindMap,
+	"function": KindLambda,
 }
 
 func (s *Schema) Validate(node *YispNode) error {
@@ -128,7 +140,209 @@ func (s *Schema) Validate(node *YispNode) error {
 	return nil
 }
 
-func (s *Schema) Cast(node *YispNode) {
+func (s *Schema) Cast(node *YispNode) (*YispNode, error) {
+	switch s.Type {
+	case "any":
+		return node, nil
+	case "null":
+		return &YispNode{
+			Kind:  KindNull,
+			Value: nil,
+			Tag:   node.Tag,
+			Pos:   node.Pos,
+			Type:  s,
+		}, nil
+	case "boolean":
+		value, err := isTruthy(node)
+		if err != nil {
+			return nil, err
+		}
+
+		return &YispNode{
+			Kind:  KindBool,
+			Value: value,
+			Tag:   node.Tag,
+			Pos:   node.Pos,
+			Type:  s,
+		}, nil
+
+	case "integer":
+		value := 0
+		if node.Kind == KindInt {
+			return node, nil
+		} else if node.Kind == KindFloat {
+			value = int(node.Value.(float64)) // Convert float to int
+		} else if node.Kind == KindString {
+			var err error
+			value, err = strconv.Atoi(node.Value.(string))
+			if err != nil {
+				return nil, fmt.Errorf("cannot cast string to int: %v", err)
+			}
+		} else if node.Kind == KindBool {
+			if node.Value == true {
+				value = 1
+			} else {
+				value = 0
+			}
+		} else {
+			return nil, fmt.Errorf("cannot cast %s to integer", node.Kind)
+		}
+		return &YispNode{
+			Kind:  KindInt,
+			Value: value,
+			Tag:   node.Tag,
+			Pos:   node.Pos,
+			Type:  s,
+		}, nil
+
+	case "float":
+		value := 0.0
+		if node.Kind == KindFloat {
+			return node, nil
+		} else if node.Kind == KindInt {
+			value = float64(node.Value.(int)) // Convert int to float
+		} else if node.Kind == KindString {
+			var err error
+			value, err = strconv.ParseFloat(node.Value.(string), 64)
+			if err != nil {
+				return nil, fmt.Errorf("cannot cast string to float: %v", err)
+			}
+		} else if node.Kind == KindBool {
+			if node.Value == true {
+				value = 1.0
+			} else {
+				value = 0.0
+			}
+		} else {
+			return nil, fmt.Errorf("cannot cast %s to float", node.Kind)
+		}
+
+		return &YispNode{
+			Kind:  KindFloat,
+			Value: value,
+			Tag:   node.Tag,
+			Pos:   node.Pos,
+			Type:  s,
+		}, nil
+
+	case "string":
+		value := ""
+		if node.Kind == KindString {
+			return node, nil
+		} else if node.Kind == KindInt {
+			value = strconv.Itoa(node.Value.(int)) // Convert int to string
+		} else if node.Kind == KindFloat {
+			value = strconv.FormatFloat(node.Value.(float64), 'f', -1, 64) // Convert float to string
+		} else if node.Kind == KindBool {
+			if node.Value == true {
+				value = "true"
+			} else {
+				value = "false"
+			}
+		} else if node.Kind == KindNull {
+			value = "null"
+		} else {
+			return nil, fmt.Errorf("cannot cast %s to string", node.Kind)
+		}
+		return &YispNode{
+			Kind:  KindString,
+			Value: value,
+			Tag:   node.Tag,
+			Pos:   node.Pos,
+			Type:  s,
+		}, nil
+
+	case "array":
+		if node.Kind != KindArray {
+			return nil, fmt.Errorf("expected array, got %s", node.Kind)
+		}
+		if s.Items == nil {
+			return node, nil // No item schema, return as is
+		}
+		arr, ok := node.Value.([]any)
+		if !ok {
+			return nil, fmt.Errorf("expected array, got %T", node.Value)
+		}
+		newArr := make([]any, len(arr))
+		for i, item := range arr {
+			itemNode, ok := item.(*YispNode)
+			if !ok {
+				return nil, fmt.Errorf("expected YispNode, got %T", item)
+			}
+			castedNode, err := s.Items.Cast(itemNode)
+			if err != nil {
+				return nil, fmt.Errorf("error casting array item at index %d: %v", i, err)
+			}
+			newArr[i] = castedNode
+		}
+		return &YispNode{
+			Kind:  KindArray,
+			Value: newArr,
+			Tag:   node.Tag,
+			Pos:   node.Pos,
+			Type:  s,
+		}, nil
+
+	case "object":
+		if node.Kind != KindMap {
+			return nil, fmt.Errorf("expected map, got %s", node.Kind)
+		}
+		m, ok := node.Value.(*YispMap)
+		if !ok {
+			return nil, fmt.Errorf("expected map, got %T", node.Value)
+		}
+		newMap := NewYispMap()
+		for key, value := range m.AllFromFront() {
+			itemNode, ok := value.(*YispNode)
+			if !ok {
+				return nil, fmt.Errorf("expected YispNode, got %T", value)
+			}
+			subSchema, ok := s.Properties[key]
+			if !ok {
+				if !s.AdditionalProperties {
+					return nil, fmt.Errorf("unexpected property: %s", key)
+				}
+				// If additional properties are allowed, just add the item as is
+				newMap.Set(key, itemNode)
+				continue
+			}
+			castedNode, err := subSchema.Cast(itemNode)
+			if err != nil {
+				return nil, fmt.Errorf("error casting property '%s': %v", key, err)
+			}
+			newMap.Set(key, castedNode)
+		}
+		for key, subSchema := range s.Properties {
+			if _, ok := m.Get(key); !ok {
+				if slices.Contains(s.Required, key) {
+					return nil, fmt.Errorf("missing required property: %s", key)
+				}
+				if subSchema.Default != nil {
+					defaultNode := &YispNode{
+						Kind:  schemaTypeToKind[subSchema.Type],
+						Value: subSchema.Default,
+						Tag:   node.Tag,
+						Pos:   node.Pos,
+						Type:  subSchema,
+					}
+					newMap.Set(key, defaultNode)
+				}
+			}
+		}
+		return &YispNode{
+			Kind:  KindMap,
+			Value: newMap,
+			Tag:   node.Tag,
+			Pos:   node.Pos,
+			Type:  s,
+		}, nil
+
+	case "function":
+		return nil, fmt.Errorf("currently, function casting is not supported")
+	default:
+		// Unknown type, no casting
+		return nil, fmt.Errorf("unknown schema type: %s", s.Type)
+	}
 }
 
 func (s *Schema) Equals(other *Schema) bool {

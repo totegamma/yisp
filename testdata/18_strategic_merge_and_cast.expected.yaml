@@ -1,0 +1,14 @@
+(type)
+---
+items:
+  - name: item1
+    value: 30
+    memo: No memo provided
+  - name: item2
+    value: 20
+    memo: No memo provided
+  - name: item3
+    value: 40
+    memo: New item added
+
+
