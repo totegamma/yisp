@@ -7,6 +7,7 @@ import (
 	"os"
 	"slices"
 
+	"github.com/totegamma/yisp/internal/k8stypes"
 	"github.com/totegamma/yisp/yaml"
 )
 
@@ -383,4 +384,18 @@ func ToNative(node *YispNode) (any, error) {
 	default:
 		return "(unknown)", nil
 	}
+}
+
+func GetK8sSchema(group, version, kind string) (*Schema, error) {
+	schemaBytes, err := k8stypes.GetSchema(group, version, kind)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get schema for %s/%s/%s: %w", group, version, kind, err)
+	}
+	var schema Schema
+	err = json.Unmarshal(schemaBytes, &schema)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal schema for %s/%s/%s: %w", group, version, kind, err)
+	}
+
+	return &schema, nil
 }
