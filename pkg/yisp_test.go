@@ -3,7 +3,7 @@ package yisp
 import (
 	"errors"
 	"github.com/stretchr/testify/assert"
-	"github.com/totegamma/yisp/yaml"
+	"github.com/totegamma/yisp/internal/yaml"
 	"io"
 	"os"
 	"path/filepath"

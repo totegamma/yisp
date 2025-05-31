@@ -3,7 +3,8 @@ package yisp
 import (
 	"bytes"
 	"fmt"
-	"github.com/totegamma/yisp/yaml"
+
+	"github.com/totegamma/yisp/internal/yaml"
 )
 
 // Render converts a YispNode to a native Go value

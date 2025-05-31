@@ -2,7 +2,7 @@ package yisp
 
 import (
 	"github.com/rs/xid"
-	"github.com/totegamma/yisp/yaml"
+	"github.com/totegamma/yisp/internal/yaml"
 )
 
 // Parse converts a YAML node to a YispNode

@@ -3,11 +3,12 @@ package yisp
 import (
 	"errors"
 	"fmt"
-	"github.com/totegamma/yisp/yaml"
 	"io"
 	"net/http"
 	"net/url"
 	"os"
+
+	"github.com/totegamma/yisp/internal/yaml"
 )
 
 var (

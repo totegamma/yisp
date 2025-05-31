@@ -8,7 +8,7 @@ import (
 	"slices"
 
 	"github.com/totegamma/yisp/internal/k8stypes"
-	"github.com/totegamma/yisp/yaml"
+	"github.com/totegamma/yisp/internal/yaml"
 )
 
 // JsonPrint prints an object as formatted JSON with a tag
