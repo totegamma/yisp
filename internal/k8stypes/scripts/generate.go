@@ -169,9 +169,10 @@ func toSchema(typ reflect.Type) Schema {
 				schema.Required = append(schema.Required, fieldName)
 			}
 
-			schema.Properties[fieldName] = toSchema(field.Type)
-			schema.PatchStrategy = field.Tag.Get("patchStrategy")
-			schema.PatchMergeKey = field.Tag.Get("patchMergeKey")
+			propSchema := toSchema(field.Type)
+			propSchema.PatchStrategy = field.Tag.Get("patchStrategy")
+			propSchema.PatchMergeKey = field.Tag.Get("patchMergeKey")
+			schema.Properties[fieldName] = propSchema
 		}
 	} else if typ.Kind() == reflect.Map {
 		schema.Type = "object"

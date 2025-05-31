@@ -84,6 +84,7 @@ type YispNode struct {
 	Anchor         string
 	Pos            Position
 	IsDocumentRoot bool
+	Type           *Schema
 }
 
 func (n *YispNode) String() string {

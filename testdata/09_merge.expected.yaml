@@ -3,9 +3,7 @@ app:
   version: 1.1              # input2 で上書き
   metadata:
     maintainers:
-      - alice@example.com   # input1
-      - bob@example.com     # input1
-      - carol@example.com   # input2 追加
+      - carol@example.com   # input2 で上書き
     labels:
       tier: frontend        # input1
       region: eu-central    # input2 で上書き
@@ -15,11 +13,7 @@ app:
     payments: true          # input2 で上書き
     analytics: true         # input2 新規
 servers:
-  - host: db1.example.com   # input1
-    port: 5432
-  - host: db2.example.com   # input1
-    port: 5432
-  - host: cache1.example.com # input2 追加
+  - host: cache1.example.com
     port: 6379
 newSection:
   enabled: true             # input2 新規

@@ -197,7 +197,17 @@ func isTruthy(node *YispNode) (bool, error) {
 	}
 }
 
-func DeepMergeYispNode(dst, src *YispNode) (*YispNode, error) {
+func DeepMergeYispNode(dst, src *YispNode, schema *Schema) (*YispNode, error) {
+
+	strategy := "replace"
+	mergeKey := ""
+	if schema != nil {
+		if schema.PatchStrategy != "" {
+			strategy = schema.PatchStrategy
+		}
+		mergeKey = schema.PatchMergeKey
+	}
+
 	if dst.Kind == KindMap && src.Kind == KindMap {
 
 		dstMap, dstOK := dst.Value.(*YispMap)
@@ -222,12 +232,17 @@ func DeepMergeYispNode(dst, src *YispNode) (*YispNode, error) {
 			dstVal, dstOK := dstMap.Get(key)
 			srcVal, srcOK := srcMap.Get(key)
 
+			var subType *Schema
+			if schema != nil {
+				subType = schema.Properties[key]
+			}
+
 			if dstOK && srcOK {
 				dstNode, dstNodeOK := dstVal.(*YispNode)
 				srcNode, srcNodeOK := srcVal.(*YispNode)
 
 				if dstNodeOK && srcNodeOK {
-					mergedNode, err := DeepMergeYispNode(dstNode, srcNode)
+					mergedNode, err := DeepMergeYispNode(dstNode, srcNode, subType)
 					if err != nil {
 						return nil, err
 					}
@@ -252,9 +267,96 @@ func DeepMergeYispNode(dst, src *YispNode) (*YispNode, error) {
 		if !dstOK || !srcOK {
 			return nil, fmt.Errorf("invalid array value. Actual type: %T", dst.Value)
 		}
-		result := make([]any, len(dstArray)+len(srcArray))
-		copy(result, dstArray)
-		copy(result[len(dstArray):], srcArray)
+
+		var subType *Schema
+		if schema != nil {
+			subType = schema.Items
+		}
+
+		var result []any
+		if strategy == "replace" {
+			result = srcArray
+		} else if strategy == "merge" {
+			if mergeKey == "" {
+				result = append(result, dstArray...)
+				result = append(result, srcArray...)
+			} else {
+				result = dstArray
+				for _, srcItem := range srcArray {
+					srcNode, ok := srcItem.(*YispNode)
+					if !ok {
+						return nil, fmt.Errorf("invalid item type in srcArray: %T", srcItem)
+					}
+
+					srcMap, ok := srcNode.Value.(*YispMap)
+					if !ok {
+						return nil, fmt.Errorf("expected YispMap in srcArray, got %T", srcNode.Value)
+					}
+
+					keyItem, ok := srcMap.Get(mergeKey)
+					if !ok {
+						return nil, fmt.Errorf("merge key %s not found in srcMap", mergeKey)
+					}
+
+					keyNode, ok := keyItem.(*YispNode)
+					if !ok {
+						return nil, fmt.Errorf("expected YispNode for merge key, got %T", keyItem)
+					}
+
+					key, ok := keyNode.Value.(string)
+					if !ok {
+						return nil, fmt.Errorf("expected string for merge key, got %T", keyNode.Value)
+					}
+
+					// Check if the key already exists in the result
+					found := false
+					for i, dstItem := range result {
+						dstNode, ok := dstItem.(*YispNode)
+						if !ok {
+							return nil, fmt.Errorf("invalid item type in dstArray: %T", dstItem)
+						}
+
+						dstMap, ok := dstNode.Value.(*YispMap)
+						if !ok {
+							return nil, fmt.Errorf("expected YispMap in dstArray, got %T", dstNode.Value)
+						}
+
+						existingKeyItem, ok := dstMap.Get(mergeKey)
+						if !ok {
+							continue
+						}
+
+						existingKeyNode, ok := existingKeyItem.(*YispNode)
+						if !ok {
+							return nil, fmt.Errorf("expected YispNode for existing merge key, got %T", existingKeyItem)
+						}
+
+						existingKey, ok := existingKeyNode.Value.(string)
+						if !ok {
+							return nil, fmt.Errorf("expected string for existing merge key, got %T", existingKeyNode.Value)
+						}
+
+						if existingKey == key {
+							// Merge the srcMap into the existing dstMap
+							mergedNode, err := DeepMergeYispNode(dstNode, srcNode, subType)
+							if err != nil {
+								return nil, err
+							}
+							result[i] = mergedNode
+							found = true
+							break
+						}
+					}
+					if !found {
+						// If not found, add the srcNode to the result
+						result = append(result, srcNode)
+					}
+				}
+			}
+		} else {
+			return nil, fmt.Errorf("unknown patch strategy: %s", strategy)
+		}
+
 		return &YispNode{
 			Kind:  KindArray,
 			Value: result,

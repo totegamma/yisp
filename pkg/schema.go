@@ -6,15 +6,17 @@ import (
 )
 
 type Schema struct {
-	Type                 string            `json:"type"`
-	Required             []string          `json:"required,omitempty"`
-	Properties           map[string]Schema `json:"properties,omitempty"`
-	Items                *Schema           `json:"items,omitempty"`
-	AdditionalProperties bool              `json:"additionalProperties,omitempty"`
-	Arguments            []Schema          `json:"arguments,omitempty"`
-	Returns              *Schema           `json:"returns,omitempty"`
-	Description          string            `json:"description,omitempty"`
-	Default              any               `json:"default,omitempty"`
+	Type                 string             `json:"type"`
+	Required             []string           `json:"required,omitempty"`
+	Properties           map[string]*Schema `json:"properties,omitempty"`
+	Items                *Schema            `json:"items,omitempty"`
+	AdditionalProperties bool               `json:"additionalProperties,omitempty"`
+	Arguments            []Schema           `json:"arguments,omitempty"`
+	Returns              *Schema            `json:"returns,omitempty"`
+	Description          string             `json:"description,omitempty"`
+	Default              any                `json:"default,omitempty"`
+	PatchStrategy        string             `json:"patchStrategy,omitempty"`
+	PatchMergeKey        string             `json:"patchMergeKey,omitempty"`
 }
 
 func (s *Schema) Validate(node *YispNode) error {
@@ -152,7 +154,7 @@ func (s *Schema) Equals(other *Schema) bool {
 		}
 		for key, subSchema := range s.Properties {
 			otherSubSchema, ok := other.Properties[key]
-			if !ok || !subSchema.Equals(&otherSubSchema) {
+			if !ok || !subSchema.Equals(otherSubSchema) {
 				return false
 			}
 		}

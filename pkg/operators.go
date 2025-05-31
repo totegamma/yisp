@@ -57,6 +57,7 @@ func init() {
 	operators["go-run"] = opGoRun
 	operators["pipeline"] = opPipeline
 	operators["format"] = opFormat
+	operators["k8s-patch"] = opPatch
 }
 
 // Call dispatches to the appropriate operator function based on the operator name
@@ -586,7 +587,7 @@ func opMerge(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate map argument"), err)
 		}
 
-		result, err = DeepMergeYispNode(result, value)
+		result, err = DeepMergeYispNode(result, value, nil)
 		if err != nil {
 			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to merge map"), err)
 		}
@@ -1298,4 +1299,90 @@ func opFormat(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		Pos:   formatNode.Pos,
 	}, nil
 
+}
+
+func opPatch(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+	if len(cdr) != 2 {
+		return nil, NewEvaluationError(nil, fmt.Sprintf("patch requires 2 arguments, got %d", len(cdr)))
+	}
+
+	targetNode := cdr[0]
+	patchNode := cdr[1]
+
+	target, err := Eval(targetNode, env, mode)
+	if err != nil {
+		return nil, NewEvaluationErrorWithParent(targetNode, fmt.Sprintf("failed to evaluate target"), err)
+	}
+
+	patch, err := Eval(patchNode, env, mode)
+	if err != nil {
+		return nil, NewEvaluationErrorWithParent(patchNode, fmt.Sprintf("failed to evaluate patch"), err)
+	}
+
+	if target.Kind != KindMap || patch.Kind != KindMap {
+		return nil, NewEvaluationError(nil, "patch requires both target and patch to be maps")
+	}
+
+	targetMap, ok := target.Value.(*YispMap)
+	if !ok {
+		return nil, NewEvaluationError(targetNode, fmt.Sprintf("invalid target type: %T", target.Value))
+	}
+
+	apiVersionAny, ok := targetMap.Get("apiVersion")
+	if !ok {
+		return nil, NewEvaluationError(targetNode, "target map must have 'apiVersion' key")
+	}
+
+	apiVersionNode, ok := apiVersionAny.(*YispNode)
+	if !ok {
+		return nil, NewEvaluationError(targetNode, fmt.Sprintf("invalid apiVersion type: %T", apiVersionAny))
+	}
+
+	apiVersion, ok := apiVersionNode.Value.(string)
+	if !ok {
+		return nil, NewEvaluationError(targetNode, fmt.Sprintf("invalid apiVersion value: %T", apiVersionNode.Value))
+	}
+
+	kindAny, ok := targetMap.Get("kind")
+	if !ok {
+		return nil, NewEvaluationError(targetNode, "target map must have 'kind' key")
+	}
+
+	kindNode, ok := kindAny.(*YispNode)
+	if !ok {
+		return nil, NewEvaluationError(targetNode, fmt.Sprintf("invalid kind type: %T", kindAny))
+	}
+
+	kind, ok := kindNode.Value.(string)
+	if !ok {
+		return nil, NewEvaluationError(targetNode, fmt.Sprintf("invalid kind value: %T", kindNode.Value))
+	}
+
+	group := ""
+	version := ""
+	split := strings.Split(apiVersion, "/")
+	if len(split) == 2 {
+		group = split[0]
+		version = split[1]
+	} else if len(split) == 1 {
+		version = split[0]
+	}
+
+	k8sType, err := GetK8sSchema(group, version, kind)
+	if err != nil {
+		return nil, NewEvaluationErrorWithParent(targetNode, fmt.Sprintf("failed to get k8s schema for %s/%s", apiVersion, kind), err)
+	}
+
+	result, err := DeepMergeYispNode(target, patch, k8sType)
+	if err != nil {
+		return nil, NewEvaluationErrorWithParent(patchNode, fmt.Sprintf("failed to apply patch"), err)
+	}
+	if result.Kind != KindMap {
+		return nil, NewEvaluationError(nil, fmt.Sprintf("patch result must be a map, got %v", result.Kind))
+	}
+	return &YispNode{
+		Kind:  KindMap,
+		Value: result.Value,
+		Pos:   targetNode.Pos,
+	}, nil
 }
