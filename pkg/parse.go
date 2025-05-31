@@ -68,20 +68,19 @@ func Parse(filename string, node *yaml.Node) (*YispNode, error) {
 		}
 
 	case yaml.ScalarNode:
-		var kind Kind
+
+		kind := KindString
 		switch node.Tag {
-		case "!!null":
+		case "!null", "!!null":
 			kind = KindNull
-		case "!!bool":
+		case "!bool", "!!bool":
 			kind = KindBool
-		case "!!int":
+		case "!int", "!!int":
 			kind = KindInt
-		case "!!float":
+		case "!float", "!!float":
 			kind = KindFloat
-		case "!!str":
+		case "!string", "!!str":
 			kind = KindString
-		case "!string", "!number", "!bool":
-			kind = KindParameter
 		}
 
 		result = &YispNode{

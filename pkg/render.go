@@ -14,13 +14,37 @@ func render(node *YispNode) (*yaml.Node, error) {
 		return &yaml.Node{
 			Kind:  yaml.ScalarNode,
 			Value: "null",
+			Tag:   "!!null",
 		}, nil
 
-	case KindBool, KindInt, KindFloat, KindString:
+	case KindBool:
 		return &yaml.Node{
 			Kind:  yaml.ScalarNode,
-			Value: fmt.Sprintf("%v", node.Value),
+			Value: fmt.Sprintf("%t", node.Value),
+			Tag:   "!!bool",
 		}, nil
+
+	case KindInt:
+		return &yaml.Node{
+			Kind:  yaml.ScalarNode,
+			Value: fmt.Sprintf("%d", node.Value),
+			Tag:   "!!int",
+		}, nil
+
+	case KindFloat:
+		return &yaml.Node{
+			Kind:  yaml.ScalarNode,
+			Value: fmt.Sprintf("%f", node.Value),
+			Tag:   "!!float",
+		}, nil
+
+	case KindString:
+		return &yaml.Node{
+			Kind:  yaml.ScalarNode,
+			Value: fmt.Sprintf("%s", node.Value),
+			Tag:   "!!str",
+		}, nil
+
 	case KindArray:
 		arr, ok := node.Value.([]any)
 		if !ok {
