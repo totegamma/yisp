@@ -1,0 +1,4 @@
+!yisp
+- include
+- ./deployment.yaml
+- ./service.yaml

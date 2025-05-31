@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+spec:
+ template:
+    spec:
+      containers:
+        - name: myapp
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "7000m"
