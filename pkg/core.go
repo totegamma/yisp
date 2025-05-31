@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 
 	"github.com/totegamma/yisp/internal/yaml"
 )
@@ -68,6 +69,15 @@ func evaluateYispFile(path, base string, env *Env) (*YispNode, error) {
 			return nil, fmt.Errorf("failed to fetch remote file: %v", err)
 		}
 	} else {
+
+		stat, err := os.Stat(targetURL.Path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to stat file: %v", err)
+		}
+
+		if stat.IsDir() {
+			targetURL = &url.URL{Path: filepath.Join(targetURL.Path, "index.yaml")}
+		}
 		reader, err = os.Open(targetURL.Path)
 		if err != nil {
 			return nil, fmt.Errorf("failed to open file: %v", err)

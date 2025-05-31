@@ -1,7 +1,7 @@
 !yisp
 - k8s-patch
 - - include
-  - ../../base/index.yaml
+  - ../../base
 - - include
   - ./replica_count.yaml
   - ./cpu_count.yaml
