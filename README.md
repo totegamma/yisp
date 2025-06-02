@@ -3,6 +3,8 @@
   
   # YISP - A Lisp-inspired Functional Engine for YAML
   [![Test](https://github.com/totegamma/yisp/actions/workflows/test.yaml/badge.svg)](https://github.com/totegamma/yisp/actions/workflows/test.yaml)
+  
+  [[getting-started]](https://github.com/totegamma/yisp/blob/main/docs/getting-started.md) | [[examples]](https://github.com/totegamma/yisp/blob/main/docs/examples.md) | [[other docs]](https://github.com/totegamma/yisp/tree/main/docs)
 </div>
 
 **YISP** (suggested pronunciation: `/ˈjɪsp/`) is a lightweight evaluation engine for YAML, inspired by Lisp.  
@@ -89,7 +91,7 @@ spec:
 
 More examples are available in `/testfiles`.
 
-### Use yisp from Go code
+## Use yisp from Go code
 ```go
 package main
 
