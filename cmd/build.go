@@ -1,10 +1,10 @@
-package cmd
+package main
 
 import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/totegamma/yisp/pkg"
+	"github.com/totegamma/yisp"
 	"path/filepath"
 	"strings"
 )

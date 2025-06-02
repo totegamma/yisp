@@ -36,7 +36,7 @@ func getWholeYamlDocument(str string) (any, error) {
 
 func TestYisp(t *testing.T) {
 
-	files, err := filepath.Glob("../testdata/*.test.yaml")
+	files, err := filepath.Glob("./testdata/*.test.yaml")
 	if err != nil {
 		t.Fatalf("Error finding test files: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestYisp(t *testing.T) {
 				t.Fatalf("Error getting absolute path for file %s: %v", file, err)
 			}
 
-			renderedStr, err := EvaluateYisp(abspath)
+			renderedStr, err := EvaluateYispToYaml(abspath)
 			if err != nil {
 				t.Fatalf("Error evaluating Yisp file %s: %v", file, err)
 			}

@@ -30,22 +30,7 @@ func SetAllowedPkgs(pkgs []string) {
 	allowedGoPkgs = pkgs
 }
 
-func EvaluateYisp(path string) (string, error) {
-	env := NewEnv()
-	evaluated, err := evaluateYispFile(path, "", env)
-	if err != nil {
-		return "", err
-	}
-
-	result, err := Render(evaluated)
-	if err != nil {
-		return "", err
-	}
-
-	return result, nil
-}
-
-func evaluateYispFile(path, base string, env *Env) (*YispNode, error) {
+func EvaluateYispFile(path, base string, env *Env) (*YispNode, error) {
 
 	var reader io.Reader
 	var err error

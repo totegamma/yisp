@@ -397,7 +397,7 @@ func opInclude(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		}
 
 		var err error
-		evaluated, err := evaluateYispFile(relpath, node.Pos.File, env.CreateChild())
+		evaluated, err := EvaluateYispFile(relpath, node.Pos.File, env.CreateChild())
 		if err != nil {
 			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to include file"), err)
 		}
@@ -463,7 +463,7 @@ func opImport(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		newEnv := NewEnv()
 
 		var err error
-		_, err = evaluateYispFile(relpath, node.Pos.File, newEnv)
+		_, err = EvaluateYispFile(relpath, node.Pos.File, newEnv)
 		if err != nil {
 			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to include file"), err)
 		}
