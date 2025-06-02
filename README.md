@@ -10,10 +10,7 @@ It allows you to embed logic, expressions, and includes within YAML files.
 This is useful for generating structured configuration such as Kubernetes manifests, Ansible playbooks, and more.
 
 ## Installation
-
-```sh
-go install github.com/totegamma/yisp@latest
-```
+Download latest version from [release page](https://github.com/totegamma/yisp/releases).
 
 ## Syntax
 In yisp, YAML documents are treated as plain data by default.  
