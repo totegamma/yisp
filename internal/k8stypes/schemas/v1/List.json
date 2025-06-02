@@ -1,0 +1,1 @@
+{"type":"object","required":["items"],"properties":{"items":{"type":"array","items":{"type":"object"}},"metadata":{"type":"object","properties":{"continue":{"type":"string"},"remainingItemCount":{"type":"integer"},"resourceVersion":{"type":"string"},"selfLink":{"type":"string"}}}}}

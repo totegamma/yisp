@@ -1,0 +1,1 @@
+{"type":"object","properties":{"container":{"type":"string"},"follow":{"type":"boolean"},"insecureSkipTLSVerifyBackend":{"type":"boolean"},"limitBytes":{"type":"integer"},"previous":{"type":"boolean"},"sinceSeconds":{"type":"integer"},"sinceTime":{"type":"Time"},"stream":{"type":"string"},"tailLines":{"type":"integer"},"timestamps":{"type":"boolean"}}}

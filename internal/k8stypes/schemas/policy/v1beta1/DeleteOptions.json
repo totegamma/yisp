@@ -1,0 +1,1 @@
+{"type":"object","properties":{"dryRun":{"type":"array","items":{"type":"string"}},"gracePeriodSeconds":{"type":"integer"},"ignoreStoreReadErrorWithClusterBreakingPotential":{"type":"boolean"},"orphanDependents":{"type":"boolean"},"preconditions":{"type":"object","properties":{"resourceVersion":{"type":"string"},"uid":{"type":"string"}}},"propagationPolicy":{"type":"string"}}}

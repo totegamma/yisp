@@ -1,0 +1,1 @@
+{"type":"object","required":["name","rollbackTo"],"properties":{"name":{"type":"string"},"rollbackTo":{"type":"object","properties":{"revision":{"type":"integer"}}},"updatedAnnotations":{"type":"object","items":{"type":"string"},"additionalProperties":true}}}

@@ -1,0 +1,1 @@
+{"type":"object","properties":{"allowWatchBookmarks":{"type":"boolean"},"continue":{"type":"string"},"fieldSelector":{"type":"string"},"labelSelector":{"type":"string"},"limit":{"type":"integer"},"resourceVersion":{"type":"string"},"resourceVersionMatch":{"type":"string"},"sendInitialEvents":{"type":"boolean"},"timeoutSeconds":{"type":"integer"},"watch":{"type":"boolean"}}}

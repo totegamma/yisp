@@ -12,6 +12,11 @@ This is useful for generating structured configuration such as Kubernetes manife
 ## Installation
 Download latest version from [release page](https://github.com/totegamma/yisp/releases).
 
+or use go install:
+```sh
+go install github.com/totegamma/yisp@latest
+```
+
 ## Syntax
 In yisp, YAML documents are treated as plain data by default.  
 To enable evaluation, you explicitly mark expressions using the `!yisp` tag.

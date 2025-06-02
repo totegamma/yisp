@@ -1,0 +1,1 @@
+{"type":"object","required":["versions","serverAddressByClientCIDRs"],"properties":{"serverAddressByClientCIDRs":{"type":"array","items":{"type":"object","required":["clientCIDR","serverAddress"],"properties":{"clientCIDR":{"type":"string"},"serverAddress":{"type":"string"}}}},"versions":{"type":"array","items":{"type":"string"}}}}

@@ -1,0 +1,1 @@
+{"type":"object","properties":{"dryRun":{"type":"array","items":{"type":"string"}},"fieldManager":{"type":"string"},"fieldValidation":{"type":"string"}}}
