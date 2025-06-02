@@ -89,3 +89,25 @@ spec:
 
 More examples are available in `/testfiles`.
 
+### Use yisp from Go code
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/totegamma/yisp/pkg"
+)
+
+func main() {
+	evaluated, err := yisp.EvaluateFileToYaml("test.yaml")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println("Evaluated YAML:")
+	fmt.Println(evaluated)
+}
+```
+
+also you can use `yisp.EvaluateFileToAny` to get the result as go `any` type.
+

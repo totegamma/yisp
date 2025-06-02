@@ -30,7 +30,7 @@ func SetAllowedPkgs(pkgs []string) {
 	allowedGoPkgs = pkgs
 }
 
-func EvaluateYisp(path string) (string, error) {
+func EvaluateFileToYaml(path string) (string, error) {
 	env := NewEnv()
 	evaluated, err := evaluateYispFile(path, "", env)
 	if err != nil {
@@ -38,6 +38,21 @@ func EvaluateYisp(path string) (string, error) {
 	}
 
 	result, err := Render(evaluated)
+	if err != nil {
+		return "", err
+	}
+
+	return result, nil
+}
+
+func EvaluateFileToAny(path string) (any, error) {
+	env := NewEnv()
+	evaluated, err := evaluateYispFile(path, "", env)
+	if err != nil {
+		return "", err
+	}
+
+	result, err := ToNative(evaluated)
 	if err != nil {
 		return "", err
 	}
