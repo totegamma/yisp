@@ -43,7 +43,7 @@ var buildCmd = &cobra.Command{
 			}
 		}
 
-		result, err := yisp.EvaluateFileToAny(yamlFile)
+		result, err := yisp.EvaluateFileToYaml(yamlFile)
 		if err != nil {
 			fmt.Println("Error:", err)
 			return
