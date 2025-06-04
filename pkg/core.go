@@ -99,6 +99,11 @@ func evaluateYispFile(path, base string, env *Env) (*YispNode, error) {
 		}
 	}
 
+	extension := filepath.Ext(targetURL.Path)
+	if extension == "json" {
+		return ParseJson(targetURL.String(), reader)
+	}
+
 	return evaluateYisp(reader, env, targetURL.String())
 }
 
