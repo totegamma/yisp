@@ -163,7 +163,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 				return nil, NewEvaluationError(node, fmt.Sprintf("invalid car type: %T", arr[0]))
 			}
 
-			car, err := Eval(carNode, env, mode)
+			car, err := Eval(carNode, env.CreateChild(), mode)
 			if err != nil {
 				return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate car"), err)
 			}
@@ -185,7 +185,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 				}
 			}
 
-			r, err := Apply(car, cdr, env, mode)
+			r, err := Apply(car, cdr, env.CreateChild(), mode)
 			if err != nil {
 				return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to apply function"), err)
 			}
@@ -213,7 +213,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 					return nil, NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
 				}
 
-				result, err := Eval(node, env, mode)
+				result, err := Eval(node, env.CreateChild(), mode)
 				if err != nil {
 					return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate item"), err)
 				}
@@ -239,7 +239,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 				return nil, NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
 			}
 
-			val, err := Eval(node, env, mode)
+			val, err := Eval(node, env.CreateChild(), mode)
 			if err != nil {
 				return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate item"), err)
 			}
@@ -293,7 +293,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	}
 
 	if node.Anchor != "" {
-		env.Set(node.Anchor, result)
+		env.Root().Set(node.Anchor, result) // anchor is global
 
 		if result.Kind == KindLambda {
 			lambda, ok := result.Value.(*Lambda)

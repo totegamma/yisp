@@ -14,6 +14,7 @@ type Env struct {
 // NewEnv creates a new environment with an empty variable map
 func NewEnv() *Env {
 	return &Env{
+		Parent: nil,
 		Vars: map[string]*YispNode{
 			"null": {
 				Kind: KindType,
@@ -47,6 +48,13 @@ func NewEnv() *Env {
 			},
 		},
 	}
+}
+
+func (e *Env) Root() *Env {
+	if e.Parent == nil {
+		return e
+	}
+	return e.Parent.Root()
 }
 
 func (e *Env) Depth() int {

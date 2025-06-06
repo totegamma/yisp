@@ -468,7 +468,7 @@ func opImport(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to include file"), err)
 		}
 
-		env.Set(name, &YispNode{
+		env.Root().Set(name, &YispNode{
 			Kind:  KindMap,
 			Value: newEnv.Vars,
 		})
