@@ -5,13 +5,13 @@
 !yisp
 - cmd
 - cmd: echo
-  args:
+  args: !quote
     - "hogehoge"
 ---
 !yisp
 - cmd
 - cmd: echo
-  args:
+  args: !quote
     - "-n"
     - "\a"
   asString: true

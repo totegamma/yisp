@@ -18,19 +18,14 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 
 		newEnv := lambda.Clojure.CreateChild()
 		for i, node := range cdr {
-			val, err := Eval(node, env, mode)
-			if err != nil {
-				return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate argument"), err)
-			}
-
 			if lambda.Arguments[i].Schema != nil {
-				err := lambda.Arguments[i].Schema.Validate(val)
+				err := lambda.Arguments[i].Schema.Validate(node)
 				if err != nil {
 					return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("object does not satisfy type"), err)
 				}
 			}
 
-			newEnv.Vars[lambda.Arguments[i].Name] = val
+			newEnv.Vars[lambda.Arguments[i].Name] = node
 		}
 
 		return Eval(lambda.Body, newEnv, mode)
@@ -45,6 +40,14 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 
 // Eval evaluates a YispNode in the given environment
 func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+
+	if showTrace {
+		val, err := ToNative(node)
+		if err != nil {
+			return nil, NewEvaluationError(node, fmt.Sprintf("failed to convert node to native: %v", err))
+		}
+		fmt.Printf("%sEVAL: %v\n", pad(env.Depth()), val)
+	}
 
 	if node.Tag == "!yisp" {
 		mode = EvalModeEval
@@ -158,47 +161,190 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 				return nil, NewEvaluationError(node, fmt.Sprintf("invalid array type: %T", node.Value))
 			}
 
-			carNode, ok := arr[0].(*YispNode)
-			if !ok {
-				return nil, NewEvaluationError(node, fmt.Sprintf("invalid car type: %T", arr[0]))
+			if len(arr) == 0 {
+				goto END_EVAL
 			}
 
-			car, err := Eval(carNode, env.CreateChild(), mode)
-			if err != nil {
-				return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate car"), err)
-			}
-
-			cdr := make([]*YispNode, len(arr)-1)
-			for i, item := range arr[1:] {
+			nodes := make([]*YispNode, len(arr))
+			for i, item := range arr {
 				node, ok := item.(*YispNode)
 				if !ok {
 					return nil, NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
 				}
-				cdr[i] = node
+				nodes[i] = node
 			}
 
-			if showTrace {
-				if car.Kind == KindLambda {
-					fmt.Printf("%s->%s\n", pad(env.Depth()), car)
-				} else {
-					fmt.Printf("%s->%s\n", pad(env.Depth()), car.Value)
+			// check special forms
+			op, ok := nodes[0].Value.(string)
+			if ok {
+				switch op {
+				case "if":
+					if len(nodes) != 4 {
+						return nil, NewEvaluationError(nodes[0], "if requires 3 arguments")
+					}
+					condNode, err := Eval(nodes[1], env.CreateChild(), mode)
+					if err != nil {
+						return nil, NewEvaluationErrorWithParent(nodes[1], "failed to evaluate condition", err)
+					}
+
+					cond, err := isTruthy(condNode)
+					if err != nil {
+						return nil, NewEvaluationErrorWithParent(nodes[1], "failed to evaluate condition", err)
+					}
+
+					if cond {
+						result, err = Eval(nodes[2], env.CreateChild(), mode)
+						if err != nil {
+							return nil, NewEvaluationErrorWithParent(nodes[2], "failed to evaluate true branch", err)
+						}
+						goto END_EVAL
+					} else {
+						result, err = Eval(nodes[3], env.CreateChild(), mode)
+						if err != nil {
+							return nil, NewEvaluationErrorWithParent(nodes[3], "failed to evaluate false branch", err)
+						}
+						goto END_EVAL
+					}
+				case "lambda":
+					if len(nodes) < 3 {
+						return nil, NewEvaluationError(nodes[0], "lambda requires at least 2 arguments")
+					}
+
+					paramsNode := nodes[1]
+					bodyNode := nodes[2]
+
+					params := make([]TypedSymbol, 0)
+					for _, item := range paramsNode.Value.([]any) {
+						paramNode, ok := item.(*YispNode)
+						if !ok {
+							return nil, NewEvaluationError(nil, fmt.Sprintf("invalid param type: %T", item))
+						}
+						param, ok := paramNode.Value.(string)
+						if !ok {
+							return nil, NewEvaluationError(nil, fmt.Sprintf("invalid param value: %T", paramNode.Value))
+						}
+
+						var schema *Schema
+						tag := paramNode.Tag
+						typeName := strings.TrimPrefix(tag, "!")
+						if typeName != "" && !strings.HasPrefix(typeName, "!") {
+							typeNode, ok := env.Get(typeName)
+							if !ok {
+								return nil, NewEvaluationError(nil, fmt.Sprintf("undefined type: %s", typeName))
+							}
+							if typeNode.Kind != KindType {
+								return nil, NewEvaluationError(nil, fmt.Sprintf("%s is not a type. actual: %s", typeName, typeNode.Kind))
+							}
+							schema, ok = typeNode.Value.(*Schema)
+							if !ok {
+								return nil, NewEvaluationError(nil, fmt.Sprintf("invalid type value: %T", typeNode.Value))
+							}
+						}
+
+						params = append(params, TypedSymbol{
+							Name:   param,
+							Schema: schema,
+						})
+					}
+
+					var schema *Schema
+					tag := paramsNode.Tag
+					typeName := strings.TrimPrefix(tag, "!")
+					if typeName != "" && !strings.HasPrefix(typeName, "!") {
+						typeNode, ok := env.Get(typeName)
+						if !ok {
+							return nil, NewEvaluationError(nil, fmt.Sprintf("undefined type: %s", typeName))
+						}
+						if typeNode.Kind != KindType {
+							return nil, NewEvaluationError(nil, fmt.Sprintf("%s is not a type. actual: %s", typeName, typeNode.Kind))
+						}
+						schema, ok = typeNode.Value.(*Schema)
+						if !ok {
+							return nil, NewEvaluationError(nil, fmt.Sprintf("invalid type value: %T", typeNode.Value))
+						}
+					}
+
+					lambda := &Lambda{
+						Arguments: params,
+						Returns:   schema,
+						Body:      bodyNode,
+						Clojure:   env.Clone(),
+					}
+
+					result = &YispNode{
+						Kind:  KindLambda,
+						Value: lambda,
+						Tag:   node.Tag,
+						Pos:   node.Pos,
+					}
+					goto END_EVAL
+				case "import":
+					for _, node := range nodes[1:] {
+
+						tuple, ok := node.Value.([]any)
+						if !ok {
+							return nil, NewEvaluationError(node, fmt.Sprintf("invalid tuple type: %T", node.Value))
+						}
+
+						if len(tuple) != 2 {
+							return nil, NewEvaluationError(node, fmt.Sprintf("import requires 2 arguments, got %d", len(tuple)))
+						}
+
+						nameNode, ok := tuple[0].(*YispNode)
+						if !ok {
+							return nil, NewEvaluationError(node, fmt.Sprintf("invalid name type: %T", tuple[0]))
+						}
+
+						name, ok := nameNode.Value.(string)
+						if !ok {
+							return nil, NewEvaluationError(node, fmt.Sprintf("invalid name type: %T", nameNode.Value))
+						}
+
+						relpathNode, ok := tuple[1].(*YispNode)
+						if !ok {
+							return nil, NewEvaluationError(node, fmt.Sprintf("invalid path type: %T", tuple[1]))
+						}
+
+						relpath, ok := relpathNode.Value.(string)
+						if !ok {
+							return nil, NewEvaluationError(node, fmt.Sprintf("invalid path type: %T", relpathNode.Value))
+						}
+
+						newEnv := NewEnv()
+
+						var err error
+						_, err = evaluateYispFile(relpath, node.Pos.File, newEnv)
+						if err != nil {
+							return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to include file"), err)
+						}
+
+						env.Root().Set(name, &YispNode{
+							Kind:  KindMap,
+							Value: newEnv.Vars,
+						})
+					}
+
+					result = &YispNode{
+						Kind: KindNull,
+					}
+					goto END_EVAL
 				}
 			}
 
-			r, err := Apply(car, cdr, env.CreateChild(), mode)
+			evaluated := make([]*YispNode, len(nodes))
+			for i, item := range nodes {
+				e, err := Eval(item, env.CreateChild(), mode)
+				if err != nil {
+					return nil, NewEvaluationErrorWithParent(item, fmt.Sprintf("failed to evaluate item %d", i), err)
+				}
+				evaluated[i] = e
+			}
+
+			var err error
+			result, err = Apply(evaluated[0], evaluated[1:], env.CreateChild(), mode)
 			if err != nil {
 				return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to apply function"), err)
 			}
-
-			if showTrace {
-				if r.Kind == KindLambda {
-					fmt.Printf("%s<-%s\n", pad(env.Depth()), r)
-				} else {
-					fmt.Printf("%s<-%s\n", pad(env.Depth()), r.Value)
-				}
-			}
-
-			result = r
 
 		} else {
 			arr, ok := node.Value.([]any)
@@ -291,6 +437,8 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			Pos:   node.Pos,
 		}
 	}
+
+END_EVAL:
 
 	if node.Anchor != "" {
 		env.Root().Set(node.Anchor, result) // anchor is global
