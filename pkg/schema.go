@@ -6,20 +6,6 @@ import (
 	"strconv"
 )
 
-type Schema struct {
-	Type                 string             `json:"type"`
-	Required             []string           `json:"required,omitempty"`
-	Properties           map[string]*Schema `json:"properties,omitempty"`
-	Items                *Schema            `json:"items,omitempty"`
-	AdditionalProperties bool               `json:"additionalProperties,omitempty"`
-	Arguments            []Schema           `json:"arguments,omitempty"`
-	Returns              *Schema            `json:"returns,omitempty"`
-	Description          string             `json:"description,omitempty"`
-	Default              any                `json:"default,omitempty"`
-	PatchStrategy        string             `json:"patchStrategy,omitempty"`
-	PatchMergeKey        string             `json:"patchMergeKey,omitempty"`
-}
-
 var schemaTypeToKind = map[string]Kind{
 	"null":     KindNull,
 	"boolean":  KindBool,
@@ -31,7 +17,45 @@ var schemaTypeToKind = map[string]Kind{
 	"function": KindLambda,
 }
 
+type Schema struct {
+	Type                 string             `json:"type"`
+	Required             []string           `json:"required,omitempty"`
+	Properties           map[string]*Schema `json:"properties,omitempty"`
+	Items                *Schema            `json:"items,omitempty"`
+	AdditionalProperties bool               `json:"additionalProperties,omitempty"`
+	Arguments            []*Schema          `json:"arguments,omitempty"`
+	Returns              *Schema            `json:"returns,omitempty"`
+	Description          string             `json:"description,omitempty"`
+	Default              any                `json:"default,omitempty"`
+	PatchStrategy        string             `json:"patchStrategy,omitempty"`
+	PatchMergeKey        string             `json:"patchMergeKey,omitempty"`
+	OneOf                []*Schema          `json:"oneOf,omitempty"`
+
+	// Numeric constraints
+	MultipleOf       *int     `json:"multipleOf,omitempty"`
+	Minimum          *float64 `json:"minimum,omitempty"`
+	Maximum          *float64 `json:"maximum,omitempty"`
+	ExclusiveMinimum *float64 `json:"exclusiveMinimum,omitempty"`
+	ExclusiveMaximum *float64 `json:"exclusiveMaximum,omitempty"`
+
+	// String constraints
+	MinLength *int `json:"minLength,omitempty"`
+	MaxLength *int `json:"maxLength,omitempty"`
+}
+
 func (s *Schema) Validate(node *YispNode) error {
+
+	if s.OneOf != nil {
+		var errors []string
+		for _, subSchema := range s.OneOf {
+			err := subSchema.Validate(node)
+			if err == nil {
+				return nil // Valid against one of the schemas
+			}
+			errors = append(errors, err.Error())
+		}
+		return fmt.Errorf("node does not match any of the oneOf schemas: %s", errors)
+	}
 
 	switch s.Type {
 	case "any":
@@ -48,13 +72,53 @@ func (s *Schema) Validate(node *YispNode) error {
 		if node.Kind != KindInt {
 			return fmt.Errorf("expected int, got %s", node.Kind)
 		}
+		if s.Minimum != nil && node.Value.(int) < int(*s.Minimum) {
+			return fmt.Errorf("value %d is less than minimum %f", node.Value.(int), *s.Minimum)
+		}
+		if s.Maximum != nil && node.Value.(int) > int(*s.Maximum) {
+			return fmt.Errorf("value %d is greater than maximum %f", node.Value.(int), *s.Maximum)
+		}
+		if s.ExclusiveMinimum != nil && node.Value.(int) <= int(*s.ExclusiveMinimum) {
+			return fmt.Errorf("value %d is not greater than exclusive minimum %f", node.Value.(int), *s.ExclusiveMinimum)
+		}
+		if s.ExclusiveMaximum != nil && node.Value.(int) >= int(*s.ExclusiveMaximum) {
+			return fmt.Errorf("value %d is not less than exclusive maximum %f", node.Value.(int), *s.ExclusiveMaximum)
+		}
+		if s.MultipleOf != nil {
+			if node.Value.(int)%*s.MultipleOf != 0 {
+				return fmt.Errorf("value %d is not a multiple of %d", node.Value.(int), *s.MultipleOf)
+			}
+		}
 	case "float":
 		if node.Kind != KindFloat {
 			return fmt.Errorf("expected float, got %s", node.Kind)
 		}
+		if s.Minimum != nil && node.Value.(float64) < *s.Minimum {
+			return fmt.Errorf("value %f is less than minimum %f", node.Value.(float64), *s.Minimum)
+		}
+		if s.Maximum != nil && node.Value.(float64) > *s.Maximum {
+			return fmt.Errorf("value %f is greater than maximum %f", node.Value.(float64), *s.Maximum)
+		}
+		if s.ExclusiveMinimum != nil && node.Value.(float64) <= *s.ExclusiveMinimum {
+			return fmt.Errorf("value %f is not greater than exclusive minimum %f", node.Value.(float64), *s.ExclusiveMinimum)
+		}
+		if s.ExclusiveMaximum != nil && node.Value.(float64) >= *s.ExclusiveMaximum {
+			return fmt.Errorf("value %f is not less than exclusive maximum %f", node.Value.(float64), *s.ExclusiveMaximum)
+		}
+		if s.MultipleOf != nil {
+			if int(node.Value.(float64))%*s.MultipleOf != 0 {
+				return fmt.Errorf("value %f is not a multiple of %d", node.Value.(float64), *s.MultipleOf)
+			}
+		}
 	case "string":
 		if node.Kind != KindString {
 			return fmt.Errorf("expected string, got %s", node.Kind)
+		}
+		if s.MinLength != nil && len(node.Value.(string)) < *s.MinLength {
+			return fmt.Errorf("string length %d is less than minimum %d", len(node.Value.(string)), *s.MinLength)
+		}
+		if s.MaxLength != nil && len(node.Value.(string)) > *s.MaxLength {
+			return fmt.Errorf("string length %d is greater than maximum %d", len(node.Value.(string)), *s.MaxLength)
 		}
 	case "array":
 		if node.Kind != KindArray {
@@ -383,7 +447,7 @@ func (s *Schema) Equals(other *Schema) bool {
 			return false
 		}
 		for i, arg := range s.Arguments {
-			if !arg.Equals(&other.Arguments[i]) {
+			if !arg.Equals(other.Arguments[i]) {
 				return false
 			}
 		}
