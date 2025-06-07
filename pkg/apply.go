@@ -99,6 +99,7 @@ func init() {
 	operators["format"] = opFormat
 	operators["k8s-patch"] = opPatch
 	operators["as-document-root"] = opAsDocumentRoot
+	operators["assert-type"] = opAssertType
 }
 
 // opConcat concatenates strings
@@ -1189,4 +1190,28 @@ func opAsDocumentRoot(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, erro
 		Value:          flattened,
 		IsDocumentRoot: true,
 	}, nil
+}
+
+func opAssertType(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+	if len(cdr) != 2 {
+		return nil, NewEvaluationError(nil, fmt.Sprintf("assert-type requires 2 arguments, got %d", len(cdr)))
+	}
+
+	schemaNode := cdr[0]
+	valueNode := cdr[1]
+
+	if schemaNode.Kind != KindType {
+		return nil, NewEvaluationError(schemaNode, fmt.Sprintf("assert-type requires a type as the first argument, got %v", schemaNode.Kind))
+	}
+	schema, ok := schemaNode.Value.(*Schema)
+	if !ok {
+		return nil, NewEvaluationError(schemaNode, fmt.Sprintf("invalid type value: %T", schemaNode.Value))
+	}
+
+	err := schema.Validate(valueNode)
+	if err != nil {
+		return nil, NewEvaluationErrorWithParent(valueNode, fmt.Sprintf("value does not match schema: %s", err.Error()), err)
+	}
+
+	return valueNode, nil
 }
