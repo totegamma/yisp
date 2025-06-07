@@ -6,38 +6,6 @@ import (
 	"strings"
 )
 
-// Apply applies a function to arguments
-func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
-
-	switch car.Kind {
-	case KindLambda:
-		lambda, ok := car.Value.(*Lambda)
-		if !ok {
-			return nil, NewEvaluationError(car, fmt.Sprintf("invalid lambda type: %T", car.Value))
-		}
-
-		newEnv := lambda.Clojure.CreateChild()
-		for i, node := range cdr {
-			if lambda.Arguments[i].Schema != nil {
-				err := lambda.Arguments[i].Schema.Validate(node)
-				if err != nil {
-					return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("object does not satisfy type"), err)
-				}
-			}
-
-			newEnv.Vars[lambda.Arguments[i].Name] = node
-		}
-
-		return Eval(lambda.Body, newEnv, mode)
-
-	case KindString:
-		return Call(car, cdr, env.CreateChild(), mode)
-
-	default:
-		return nil, NewEvaluationError(car, fmt.Sprintf("cannot apply type %s", car.Kind))
-	}
-}
-
 // Eval evaluates a YispNode in the given environment
 func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 

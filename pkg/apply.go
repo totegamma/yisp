@@ -12,6 +12,49 @@ import (
 	"strings"
 )
 
+// Apply applies a function to arguments
+func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+
+	switch car.Kind {
+	case KindLambda:
+		lambda, ok := car.Value.(*Lambda)
+		if !ok {
+			return nil, NewEvaluationError(car, fmt.Sprintf("invalid lambda type: %T", car.Value))
+		}
+
+		newEnv := lambda.Clojure.CreateChild()
+		for i, node := range cdr {
+			if lambda.Arguments[i].Schema != nil {
+				err := lambda.Arguments[i].Schema.Validate(node)
+				if err != nil {
+					return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("object does not satisfy type"), err)
+				}
+			}
+
+			newEnv.Vars[lambda.Arguments[i].Name] = node
+		}
+
+		return Eval(lambda.Body, newEnv, mode)
+
+	case KindString:
+		op, ok := car.Value.(string)
+		if !ok {
+			return nil, NewEvaluationError(car, fmt.Sprintf("invalid car value: %T", car.Value))
+		}
+
+		fn, ok := operators[op]
+		if !ok {
+			return nil, NewEvaluationError(car, fmt.Sprintf("unknown function name: %s", op))
+		}
+
+		// Call the operator function with the arguments
+		return fn(cdr, env.CreateChild(), mode)
+
+	default:
+		return nil, NewEvaluationError(car, fmt.Sprintf("cannot apply type %s", car.Kind))
+	}
+}
+
 // OperatorFunc is a function that implements a Yisp operator
 type OperatorFunc func([]*YispNode, *Env, EvalMode) (*YispNode, error)
 
@@ -56,21 +99,6 @@ func init() {
 	operators["format"] = opFormat
 	operators["k8s-patch"] = opPatch
 	operators["as-document-root"] = opAsDocumentRoot
-}
-
-// Call dispatches to the appropriate operator function based on the operator name
-func Call(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
-
-	op, ok := car.Value.(string)
-	if !ok {
-		return nil, NewEvaluationError(car, fmt.Sprintf("invalid car value: %T", car.Value))
-	}
-
-	if fn, ok := operators[op]; ok {
-		return fn(cdr, env, mode)
-	}
-
-	return nil, NewEvaluationError(car, fmt.Sprintf("unknown function name: %s", op))
 }
 
 // opConcat concatenates strings
