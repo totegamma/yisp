@@ -31,7 +31,7 @@ func Apply(car *YispNode, cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, 
 		return Eval(lambda.Body, newEnv, mode)
 
 	case KindString:
-		return Call(car, cdr, env, mode)
+		return Call(car, cdr, env.CreateChild(), mode)
 
 	default:
 		return nil, NewEvaluationError(car, fmt.Sprintf("cannot apply type %s", car.Kind))
@@ -182,7 +182,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 					if len(nodes) != 4 {
 						return nil, NewEvaluationError(nodes[0], "if requires 3 arguments")
 					}
-					condNode, err := Eval(nodes[1], env.CreateChild(), mode)
+					condNode, err := Eval(nodes[1], env, mode)
 					if err != nil {
 						return nil, NewEvaluationErrorWithParent(nodes[1], "failed to evaluate condition", err)
 					}
@@ -193,13 +193,13 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 					}
 
 					if cond {
-						result, err = Eval(nodes[2], env.CreateChild(), mode)
+						result, err = Eval(nodes[2], env, mode)
 						if err != nil {
 							return nil, NewEvaluationErrorWithParent(nodes[2], "failed to evaluate true branch", err)
 						}
 						goto END_EVAL
 					} else {
-						result, err = Eval(nodes[3], env.CreateChild(), mode)
+						result, err = Eval(nodes[3], env, mode)
 						if err != nil {
 							return nil, NewEvaluationErrorWithParent(nodes[3], "failed to evaluate false branch", err)
 						}
@@ -333,7 +333,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 			evaluated := make([]*YispNode, len(nodes))
 			for i, item := range nodes {
-				e, err := Eval(item, env.CreateChild(), mode)
+				e, err := Eval(item, env, mode)
 				if err != nil {
 					return nil, NewEvaluationErrorWithParent(item, fmt.Sprintf("failed to evaluate item %d", i), err)
 				}
@@ -341,7 +341,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			}
 
 			var err error
-			result, err = Apply(evaluated[0], evaluated[1:], env.CreateChild(), mode)
+			result, err = Apply(evaluated[0], evaluated[1:], env, mode)
 			if err != nil {
 				return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to apply function"), err)
 			}
@@ -359,7 +359,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 					return nil, NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
 				}
 
-				result, err := Eval(node, env.CreateChild(), mode)
+				result, err := Eval(node, env, mode)
 				if err != nil {
 					return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate item"), err)
 				}
@@ -385,7 +385,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 				return nil, NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
 			}
 
-			val, err := Eval(node, env.CreateChild(), mode)
+			val, err := Eval(node, env, mode)
 			if err != nil {
 				return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate item"), err)
 			}
