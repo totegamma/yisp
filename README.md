@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./docs/assets/yisp-wordmark.png" alt="yisp logo" width="200px"/>
+  <img src="./docs/assets/yisp-wordmark.png" alt="yisp logo" width="400px"/>
   
   # YISP - A Lisp-inspired Functional Engine for YAML
   [![Test](https://github.com/totegamma/yisp/actions/workflows/test.yaml/badge.svg)](https://github.com/totegamma/yisp/actions/workflows/test.yaml)
