@@ -3,18 +3,20 @@ module k8stypes
 go 1.24.2
 
 require (
+	github.com/totegamma/yisp v0.2.3
 	k8s.io/api v0.33.1
 	k8s.io/apimachinery v0.33.1
 )
 
 require (
+	github.com/elliotchance/orderedmap/v3 v3.1.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/kr/text v0.2.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/rs/xid v1.6.0 // indirect
 	github.com/x448/float16 v0.8.4 // indirect
 	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/text v0.23.0 // indirect

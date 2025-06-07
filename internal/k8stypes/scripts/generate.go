@@ -70,50 +70,43 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
+
+	"github.com/totegamma/yisp/pkg"
 )
 
-func isIgnoredType(typ reflect.Type) bool {
-	ignoredTypes := []reflect.Type{
-		reflect.TypeOf(meta.Time{}),
-		reflect.TypeOf(meta.MicroTime{}),
-		reflect.TypeOf(time.Time{}),
-		reflect.TypeOf(intstr.IntOrString{}),
-		reflect.TypeOf(resource.Quantity{}),
-	}
-
-	for _, ignoredType := range ignoredTypes {
-		if typ == ignoredType {
-			return true
-		}
-	}
-
-	return false
+var knownTypes = map[reflect.Type]yisp.Schema{
+	reflect.TypeOf(meta.Time{}): {
+		Type:        "string",
+	},
+	reflect.TypeOf(meta.MicroTime{}): {
+		Type:        "string",
+	},
+	reflect.TypeOf(time.Time{}): {
+		Type:        "string",
+	},
+	reflect.TypeOf(intstr.IntOrString{}): {
+		OneOf: []*yisp.Schema{
+			{
+				Type: "integer",
+			},
+			{
+				Type: "string",
+			},
+		},
+	},
+	reflect.TypeOf(resource.Quantity{}): {
+		Type:        "string",
+	},
 }
 
-type Schema struct {
-	Type                 string            `json:"type"`
-	Required             []string          `json:"required,omitempty"`
-	Properties           map[string]Schema `json:"properties,omitempty"`
-	Items                *Schema           `json:"items,omitempty"`
-	AdditionalProperties bool              `json:"additionalProperties,omitempty"`
-	Arguments            []Schema          `json:"arguments,omitempty"`
-	Returns              *Schema           `json:"returns,omitempty"`
-	Description          string            `json:"description,omitempty"`
-	Default              any               `json:"default,omitempty"`
-	PatchStrategy        string            `json:"patchStrategy,omitempty"`
-	PatchMergeKey        string            `json:"patchMergeKey,omitempty"`
-}
-
-func toSchema(typ reflect.Type) Schema {
+func toSchema(typ reflect.Type) yisp.Schema {
 
 	if typ.Kind() == reflect.Ptr {
 		return toSchema(typ.Elem())
 	}
 
-	if isIgnoredType(typ) {
-		return Schema{
-			Type: typ.Name(),
-		}
+	if schema, ok := knownTypes[typ]; ok {
+		return schema
 	}
 
 	typeMap := map[reflect.Kind]string{
@@ -138,10 +131,10 @@ func toSchema(typ reflect.Type) Schema {
 	}
 
 	//var schema Schema
-	schema := Schema{
+	schema := yisp.Schema{
 		Type:       typeMap[typ.Kind()],
 		Required:   make([]string, 0),
-		Properties: make(map[string]Schema),
+		Properties: make(map[string]*yisp.Schema),
 	}
 
 	if schema.Type == "" {
@@ -172,7 +165,7 @@ func toSchema(typ reflect.Type) Schema {
 			propSchema := toSchema(field.Type)
 			propSchema.PatchStrategy = field.Tag.Get("patchStrategy")
 			propSchema.PatchMergeKey = field.Tag.Get("patchMergeKey")
-			schema.Properties[fieldName] = propSchema
+			schema.Properties[fieldName] = &propSchema
 		}
 	} else if typ.Kind() == reflect.Map {
 		schema.Type = "object"
