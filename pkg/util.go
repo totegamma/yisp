@@ -60,20 +60,13 @@ func EvalAndCastAny[T any](value any, env *Env, mode EvalMode) (T, error) {
 
 // compareValues compares two values of any type for equality
 // It only compares values of the same type
-func compareValues(cdr []*YispNode, env *Env, mode EvalMode, opName string, expectEqual bool) (*YispNode, error) {
+func compareValues(cdr []*YispNode, opName string, expectEqual bool) (*YispNode, error) {
 	if len(cdr) != 2 {
 		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("%s requires 2 arguments, got %d", opName, len(cdr)))
 	}
 
-	firstNode, err := Eval(cdr[0], env, mode)
-	if err != nil {
-		return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate first argument"), err)
-	}
-
-	secondNode, err := Eval(cdr[1], env, mode)
-	if err != nil {
-		return nil, NewEvaluationErrorWithParent(cdr[1], fmt.Sprintf("failed to evaluate second argument"), err)
-	}
+	firstNode := cdr[0]
+	secondNode := cdr[1]
 
 	// Only compare values of the same type
 	equal := false
@@ -130,16 +123,12 @@ func compareValues(cdr []*YispNode, env *Env, mode EvalMode, opName string, expe
 
 // compareNumbers compares two numbers using the provided comparison function
 // It handles both integers and floating point numbers
-func compareNumbers(cdr []*YispNode, env *Env, mode EvalMode, opName string, cmp func(float64, float64) bool) (*YispNode, error) {
+func compareNumbers(cdr []*YispNode, opName string, cmp func(float64, float64) bool) (*YispNode, error) {
 	if len(cdr) != 2 {
 		return nil, NewEvaluationError(cdr[0], fmt.Sprintf("%s requires 2 arguments, got %d", opName, len(cdr)))
 	}
 
-	firstNode, err := Eval(cdr[0], env, mode)
-	if err != nil {
-		return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate first argument"), err)
-	}
-
+	firstNode := cdr[0]
 	var firstNum float64
 	switch v := firstNode.Value.(type) {
 	case int:
@@ -150,11 +139,7 @@ func compareNumbers(cdr []*YispNode, env *Env, mode EvalMode, opName string, cmp
 		return nil, NewEvaluationError(firstNode, fmt.Sprintf("invalid first argument type for %s: %T (value: %v)", opName, firstNode.Value, firstNode.Value))
 	}
 
-	secondNode, err := Eval(cdr[1], env, mode)
-	if err != nil {
-		return nil, NewEvaluationErrorWithParent(cdr[1], fmt.Sprintf("failed to evaluate second argument"), err)
-	}
-
+	secondNode := cdr[1]
 	var secondNum float64
 	switch v := secondNode.Value.(type) {
 	case int:
@@ -516,7 +501,7 @@ func ToNative(node *YispNode) (any, error) {
 	case KindParameter:
 		return "(parameter)", nil
 	case KindSymbol:
-		return "(symbol)", nil
+		return "*" + node.Value.(string), nil
 	case KindType:
 		return "(type)", nil
 	default:
