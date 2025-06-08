@@ -154,11 +154,13 @@ func (s *Schema) Validate(node *YispNode) error {
 			if !ok {
 				if slices.Contains(s.Required, key) {
 					return fmt.Errorf("missing required property: %s", key)
+				} else {
+					continue
 				}
 			}
 			itemNode, ok := item.(*YispNode)
 			if !ok {
-				return fmt.Errorf("expected YispNode, got %T", itemNode)
+				return fmt.Errorf("[object]expected YispNode, got %T", item)
 			}
 			if err := subSchema.Validate(itemNode); err != nil {
 				return err
