@@ -12,8 +12,14 @@
           value:
             type: integer
           memo:
-            type: string
-            default: "No memo provided"
+            type: object
+            properties:
+              type:
+                type: string
+                default: plain
+              value:
+                type: string
+                default: "No memo provided"
       patchStrategy: merge
       patchMergeKey: name
 
@@ -32,4 +38,5 @@
       value: 30
     - name: item3
       value: 40
-      memo: "New item added"
+      memo:
+        value: "New item added"

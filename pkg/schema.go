@@ -232,6 +232,9 @@ func (s *Schema) InterpolateDefaults(node *YispNode) error {
 		if node.Kind != KindMap {
 			return fmt.Errorf("expected map, got %s", node.Kind)
 		}
+		if node.Value == nil {
+			node.Value = NewYispMap()
+		}
 		m, ok := node.Value.(*YispMap)
 		if !ok {
 			return fmt.Errorf("expected map, got %T", node.Value)
@@ -251,6 +254,17 @@ func (s *Schema) InterpolateDefaults(node *YispNode) error {
 						Type:  subSchema,
 					}
 					m.Set(key, defaultNode)
+					continue
+				}
+				dummyNode := &YispNode{
+					Kind: schemaTypeToKind[subSchema.Type],
+				}
+				err := subSchema.InterpolateDefaults(dummyNode)
+				if err != nil {
+					return fmt.Errorf("failed to interpolate dummy Node %v", err)
+				}
+				if !IsZero(dummyNode.Value) {
+					m.Set(key, dummyNode)
 				}
 				continue
 			}

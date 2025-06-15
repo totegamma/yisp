@@ -596,3 +596,16 @@ func GetGVK(node *YispNode) (*GVK, error) {
 		Kind:    kind,
 	}, nil
 }
+
+func IsZero(v any) bool {
+	if v == nil {
+		return true
+	}
+
+	switch v.(type) {
+	case *YispMap:
+		return v.(*YispMap).Len() == 0
+	default:
+		panic("iszero")
+	}
+}
