@@ -97,31 +97,43 @@ func render(node *YispNode) (*yaml.Node, error) {
 		}, nil
 
 	case KindLambda:
-		return &yaml.Node{
-			Kind:  yaml.ScalarNode,
-			Value: "(lambda)",
-		}, nil
+		if renderSpecialObjects {
+			return &yaml.Node{
+				Kind:  yaml.ScalarNode,
+				Value: "(lambda)",
+			}, nil
+		}
 	case KindParameter:
-		return &yaml.Node{
-			Kind:  yaml.ScalarNode,
-			Value: "(parameter)",
-		}, nil
+		if renderSpecialObjects {
+			return &yaml.Node{
+				Kind:  yaml.ScalarNode,
+				Value: "(parameter)",
+			}, nil
+		}
 	case KindSymbol:
-		return &yaml.Node{
-			Kind:  yaml.ScalarNode,
-			Value: "(symbol)",
-		}, nil
+		if renderSpecialObjects {
+			return &yaml.Node{
+				Kind:  yaml.ScalarNode,
+				Value: "(symbol)",
+			}, nil
+		}
 	case KindType:
-		return &yaml.Node{
-			Kind:  yaml.ScalarNode,
-			Value: "(type)",
-		}, nil
+		if renderSpecialObjects {
+			return &yaml.Node{
+				Kind:  yaml.ScalarNode,
+				Value: "(type)",
+			}, nil
+		}
 	default:
-		return &yaml.Node{
-			Kind:  yaml.ScalarNode,
-			Value: "(unknown)",
-		}, nil
+		if renderSpecialObjects {
+			return &yaml.Node{
+				Kind:  yaml.ScalarNode,
+				Value: "(unknown)",
+			}, nil
+		}
 	}
+
+	return nil, nil
 }
 
 func Render(node *YispNode) (string, error) {

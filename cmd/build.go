@@ -27,6 +27,11 @@ var buildCmd = &cobra.Command{
 			yisp.SetShowTrace(showTrace)
 		}
 
+		renderSpecialObjects, err := cmd.Flags().GetBool("render-special-objects")
+		if err == nil {
+			yisp.SetRenderSpecialObjects(renderSpecialObjects)
+		}
+
 		output, err := cmd.Flags().GetString("output")
 		if err != nil {
 			output = "yaml"
@@ -98,5 +103,6 @@ func init() {
 	rootCmd.AddCommand(buildCmd)
 	buildCmd.Flags().BoolP("allow-cmd", "", false, "Allow command execution")
 	buildCmd.Flags().BoolP("show-trace", "", false, "Show trace")
+	buildCmd.Flags().BoolP("render-special-objects", "", false, "Show special objects (e.g. type, lambda, etc.)")
 	buildCmd.Flags().StringP("output", "o", "yaml", "Output format (yaml, json)")
 }

@@ -13,9 +13,10 @@ import (
 )
 
 var (
-	allowCmd      = false
-	showTrace     = false
-	allowedGoPkgs = []string{}
+	allowCmd             = false
+	showTrace            = false
+	renderSpecialObjects = false
+	allowedGoPkgs        = []string{}
 )
 
 func SetAllowCmd(allow bool) {
@@ -28,6 +29,10 @@ func SetShowTrace(show bool) {
 
 func SetAllowedPkgs(pkgs []string) {
 	allowedGoPkgs = pkgs
+}
+
+func SetRenderSpecialObjects(show bool) {
+	renderSpecialObjects = show
 }
 
 func EvaluateFileToYaml(path string) (string, error) {
