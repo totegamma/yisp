@@ -489,10 +489,6 @@ func opMerge(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
 func opCmd(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 
-	if allowCmd != true {
-		return nil, NewEvaluationError(nil, "cmdline operator is not allowed. Set --allow-cmd to enable it.")
-	}
-
 	if len(cdr) != 1 {
 		return nil, NewEvaluationError(nil, fmt.Sprintf("cmdline requires 1 argument, got %d", len(cdr)))
 	}
@@ -581,6 +577,15 @@ func opCmd(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		asString, ok = asStringNode.Value.(bool)
 		if !ok {
 			return nil, NewEvaluationError(asStringNode, fmt.Sprintf("invalid asString value: %T", asStringNode.Value))
+		}
+	}
+
+	if allowCmd != true {
+		fmt.Fprintf(os.Stderr, "Going to run command: %v\n", cmd.Args)
+		fmt.Fprintf(os.Stderr, "Press Enter to continue or Ctrl+C to cancel...\n")
+		_, err := os.Stdin.Read(make([]byte, 1))
+		if err != nil {
+			return nil, NewEvaluationError(cdr[0], fmt.Sprintf("failed to read input: %v", err))
 		}
 	}
 
