@@ -85,13 +85,15 @@ func saveSchemas(openapi open) error {
 		os.Exit(1)
 	}
 
-	gvkPath := filepath.Join(home, ".cache", "yisp", "schemas", "gvk")
+	gvkPath := filepath.Join(home, ".cache", "yisp", "gvk")
 	if err := os.MkdirAll(gvkPath, 0755); err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating GVK directory: %v\n", err)
 		os.Exit(1)
 	}
 
 	for key, def := range openapi.Definitions {
+
+		def["$id"] = key
 
 		schemaPath := filepath.Join(schemasPath, fmt.Sprintf("%s.json", key))
 
@@ -129,8 +131,6 @@ func saveSchemas(openapi open) error {
 				fmt.Println("Invalid GVK structure for key:", key)
 				continue
 			}
-
-			def["$id"] = key
 
 			group, ok := gvkMap["group"]
 			if !ok {
