@@ -251,9 +251,16 @@ func DeepMergeYispNode(dst, src *YispNode, schema *Schema) (*YispNode, error) {
 			dstVal, dstOK := dstMap.Get(key)
 			srcVal, srcOK := srcMap.Get(key)
 
-			var subType *Schema
+			var subSchema *Schema
 			if schema != nil {
-				subType = schema.Properties[key]
+				subSchema = schema.Properties[key]
+				if subSchema != nil && subSchema.Ref != "" {
+					var err error
+					subSchema, err = LoadSchemaFromID(subSchema.Ref)
+					if err != nil {
+						return nil, fmt.Errorf("failed to load schema for key %s: %v", key, err)
+					}
+				}
 			}
 
 			if dstOK && srcOK {
@@ -261,7 +268,7 @@ func DeepMergeYispNode(dst, src *YispNode, schema *Schema) (*YispNode, error) {
 				srcNode, srcNodeOK := srcVal.(*YispNode)
 
 				if dstNodeOK && srcNodeOK {
-					mergedNode, err := DeepMergeYispNode(dstNode, srcNode, subType)
+					mergedNode, err := DeepMergeYispNode(dstNode, srcNode, subSchema)
 					if err != nil {
 						return nil, err
 					}
@@ -277,6 +284,7 @@ func DeepMergeYispNode(dst, src *YispNode, schema *Schema) (*YispNode, error) {
 		return &YispNode{
 			Kind:  KindMap,
 			Value: result,
+			Type:  src.Type, // TODO: sum type
 		}, nil
 
 	} else if dst.Kind == KindArray && src.Kind == KindArray {
@@ -287,9 +295,16 @@ func DeepMergeYispNode(dst, src *YispNode, schema *Schema) (*YispNode, error) {
 			return nil, fmt.Errorf("invalid array value. Actual type: %T", dst.Value)
 		}
 
-		var subType *Schema
+		var subSchema *Schema
 		if schema != nil {
-			subType = schema.Items
+			subSchema = schema.Items
+			if subSchema != nil && subSchema.Ref != "" {
+				var err error
+				subSchema, err = LoadSchemaFromID(subSchema.Ref)
+				if err != nil {
+					return nil, fmt.Errorf("failed to load schema for array items: %v", err)
+				}
+			}
 		}
 
 		var result []any
@@ -357,7 +372,7 @@ func DeepMergeYispNode(dst, src *YispNode, schema *Schema) (*YispNode, error) {
 
 						if existingKey == key {
 							// Merge the srcMap into the existing dstMap
-							mergedNode, err := DeepMergeYispNode(dstNode, srcNode, subType)
+							mergedNode, err := DeepMergeYispNode(dstNode, srcNode, subSchema)
 							if err != nil {
 								return nil, err
 							}
@@ -379,6 +394,7 @@ func DeepMergeYispNode(dst, src *YispNode, schema *Schema) (*YispNode, error) {
 		return &YispNode{
 			Kind:  KindArray,
 			Value: result,
+			Type:  src.Type, // TODO: sum type
 		}, nil
 
 	} else {
