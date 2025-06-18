@@ -33,9 +33,8 @@ type Schema struct {
 	Returns              *Schema            `json:"returns,omitempty"`
 	Description          string             `json:"description,omitempty"`
 	Default              any                `json:"default,omitempty"`
-	PatchStrategy        string             `json:"x-kubernetes-patch-strategy,omitempty"`
-	PatchMergeKey        string             `json:"x-kubernetes-patch-merge-key,omitempty"`
-	OneOf                []*Schema          `json:"oneOf,omitempty"`
+
+	OneOf []*Schema `json:"oneOf,omitempty"`
 
 	// Numeric constraints
 	MultipleOf       *int     `json:"multipleOf,omitempty"`
@@ -47,6 +46,31 @@ type Schema struct {
 	// String constraints
 	MinLength *int `json:"minLength,omitempty"`
 	MaxLength *int `json:"maxLength,omitempty"`
+
+	PatchStrategy    string `json:"patchStrategy,omitempty"`
+	PatchMergeKey    string `json:"patchMergeKey,omitempty"`
+	K8sPatchStrategy string `json:"x-kubernetes-patch-strategy,omitempty"`
+	K8sPatchMergeKey string `json:"x-kubernetes-patch-merge-key,omitempty"`
+}
+
+func (s *Schema) GetPatchStrategy() string {
+	if s.PatchStrategy != "" {
+		return s.PatchStrategy
+	}
+	if s.K8sPatchStrategy != "" {
+		return s.K8sPatchStrategy
+	}
+	return ""
+}
+
+func (s *Schema) GetPatchMergeKey() string {
+	if s.PatchMergeKey != "" {
+		return s.PatchMergeKey
+	}
+	if s.K8sPatchMergeKey != "" {
+		return s.K8sPatchMergeKey
+	}
+	return ""
 }
 
 func (s *Schema) ToYispNode() (*YispNode, error) {

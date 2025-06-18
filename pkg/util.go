@@ -221,10 +221,10 @@ func DeepMergeYispNode(dst, src *YispNode, schema *Schema) (*YispNode, error) {
 	strategy := "replace"
 	mergeKey := ""
 	if schema != nil {
-		if schema.PatchStrategy != "" {
-			strategy = schema.PatchStrategy
+		if schema.GetPatchStrategy() != "" {
+			strategy = schema.GetPatchStrategy()
 		}
-		mergeKey = schema.PatchMergeKey
+		mergeKey = schema.GetPatchMergeKey()
 	}
 
 	if dst.Kind == KindMap && src.Kind == KindMap {

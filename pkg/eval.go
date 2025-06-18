@@ -429,7 +429,15 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			}
 			schema, err := LoadSchemaFromGVK(group, version, kind)
 			if err != nil && !allowUntypedManifest {
-				return nil, NewEvaluationError(node, fmt.Sprintf("failed to resolve type for %s/%s/%s. Did you run `yisp cache-kube-schemas` first?", group, version, kind))
+				return nil, NewEvaluationError(
+					node,
+					fmt.Sprintf(
+						"failed to resolve type for %s/%s/%s. Did you run `yisp cache-kube-schemas` first?",
+						group,
+						version,
+						kind,
+					),
+				)
 			}
 			result.Type = schema
 		}
