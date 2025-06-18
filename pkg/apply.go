@@ -1135,7 +1135,7 @@ func opPatch(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			return nil, NewEvaluationError(patches, fmt.Sprintf("invalid patch item type: %T", patchAny))
 		}
 
-		patchGVK, err := GetGVK(patchNode)
+		patchID, err := GetManifestID(patchNode)
 		if err != nil {
 			return nil, NewEvaluationErrorWithParent(patchNode, fmt.Sprintf("failed to get GVK from patch"), err)
 		}
@@ -1146,13 +1146,12 @@ func opPatch(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 				return nil, NewEvaluationError(targets, fmt.Sprintf("invalid target item type: %T", targetAny))
 			}
 
-			targetGVK, err := GetGVK(targetNode)
+			targetID, err := GetManifestID(targetNode)
 			if err != nil {
 				return nil, NewEvaluationErrorWithParent(targetNode, fmt.Sprintf("failed to get GVK from target"), err)
 			}
 
-			if patchGVK.Equal(targetGVK) {
-
+			if patchID == targetID {
 				targetArray[i], err = DeepMergeYispNode(targetNode, patchNode, targetNode.Type)
 				if err != nil {
 					return nil, NewEvaluationErrorWithParent(patchNode, fmt.Sprintf("failed to apply patch"), err)

@@ -20,3 +20,26 @@ spec:
               cpu: "500m"
           ports:
             - containerPort: 6060
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp2
+spec:
+  selector:
+    matchLabels:
+      app: myapp2
+  template:
+    metadata:
+      labels:
+        app: myapp2
+    spec:
+      containers:
+        - name: myapp2
+          image: myapp2
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 6060

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"slices"
-	"strings"
 
 	"github.com/totegamma/yisp/internal/yaml"
 )
@@ -508,78 +507,73 @@ func ToNative(node *YispNode) (any, error) {
 	}
 }
 
-type GVK struct {
-	Group   string `json:"group"`
-	Version string `json:"version"`
-	Kind    string `json:"kind"`
-}
-
-func (gvk *GVK) String() string {
-	if gvk.Group == "" {
-		return fmt.Sprintf("%s/%s", gvk.Kind, gvk.Version)
-	}
-	return fmt.Sprintf("%s/%s/%s", gvk.Group, gvk.Version, gvk.Kind)
-}
-
-func (gvk *GVK) Equal(other *GVK) bool {
-	if gvk == nil || other == nil {
-		return gvk == other
-	}
-	return gvk.Group == other.Group && gvk.Version == other.Version && gvk.Kind == other.Kind
-}
-
-func GetGVK(node *YispNode) (*GVK, error) {
+func GetManifestID(node *YispNode) (string, error) {
 	if node.Kind != KindMap {
-		return nil, fmt.Errorf("expected KindMap for GVK, got %s", node.Kind)
+		return "", fmt.Errorf("expected KindMap for GVK, got %s", node.Kind)
 	}
 
 	m, ok := node.Value.(*YispMap)
 	if !ok {
-		return nil, fmt.Errorf("expected YispMap for GVK, got %T", node.Value)
+		return "", fmt.Errorf("expected YispMap for GVK, got %T", node.Value)
 	}
 
+	var apiVersion string
+	var kind string
+	var namespace string
+	var name string
+
 	apiVersionAny, ok := m.Get("apiVersion")
-	if !ok {
-		return nil, fmt.Errorf("apiVersion not found in GVK map")
-	}
-	apiVersionNode, ok := apiVersionAny.(*YispNode)
-	if !ok {
-		return nil, fmt.Errorf("expected YispNode for apiVersion, got %T", apiVersionAny)
-	}
-	apiVersion, ok := apiVersionNode.Value.(string)
-	if !ok {
-		return nil, fmt.Errorf("expected string for apiVersion, got %T", apiVersionNode.Value)
+	if ok {
+		apiVersionNode, ok := apiVersionAny.(*YispNode)
+		if !ok {
+			return "", fmt.Errorf("expected YispNode for apiVersion, got %T", apiVersionAny)
+		}
+		apiVersion, _ = apiVersionNode.Value.(string)
 	}
 
 	kindAny, ok := m.Get("kind")
-	if !ok {
-		return nil, fmt.Errorf("kind not found in GVK map")
-	}
-	kindNode, ok := kindAny.(*YispNode)
-	if !ok {
-		return nil, fmt.Errorf("expected YispNode for kind, got %T", kindAny)
-	}
-	kind, ok := kindNode.Value.(string)
-	if !ok {
-		return nil, fmt.Errorf("expected string for kind, got %T", kindNode.Value)
+	if ok {
+		kindNode, ok := kindAny.(*YispNode)
+		if !ok {
+			return "", fmt.Errorf("expected YispNode for kind, got %T", kindAny)
+		}
+		kind, _ = kindNode.Value.(string)
 	}
 
-	group := ""
-	version := ""
-	split := strings.Split(apiVersion, "/")
+	metadataAny, ok := m.Get("metadata")
+	if ok {
+		metadataNode, ok := metadataAny.(*YispNode)
+		if !ok {
+			return "", fmt.Errorf("expected YispNode for metadata, got %T", metadataAny)
+		}
+		if metadataNode.Kind != KindMap {
+			return "", fmt.Errorf("expected KindMap for metadata, got %s", metadataNode.Kind)
+		}
+		metadataMap, ok := metadataNode.Value.(*YispMap)
+		if !ok {
+			return "", fmt.Errorf("expected YispMap for metadata, got %T", metadataNode.Value)
+		}
 
-	if len(split) == 2 {
-		group = split[0]
-		version = split[1]
-	} else if len(split) == 1 {
-		version = split[0]
+		namespaceAny, ok := metadataMap.Get("namespace")
+		if ok {
+			namespaceNode, ok := namespaceAny.(*YispNode)
+			if !ok {
+				return "", fmt.Errorf("expected YispNode for namespace, got %T", namespaceAny)
+			}
+			namespace, _ = namespaceNode.Value.(string)
+		}
+
+		nameAny, ok := metadataMap.Get("name")
+		if ok {
+			nameNode, ok := nameAny.(*YispNode)
+			if !ok {
+				return "", fmt.Errorf("expected YispNode for name, got %T", nameAny)
+			}
+			name, _ = nameNode.Value.(string)
+		}
 	}
 
-	return &GVK{
-		Group:   group,
-		Version: version,
-		Kind:    kind,
-	}, nil
+	return fmt.Sprintf("%s/%s/%s/%s", apiVersion, kind, namespace, name), nil
 }
 
 func IsZero(v any) bool {
