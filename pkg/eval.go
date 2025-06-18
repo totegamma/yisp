@@ -342,7 +342,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			return nil, NewEvaluationError(node, fmt.Sprintf("invalid map type: %T", node.Value))
 		}
 		results := NewYispMap()
-		var id string
+		var schemaID string
 		var apiVersion string
 		var kind string
 		for key, item := range m.AllFromFront() {
@@ -356,8 +356,8 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 				return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate item"), err)
 			}
 
-			if key == "$id" {
-				id, _ = val.Value.(string)
+			if key == "$schema" {
+				schemaID, _ = val.Value.(string)
 			} else if key == "apiVersion" {
 				apiVersion, _ = val.Value.(string)
 			} else if key == "kind" {
@@ -411,8 +411,8 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		}
 
 		// TODO: validate before update type
-		if id != "" {
-			schema, err := LoadSchemaFromID(id)
+		if schemaID != "" {
+			schema, err := LoadSchemaFromID(schemaID)
 			if err == nil {
 				result.Type = schema
 			}

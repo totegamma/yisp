@@ -21,6 +21,8 @@ var schemaTypeToKind = map[string]Kind{
 }
 
 type Schema struct {
+	ID                   string             `json:"$id,omitempty"`
+	Ref                  string             `json:"$ref,omitempty"`
 	Type                 string             `json:"type"`
 	Required             []string           `json:"required,omitempty"`
 	Properties           map[string]*Schema `json:"properties,omitempty"`
@@ -30,8 +32,8 @@ type Schema struct {
 	Returns              *Schema            `json:"returns,omitempty"`
 	Description          string             `json:"description,omitempty"`
 	Default              any                `json:"default,omitempty"`
-	PatchStrategy        string             `json:"patchStrategy,omitempty"`
-	PatchMergeKey        string             `json:"patchMergeKey,omitempty"`
+	PatchStrategy        string             `json:"x-kubernetes-patch-strategy,omitempty"`
+	PatchMergeKey        string             `json:"x-kubernetes-patch-merge-key,omitempty"`
 	OneOf                []*Schema          `json:"oneOf,omitempty"`
 
 	// Numeric constraints
