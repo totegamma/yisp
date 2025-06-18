@@ -1,1 +1,0 @@
-{"type":"object","properties":{"container":{"type":"string"},"stderr":{"type":"boolean"},"stdin":{"type":"boolean"},"stdout":{"type":"boolean"},"tty":{"type":"boolean"}}}

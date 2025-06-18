@@ -97,7 +97,7 @@ func init() {
 	operators["go-run"] = opGoRun
 	operators["pipeline"] = opPipeline
 	operators["format"] = opFormat
-	operators["k8s-patch"] = opPatch
+	operators["patch"] = opPatch
 	operators["as-document-root"] = opAsDocumentRoot
 	operators["assert-type"] = opAssertType
 	operators["get-type"] = opGetType
@@ -1151,14 +1151,9 @@ func opPatch(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 				return nil, NewEvaluationErrorWithParent(targetNode, fmt.Sprintf("failed to get GVK from target"), err)
 			}
 
-			k8sType, err := GetK8sSchema(targetGVK.Group, targetGVK.Version, targetGVK.Kind)
-			if err != nil {
-				return nil, NewEvaluationErrorWithParent(targetNode, fmt.Sprintf("failed to get k8s schema for %s", targetGVK.String()), err)
-			}
-
 			if patchGVK.Equal(targetGVK) {
 
-				targetArray[i], err = DeepMergeYispNode(targetNode, patchNode, k8sType)
+				targetArray[i], err = DeepMergeYispNode(targetNode, patchNode, targetNode.Type)
 				if err != nil {
 					return nil, NewEvaluationErrorWithParent(patchNode, fmt.Sprintf("failed to apply patch"), err)
 				}
