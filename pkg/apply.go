@@ -101,6 +101,7 @@ func init() {
 	operators["as-document-root"] = opAsDocumentRoot
 	operators["assert-type"] = opAssertType
 	operators["get-type"] = opGetType
+	operators["typeof"] = opTypeOf
 }
 
 // opConcat concatenates strings
@@ -1238,4 +1239,26 @@ func opGetType(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	}
 
 	return node.Type.ToYispNode()
+}
+
+func opTypeOf(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+	if len(cdr) != 1 {
+		return nil, NewEvaluationError(nil, fmt.Sprintf("typeof requires 1 argument, got %d", len(cdr)))
+	}
+
+	node := cdr[0]
+
+	if node.Type == nil {
+		return &YispNode{
+			Kind:  KindNull,
+			Value: nil,
+			Pos:   node.Pos,
+		}, nil
+	}
+
+	return &YispNode{
+		Kind:  KindType,
+		Value: node.Type,
+		Pos:   node.Pos,
+	}, nil
 }
