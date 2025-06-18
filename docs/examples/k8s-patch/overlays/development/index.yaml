@@ -1,5 +1,5 @@
 !yisp
-- k8s-patch
+- patch
 - - include
   - ../../base
 - - include

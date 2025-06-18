@@ -32,6 +32,11 @@ var buildCmd = &cobra.Command{
 			yisp.SetRenderSpecialObjects(renderSpecialObjects)
 		}
 
+		allowUntypedManifest, err := cmd.Flags().GetBool("allow-untyped-manifest")
+		if err == nil {
+			yisp.SetAllowUntypedManifest(allowUntypedManifest)
+		}
+
 		output, err := cmd.Flags().GetString("output")
 		if err != nil {
 			output = "yaml"
@@ -104,5 +109,6 @@ func init() {
 	buildCmd.Flags().BoolP("allow-cmd", "", false, "Allow command execution")
 	buildCmd.Flags().BoolP("show-trace", "", false, "Show trace")
 	buildCmd.Flags().BoolP("render-special-objects", "", false, "Show special objects (e.g. type, lambda, etc.)")
+	buildCmd.Flags().BoolP("allow-untyped-manifest", "", false, "Allow untyped manifest")
 	buildCmd.Flags().StringP("output", "o", "yaml", "Output format (yaml, json)")
 }

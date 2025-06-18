@@ -97,9 +97,11 @@ func init() {
 	operators["go-run"] = opGoRun
 	operators["pipeline"] = opPipeline
 	operators["format"] = opFormat
-	operators["k8s-patch"] = opPatch
+	operators["patch"] = opPatch
 	operators["as-document-root"] = opAsDocumentRoot
 	operators["assert-type"] = opAssertType
+	operators["get-type"] = opGetType
+	operators["typeof"] = opTypeOf
 }
 
 // opConcat concatenates strings
@@ -1133,7 +1135,7 @@ func opPatch(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			return nil, NewEvaluationError(patches, fmt.Sprintf("invalid patch item type: %T", patchAny))
 		}
 
-		patchGVK, err := GetGVK(patchNode)
+		patchID, err := GetManifestID(patchNode)
 		if err != nil {
 			return nil, NewEvaluationErrorWithParent(patchNode, fmt.Sprintf("failed to get GVK from patch"), err)
 		}
@@ -1144,19 +1146,13 @@ func opPatch(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 				return nil, NewEvaluationError(targets, fmt.Sprintf("invalid target item type: %T", targetAny))
 			}
 
-			targetGVK, err := GetGVK(targetNode)
+			targetID, err := GetManifestID(targetNode)
 			if err != nil {
 				return nil, NewEvaluationErrorWithParent(targetNode, fmt.Sprintf("failed to get GVK from target"), err)
 			}
 
-			k8sType, err := GetK8sSchema(targetGVK.Group, targetGVK.Version, targetGVK.Kind)
-			if err != nil {
-				return nil, NewEvaluationErrorWithParent(targetNode, fmt.Sprintf("failed to get k8s schema for %s", targetGVK.String()), err)
-			}
-
-			if patchGVK.Equal(targetGVK) {
-
-				targetArray[i], err = DeepMergeYispNode(targetNode, patchNode, k8sType)
+			if patchID == targetID {
+				targetArray[i], err = DeepMergeYispNode(targetNode, patchNode, targetNode.Type)
 				if err != nil {
 					return nil, NewEvaluationErrorWithParent(patchNode, fmt.Sprintf("failed to apply patch"), err)
 				}
@@ -1219,4 +1215,44 @@ func opAssertType(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	}
 
 	return valueNode, nil
+}
+
+func opGetType(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+	if len(cdr) != 1 {
+		return nil, NewEvaluationError(nil, fmt.Sprintf("get-type requires 1 argument, got %d", len(cdr)))
+	}
+
+	node := cdr[0]
+
+	if node.Type == nil {
+		return &YispNode{
+			Kind:  KindNull,
+			Value: nil,
+			Pos:   node.Pos,
+		}, nil
+	}
+
+	return node.Type.ToYispNode()
+}
+
+func opTypeOf(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+	if len(cdr) != 1 {
+		return nil, NewEvaluationError(nil, fmt.Sprintf("typeof requires 1 argument, got %d", len(cdr)))
+	}
+
+	node := cdr[0]
+
+	if node.Type == nil {
+		return &YispNode{
+			Kind:  KindNull,
+			Value: nil,
+			Pos:   node.Pos,
+		}, nil
+	}
+
+	return &YispNode{
+		Kind:  KindType,
+		Value: node.Type,
+		Pos:   node.Pos,
+	}, nil
 }

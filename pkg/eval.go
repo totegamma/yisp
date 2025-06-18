@@ -342,6 +342,9 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			return nil, NewEvaluationError(node, fmt.Sprintf("invalid map type: %T", node.Value))
 		}
 		results := NewYispMap()
+		var schemaID string
+		var apiVersion string
+		var kind string
 		for key, item := range m.AllFromFront() {
 			node, ok := item.(*YispNode)
 			if !ok {
@@ -351,6 +354,14 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			val, err := Eval(node, env, mode)
 			if err != nil {
 				return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to evaluate item"), err)
+			}
+
+			if key == "$schema" {
+				schemaID, _ = val.Value.(string)
+			} else if key == "apiVersion" {
+				apiVersion, _ = val.Value.(string)
+			} else if key == "kind" {
+				kind, _ = val.Value.(string)
 			}
 
 			if strings.HasPrefix(key, YISP_SPECIAL_MERGE_KEY) {
@@ -390,7 +401,6 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			} else {
 				results.Set(key, val)
 			}
-
 		}
 
 		result = &YispNode{
@@ -398,6 +408,38 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			Value: results,
 			Tag:   node.Tag,
 			Pos:   node.Pos,
+		}
+
+		// TODO: validate before update type
+		if schemaID != "" {
+			schema, err := LoadSchemaFromID(schemaID)
+			if err == nil {
+				result.Type = schema
+			}
+		} else if apiVersion != "" && kind != "" {
+			split := strings.Split(apiVersion, "/")
+			var group string
+			var version string
+			if len(split) == 1 {
+				version = split[0]
+			}
+			if len(split) == 2 {
+				group = split[0]
+				version = split[1]
+			}
+			schema, err := LoadSchemaFromGVK(group, version, kind)
+			if err != nil && !allowUntypedManifest {
+				return nil, NewEvaluationError(
+					node,
+					fmt.Sprintf(
+						"failed to resolve type for %s/%s/%s. Did you run `yisp cache-kube-schemas` first?",
+						group,
+						version,
+						kind,
+					),
+				)
+			}
+			result.Type = schema
 		}
 	}
 

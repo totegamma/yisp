@@ -1,8 +1,13 @@
 package yisp
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	"slices"
+	"strings"
 )
 
 var schemaTypeToKind = map[string]Kind{
@@ -17,18 +22,19 @@ var schemaTypeToKind = map[string]Kind{
 }
 
 type Schema struct {
-	Type                 string             `json:"type"`
+	ID                   string             `json:"$id,omitempty"`
+	Ref                  string             `json:"$ref,omitempty"`
+	Type                 string             `json:"type,omitempty"`
 	Required             []string           `json:"required,omitempty"`
 	Properties           map[string]*Schema `json:"properties,omitempty"`
 	Items                *Schema            `json:"items,omitempty"`
-	AdditionalProperties bool               `json:"additionalProperties,omitempty"`
+	AdditionalProperties any                `json:"additionalProperties,omitempty"`
 	Arguments            []*Schema          `json:"arguments,omitempty"`
 	Returns              *Schema            `json:"returns,omitempty"`
 	Description          string             `json:"description,omitempty"`
 	Default              any                `json:"default,omitempty"`
-	PatchStrategy        string             `json:"patchStrategy,omitempty"`
-	PatchMergeKey        string             `json:"patchMergeKey,omitempty"`
-	OneOf                []*Schema          `json:"oneOf,omitempty"`
+
+	OneOf []*Schema `json:"oneOf,omitempty"`
 
 	// Numeric constraints
 	MultipleOf       *int     `json:"multipleOf,omitempty"`
@@ -40,6 +46,95 @@ type Schema struct {
 	// String constraints
 	MinLength *int `json:"minLength,omitempty"`
 	MaxLength *int `json:"maxLength,omitempty"`
+
+	PatchStrategy    string `json:"patchStrategy,omitempty"`
+	PatchMergeKey    string `json:"patchMergeKey,omitempty"`
+	K8sPatchStrategy string `json:"x-kubernetes-patch-strategy,omitempty"`
+	K8sPatchMergeKey string `json:"x-kubernetes-patch-merge-key,omitempty"`
+}
+
+func (s *Schema) GetPatchStrategy() string {
+	if s.PatchStrategy != "" {
+		return s.PatchStrategy
+	}
+	if s.K8sPatchStrategy != "" {
+		return s.K8sPatchStrategy
+	}
+	return ""
+}
+
+func (s *Schema) GetPatchMergeKey() string {
+	if s.PatchMergeKey != "" {
+		return s.PatchMergeKey
+	}
+	if s.K8sPatchMergeKey != "" {
+		return s.K8sPatchMergeKey
+	}
+	return ""
+}
+
+func (s *Schema) ToYispNode() (*YispNode, error) {
+	jsonStr, err := json.Marshal(s)
+	if err != nil {
+		return nil, err
+	}
+
+	var anyValue any
+	err = json.Unmarshal(jsonStr, &anyValue)
+	if err != nil {
+		return nil, err
+	}
+
+	return ParseAny("", anyValue)
+}
+
+func LoadSchemaFromID(id string) (*Schema, error) {
+
+	if strings.HasPrefix(id, "#") {
+		split := strings.Split(id, "/")
+		id = split[len(split)-1]
+	}
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	schemasPath := filepath.Join(home, ".cache", "yisp", "schemas", id+".json")
+	file, err := os.Open(schemasPath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var schema Schema
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&schema)
+	if err != nil {
+		return nil, err
+	}
+	return &schema, nil
+}
+
+func LoadSchemaFromGVK(group, version, kind string) (*Schema, error) {
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+
+	gvkPath := filepath.Join(home, ".cache", "yisp", "gvk", fmt.Sprintf("%s_%s_%s.txt", group, version, kind))
+	file, err := os.Open(gvkPath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	id, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	return LoadSchemaFromID(string(id))
 }
 
 func (s *Schema) Validate(node *YispNode) error {
@@ -124,16 +219,31 @@ func (s *Schema) Validate(node *YispNode) error {
 			return fmt.Errorf("expected array, got %s", node.Kind)
 		}
 		if s.Items != nil {
+			subSchema := s.Items
 			arr, ok := node.Value.([]any)
 			if !ok {
 				return fmt.Errorf("expected array, got %T", node.Value)
 			}
+
+			if subSchema.Ref != "" {
+				ref := subSchema.Ref
+
+				var err error
+				subSchema, err = LoadSchemaFromID(ref)
+				if err != nil {
+					return fmt.Errorf("failed to load schema from ref %s: %v", ref, err)
+				}
+				if subSchema == nil {
+					return fmt.Errorf("schema not found for ref %s", ref)
+				}
+			}
+
 			for _, item := range arr {
 				itemNode, ok := item.(*YispNode)
 				if !ok {
 					return fmt.Errorf("expected YispNode, got %T", item)
 				}
-				if err := s.Items.Validate(itemNode); err != nil {
+				if err := subSchema.Validate(itemNode); err != nil {
 					return err
 				}
 			}
@@ -161,16 +271,73 @@ func (s *Schema) Validate(node *YispNode) error {
 			if !ok {
 				return fmt.Errorf("[object]expected YispNode, got %T", item)
 			}
+
+			if subSchema.Ref != "" {
+				ref := subSchema.Ref
+
+				var err error
+				subSchema, err = LoadSchemaFromID(ref)
+				if err != nil {
+					return fmt.Errorf("failed to load schema from ref %s: %v", ref, err)
+				}
+				if subSchema == nil {
+					return fmt.Errorf("schema not found for ref %s", ref)
+				}
+			}
+
 			if err := subSchema.Validate(itemNode); err != nil {
 				return err
 			}
 			processed[key] = true
 		}
 
-		for key := range m.AllFromFront() {
+		left := NewYispMap()
+		for key, item := range m.AllFromFront() {
 			if _, ok := processed[key]; !ok {
-				if !s.AdditionalProperties {
-					return fmt.Errorf("unexpected property: %s", key)
+				left.Set(key, item)
+			}
+		}
+
+		if left.Len() != 0 {
+			if s.AdditionalProperties == nil {
+				return fmt.Errorf("unexpected properties: %v", left.Keys())
+			}
+			switch ap := s.AdditionalProperties.(type) {
+			case bool:
+				if !ap {
+					return fmt.Errorf("unexpected properties: %v", left.Keys())
+				}
+			default:
+				// re-endode the additional properties schema
+				jsonStr, err := json.Marshal(s.AdditionalProperties)
+				if err != nil {
+					return fmt.Errorf("failed to marshal additionalProperties: %v", err)
+				}
+				var additionalSchema *Schema
+				err = json.Unmarshal(jsonStr, &additionalSchema)
+				if err != nil {
+					return fmt.Errorf("failed to unmarshal additionalProperties: %v", err)
+				}
+				for key, item := range left.AllFromFront() {
+					itemNode, ok := item.(*YispNode)
+					if !ok {
+						return fmt.Errorf("expected YispNode, got %T", item)
+					}
+					if additionalSchema.Ref != "" {
+						ref := additionalSchema.Ref
+
+						var err error
+						additionalSchema, err = LoadSchemaFromID(ref)
+						if err != nil {
+							return fmt.Errorf("failed to load schema from ref %s: %v", ref, err)
+						}
+						if additionalSchema == nil {
+							return fmt.Errorf("schema not found for ref %s", ref)
+						}
+					}
+					if err := additionalSchema.Validate(itemNode); err != nil {
+						return fmt.Errorf("additional property %s does not match schema: %v", key, err)
+					}
 				}
 			}
 		}
@@ -199,6 +366,7 @@ func (s *Schema) Validate(node *YispNode) error {
 		}
 
 	default:
+		JsonPrint("schema", s)
 		return fmt.Errorf("unknown type: %s", s.Type)
 	}
 

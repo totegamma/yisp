@@ -19,6 +19,18 @@ or use go install:
 go install github.com/totegamma/yisp@latest
 ```
 
+### Create cache for k8s definitions
+
+If you use kubernetes manifests, you have to create a cache for kubernetes definitions.
+Run the following command to download the latest Kubernetes API definitions:
+
+```sh
+yisp cache-kube-schemas
+```
+
+This command will run `kubectl get --raw /openapi/v2` to fetch the OpenAPI schema and store it in the cache directory.
+You have to set up kubectl before running this command, so that it can access your Kubernetes cluster.
+
 ## Syntax
 In yisp, YAML documents are treated as plain data by default.  
 To enable evaluation, you explicitly mark expressions using the `!yisp` tag.

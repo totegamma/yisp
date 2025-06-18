@@ -36,6 +36,8 @@ func getWholeYamlDocument(str string) (any, error) {
 
 func TestYisp(t *testing.T) {
 
+	allowUntypedManifest = true
+
 	files, err := filepath.Glob("../testdata/*.test.yaml")
 	if err != nil {
 		t.Fatalf("Error finding test files: %v", err)
