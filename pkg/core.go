@@ -16,6 +16,7 @@ var (
 	allowCmd             = false
 	showTrace            = false
 	renderSpecialObjects = false
+	allowUntypedManifest = false
 	allowedGoPkgs        = []string{}
 )
 
@@ -33,6 +34,10 @@ func SetAllowedPkgs(pkgs []string) {
 
 func SetRenderSpecialObjects(show bool) {
 	renderSpecialObjects = show
+}
+
+func SetAllowUntypedManifest(allow bool) {
+	allowUntypedManifest = allow
 }
 
 func EvaluateFileToYaml(path string) (string, error) {

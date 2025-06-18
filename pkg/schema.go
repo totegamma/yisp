@@ -1,7 +1,11 @@
 package yisp
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 	"slices"
 )
 
@@ -40,6 +44,64 @@ type Schema struct {
 	// String constraints
 	MinLength *int `json:"minLength,omitempty"`
 	MaxLength *int `json:"maxLength,omitempty"`
+}
+
+func (s *Schema) ToYispNode() (*YispNode, error) {
+	jsonStr, err := json.Marshal(s)
+	if err != nil {
+		return nil, err
+	}
+
+	var anyValue any
+	err = json.Unmarshal(jsonStr, &anyValue)
+	if err != nil {
+		return nil, err
+	}
+
+	return ParseAny("", anyValue)
+}
+
+func LoadSchemaFromID(id string) (*Schema, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	schemasPath := filepath.Join(home, ".cache", "yisp", "schemas", id+".json")
+	file, err := os.Open(schemasPath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var schema Schema
+	decoder := json.NewDecoder(file)
+	err = decoder.Decode(&schema)
+	if err != nil {
+		return nil, err
+	}
+	return &schema, nil
+}
+
+func LoadSchemaFromGVK(group, version, kind string) (*Schema, error) {
+
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+
+	gvkPath := filepath.Join(home, ".cache", "yisp", "gvk", fmt.Sprintf("%s_%s_%s.txt", group, version, kind))
+	file, err := os.Open(gvkPath)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	id, err := io.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	return LoadSchemaFromID(string(id))
 }
 
 func (s *Schema) Validate(node *YispNode) error {

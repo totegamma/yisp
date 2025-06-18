@@ -100,6 +100,7 @@ func init() {
 	operators["k8s-patch"] = opPatch
 	operators["as-document-root"] = opAsDocumentRoot
 	operators["assert-type"] = opAssertType
+	operators["get-type"] = opGetType
 }
 
 // opConcat concatenates strings
@@ -1219,4 +1220,22 @@ func opAssertType(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	}
 
 	return valueNode, nil
+}
+
+func opGetType(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+	if len(cdr) != 1 {
+		return nil, NewEvaluationError(nil, fmt.Sprintf("get-type requires 1 argument, got %d", len(cdr)))
+	}
+
+	node := cdr[0]
+
+	if node.Type == nil {
+		return &YispNode{
+			Kind:  KindNull,
+			Value: nil,
+			Pos:   node.Pos,
+		}, nil
+	}
+
+	return node.Type.ToYispNode()
 }
