@@ -148,7 +148,7 @@ func (s *Schema) Validate(node *YispNode) error {
 			}
 			errors = append(errors, err.Error())
 		}
-		return fmt.Errorf("node does not match any of the oneOf schemas: %s", errors)
+		return NewEvaluationError(node, fmt.Sprintf("node does not match any of the oneOf schemas: %s", strings.Join(errors, ", ")))
 	}
 
 	switch s.Type {
@@ -156,73 +156,73 @@ func (s *Schema) Validate(node *YispNode) error {
 		return nil
 	case "null":
 		if node.Kind != KindNull {
-			return fmt.Errorf("expected null, got %s", node.Kind)
+			return NewEvaluationError(node, fmt.Sprintf("expected null, got %s", node.Kind))
 		}
 	case "boolean":
 		if node.Kind != KindBool {
-			return fmt.Errorf("expected bool, got %s", node.Kind)
+			return NewEvaluationError(node, fmt.Sprintf("expected bool, got %s", node.Kind))
 		}
 	case "integer":
 		if node.Kind != KindInt {
-			return fmt.Errorf("expected int, got %s", node.Kind)
+			return NewEvaluationError(node, fmt.Sprintf("expected int, got %s", node.Kind))
 		}
 		if s.Minimum != nil && node.Value.(int) < int(*s.Minimum) {
-			return fmt.Errorf("value %d is less than minimum %f", node.Value.(int), *s.Minimum)
+			return NewEvaluationError(node, fmt.Sprintf("value %d is less than minimum %f", node.Value.(int), *s.Minimum))
 		}
 		if s.Maximum != nil && node.Value.(int) > int(*s.Maximum) {
-			return fmt.Errorf("value %d is greater than maximum %f", node.Value.(int), *s.Maximum)
+			return NewEvaluationError(node, fmt.Sprintf("value %d is greater than maximum %f", node.Value.(int), *s.Maximum))
 		}
 		if s.ExclusiveMinimum != nil && node.Value.(int) <= int(*s.ExclusiveMinimum) {
-			return fmt.Errorf("value %d is not greater than exclusive minimum %f", node.Value.(int), *s.ExclusiveMinimum)
+			return NewEvaluationError(node, fmt.Sprintf("value %d is not greater than exclusive minimum %f", node.Value.(int), *s.ExclusiveMinimum))
 		}
 		if s.ExclusiveMaximum != nil && node.Value.(int) >= int(*s.ExclusiveMaximum) {
-			return fmt.Errorf("value %d is not less than exclusive maximum %f", node.Value.(int), *s.ExclusiveMaximum)
+			return NewEvaluationError(node, fmt.Sprintf("value %d is not less than exclusive maximum %f", node.Value.(int), *s.ExclusiveMaximum))
 		}
 		if s.MultipleOf != nil {
 			if node.Value.(int)%*s.MultipleOf != 0 {
-				return fmt.Errorf("value %d is not a multiple of %d", node.Value.(int), *s.MultipleOf)
+				return NewEvaluationError(node, fmt.Sprintf("value %d is not a multiple of %d", node.Value.(int), *s.MultipleOf))
 			}
 		}
 	case "float":
 		if node.Kind != KindFloat {
-			return fmt.Errorf("expected float, got %s", node.Kind)
+			return NewEvaluationError(node, fmt.Sprintf("expected float, got %s", node.Kind))
 		}
 		if s.Minimum != nil && node.Value.(float64) < *s.Minimum {
-			return fmt.Errorf("value %f is less than minimum %f", node.Value.(float64), *s.Minimum)
+			return NewEvaluationError(node, fmt.Sprintf("value %f is less than minimum %f", node.Value.(float64), *s.Minimum))
 		}
 		if s.Maximum != nil && node.Value.(float64) > *s.Maximum {
-			return fmt.Errorf("value %f is greater than maximum %f", node.Value.(float64), *s.Maximum)
+			return NewEvaluationError(node, fmt.Sprintf("value %f is greater than maximum %f", node.Value.(float64), *s.Maximum))
 		}
 		if s.ExclusiveMinimum != nil && node.Value.(float64) <= *s.ExclusiveMinimum {
-			return fmt.Errorf("value %f is not greater than exclusive minimum %f", node.Value.(float64), *s.ExclusiveMinimum)
+			return NewEvaluationError(node, fmt.Sprintf("value %f is not greater than exclusive minimum %f", node.Value.(float64), *s.ExclusiveMinimum))
 		}
 		if s.ExclusiveMaximum != nil && node.Value.(float64) >= *s.ExclusiveMaximum {
-			return fmt.Errorf("value %f is not less than exclusive maximum %f", node.Value.(float64), *s.ExclusiveMaximum)
+			return NewEvaluationError(node, fmt.Sprintf("value %f is not less than exclusive maximum %f", node.Value.(float64), *s.ExclusiveMaximum))
 		}
 		if s.MultipleOf != nil {
 			if int(node.Value.(float64))%*s.MultipleOf != 0 {
-				return fmt.Errorf("value %f is not a multiple of %d", node.Value.(float64), *s.MultipleOf)
+				return NewEvaluationError(node, fmt.Sprintf("value %f is not a multiple of %d", node.Value.(float64), *s.MultipleOf))
 			}
 		}
 	case "string":
 		if node.Kind != KindString {
-			return fmt.Errorf("expected string, got %s", node.Kind)
+			return NewEvaluationError(node, fmt.Sprintf("expected string, got %s", node.Kind))
 		}
 		if s.MinLength != nil && len(node.Value.(string)) < *s.MinLength {
-			return fmt.Errorf("string length %d is less than minimum %d", len(node.Value.(string)), *s.MinLength)
+			return NewEvaluationError(node, fmt.Sprintf("string length %d is less than minimum %d", len(node.Value.(string)), *s.MinLength))
 		}
 		if s.MaxLength != nil && len(node.Value.(string)) > *s.MaxLength {
-			return fmt.Errorf("string length %d is greater than maximum %d", len(node.Value.(string)), *s.MaxLength)
+			return NewEvaluationError(node, fmt.Sprintf("string length %d is greater than maximum %d", len(node.Value.(string)), *s.MaxLength))
 		}
 	case "array":
 		if node.Kind != KindArray {
-			return fmt.Errorf("expected array, got %s", node.Kind)
+			return NewEvaluationError(node, fmt.Sprintf("expected array, got %s", node.Kind))
 		}
 		if s.Items != nil {
 			subSchema := s.Items
 			arr, ok := node.Value.([]any)
 			if !ok {
-				return fmt.Errorf("expected array, got %T", node.Value)
+				return NewEvaluationError(node, fmt.Sprintf("expected array, got %T", node.Value))
 			}
 
 			if subSchema.Ref != "" {
@@ -231,17 +231,17 @@ func (s *Schema) Validate(node *YispNode) error {
 				var err error
 				subSchema, err = LoadSchemaFromID(ref)
 				if err != nil {
-					return fmt.Errorf("failed to load schema from ref %s: %v", ref, err)
+					return NewEvaluationError(node, fmt.Sprintf("failed to load schema from ref %s: %v", ref, err))
 				}
 				if subSchema == nil {
-					return fmt.Errorf("schema not found for ref %s", ref)
+					return NewEvaluationError(node, fmt.Sprintf("schema not found for ref %s", ref))
 				}
 			}
 
 			for _, item := range arr {
 				itemNode, ok := item.(*YispNode)
 				if !ok {
-					return fmt.Errorf("expected YispNode, got %T", item)
+					return NewEvaluationError(node, fmt.Sprintf("expected YispNode, got %T", item))
 				}
 				if err := subSchema.Validate(itemNode); err != nil {
 					return err
@@ -250,11 +250,11 @@ func (s *Schema) Validate(node *YispNode) error {
 		}
 	case "object":
 		if node.Kind != KindMap {
-			return fmt.Errorf("expected map, got %s", node.Kind)
+			return NewEvaluationError(node, fmt.Sprintf("expected map, got %s", node.Kind))
 		}
 		m, ok := node.Value.(*YispMap)
 		if !ok {
-			return fmt.Errorf("expected map, got %T", node.Value)
+			return NewEvaluationError(node, fmt.Sprintf("expected map, got %T", node.Value))
 		}
 
 		processed := make(map[string]bool)
@@ -262,14 +262,14 @@ func (s *Schema) Validate(node *YispNode) error {
 			item, ok := m.Get(key)
 			if !ok {
 				if slices.Contains(s.Required, key) {
-					return fmt.Errorf("missing required property: %s", key)
+					return NewEvaluationError(node, fmt.Sprintf("missing required property: %s", key))
 				} else {
 					continue
 				}
 			}
 			itemNode, ok := item.(*YispNode)
 			if !ok {
-				return fmt.Errorf("[object]expected YispNode, got %T", item)
+				return NewEvaluationError(node, fmt.Sprintf("[object]expected YispNode, got %T", item))
 			}
 
 			if subSchema.Ref != "" {
@@ -278,10 +278,10 @@ func (s *Schema) Validate(node *YispNode) error {
 				var err error
 				subSchema, err = LoadSchemaFromID(ref)
 				if err != nil {
-					return fmt.Errorf("failed to load schema from ref %s: %v", ref, err)
+					return NewEvaluationError(node, fmt.Sprintf("failed to load schema from ref %s: %v", ref, err))
 				}
 				if subSchema == nil {
-					return fmt.Errorf("schema not found for ref %s", ref)
+					return NewEvaluationError(node, fmt.Sprintf("schema not found for ref %s", ref))
 				}
 			}
 
@@ -300,28 +300,28 @@ func (s *Schema) Validate(node *YispNode) error {
 
 		if left.Len() != 0 {
 			if s.AdditionalProperties == nil {
-				return fmt.Errorf("unexpected properties: %v", left.Keys())
+				return NewEvaluationError(node, fmt.Sprintf("unexpected properties: %v", left.Keys()))
 			}
 			switch ap := s.AdditionalProperties.(type) {
 			case bool:
 				if !ap {
-					return fmt.Errorf("unexpected properties: %v", left.Keys())
+					return NewEvaluationError(node, fmt.Sprintf("unexpected properties: %v", left.Keys()))
 				}
 			default:
 				// re-endode the additional properties schema
 				jsonStr, err := json.Marshal(s.AdditionalProperties)
 				if err != nil {
-					return fmt.Errorf("failed to marshal additionalProperties: %v", err)
+					return NewEvaluationError(node, fmt.Sprintf("failed to marshal additionalProperties: %v", err))
 				}
 				var additionalSchema *Schema
 				err = json.Unmarshal(jsonStr, &additionalSchema)
 				if err != nil {
-					return fmt.Errorf("failed to unmarshal additionalProperties: %v", err)
+					return NewEvaluationError(node, fmt.Sprintf("failed to unmarshal additionalProperties: %v", err))
 				}
 				for key, item := range left.AllFromFront() {
 					itemNode, ok := item.(*YispNode)
 					if !ok {
-						return fmt.Errorf("expected YispNode, got %T", item)
+						return NewEvaluationError(node, fmt.Sprintf("expected YispNode, got %T", item))
 					}
 					if additionalSchema.Ref != "" {
 						ref := additionalSchema.Ref
@@ -329,14 +329,14 @@ func (s *Schema) Validate(node *YispNode) error {
 						var err error
 						additionalSchema, err = LoadSchemaFromID(ref)
 						if err != nil {
-							return fmt.Errorf("failed to load schema from ref %s: %v", ref, err)
+							return NewEvaluationError(node, fmt.Sprintf("failed to load schema from ref %s: %v", ref, err))
 						}
 						if additionalSchema == nil {
-							return fmt.Errorf("schema not found for ref %s", ref)
+							return NewEvaluationError(node, fmt.Sprintf("schema not found for ref %s", ref))
 						}
 					}
 					if err := additionalSchema.Validate(itemNode); err != nil {
-						return fmt.Errorf("additional property %s does not match schema: %v", key, err)
+						return NewEvaluationError(node, fmt.Sprintf("additional property %s does not match schema: %v", key, err))
 					}
 				}
 			}
@@ -344,30 +344,30 @@ func (s *Schema) Validate(node *YispNode) error {
 
 	case "function":
 		if node.Kind != KindLambda {
-			return fmt.Errorf("expected function, got %s", node.Kind)
+			return NewEvaluationError(node, fmt.Sprintf("expected function, got %s", node.Kind))
 		}
 		fn, ok := node.Value.(*Lambda)
 		if !ok {
-			return fmt.Errorf("expected YispLambda, got %T", node.Value)
+			return NewEvaluationError(node, fmt.Sprintf("expected YispLambda, got %T", node.Value))
 		}
 		if len(fn.Arguments) != len(s.Arguments) {
-			return fmt.Errorf("expected %d arguments, got %d", len(s.Arguments), len(fn.Arguments))
+			return NewEvaluationError(node, fmt.Sprintf("expected %d arguments, got %d", len(s.Arguments), len(fn.Arguments)))
 		}
 		for i, arg := range s.Arguments {
 			if fn.Arguments[i].Schema != nil && !arg.Equals(fn.Arguments[i].Schema) {
-				return fmt.Errorf("argument %d does not match schema", i)
+				return NewEvaluationError(node, fmt.Sprintf("argument %d does not match schema", i))
 			}
 
 		}
 		if s.Returns != nil && fn.Returns != nil {
 			if !s.Returns.Equals(fn.Returns) {
-				return fmt.Errorf("return type does not match schema. Expected %s, got %s", s.Returns.Type, fn.Returns.Type)
+				return NewEvaluationError(node, fmt.Sprintf("return type does not match schema. Expected %s, got %s", s.Returns.Type, fn.Returns.Type))
 			}
 		}
 
 	default:
 		JsonPrint("schema", s)
-		return fmt.Errorf("unknown type: %s", s.Type)
+		return NewEvaluationError(node, fmt.Sprintf("unknown type: %s", s.Type))
 	}
 
 	return nil
@@ -377,41 +377,41 @@ func (s *Schema) InterpolateDefaults(node *YispNode) error {
 	switch s.Type {
 	case "array":
 		if node.Kind != KindArray {
-			return fmt.Errorf("expected array, got %s", node.Kind)
+			return NewEvaluationError(node, fmt.Sprintf("expected array, got %s", node.Kind))
 		}
 		if s.Items == nil {
 			return nil // No items schema to interpolate defaults for
 		}
 		arr, ok := node.Value.([]any)
 		if !ok {
-			return fmt.Errorf("expected array, got %T", node.Value)
+			return NewEvaluationError(node, fmt.Sprintf("expected array, got %T", node.Value))
 		}
 		for i, item := range arr {
 			itemNode, ok := item.(*YispNode)
 			if !ok {
-				return fmt.Errorf("expected YispNode, got %T", item)
+				return NewEvaluationError(node, fmt.Sprintf("expected YispNode, got %T", item))
 			}
 			if err := s.Items.InterpolateDefaults(itemNode); err != nil {
-				return fmt.Errorf("failed to interpolate defaults for array item %d: %v", i, err)
+				return NewEvaluationError(node, fmt.Sprintf("failed to interpolate defaults for array item %d: %v", i, err))
 			}
 		}
 		return nil
 	case "object":
 		if node.Kind != KindMap {
-			return fmt.Errorf("expected map, got %s", node.Kind)
+			return NewEvaluationError(node, fmt.Sprintf("expected map, got %s", node.Kind))
 		}
 		if node.Value == nil {
 			node.Value = NewYispMap()
 		}
 		m, ok := node.Value.(*YispMap)
 		if !ok {
-			return fmt.Errorf("expected map, got %T", node.Value)
+			return NewEvaluationError(node, fmt.Sprintf("expected map, got %T", node.Value))
 		}
 		for key, subSchema := range s.Properties {
 			item, ok := m.Get(key)
 			if !ok {
 				if slices.Contains(s.Required, key) {
-					return fmt.Errorf("missing required property: %s", key)
+					return NewEvaluationError(node, fmt.Sprintf("missing required property: %s", key))
 				}
 				if subSchema.Default != nil {
 					defaultNode := &YispNode{
@@ -429,7 +429,7 @@ func (s *Schema) InterpolateDefaults(node *YispNode) error {
 				}
 				err := subSchema.InterpolateDefaults(dummyNode)
 				if err != nil {
-					return fmt.Errorf("failed to interpolate dummy Node %v", err)
+					return NewEvaluationError(node, fmt.Sprintf("failed to interpolate dummy Node %v", err))
 				}
 				if !IsZero(dummyNode.Value) {
 					m.Set(key, dummyNode)
@@ -438,10 +438,10 @@ func (s *Schema) InterpolateDefaults(node *YispNode) error {
 			}
 			itemNode, ok := item.(*YispNode)
 			if !ok {
-				return fmt.Errorf("expected YispNode, got %T", item)
+				return NewEvaluationError(node, fmt.Sprintf("expected YispNode, got %T", item))
 			}
 			if err := subSchema.InterpolateDefaults(itemNode); err != nil {
-				return fmt.Errorf("failed to interpolate defaults for property %s: %v", key, err)
+				return NewEvaluationError(node, fmt.Sprintf("failed to interpolate defaults for property %s: %v", key, err))
 			}
 		}
 		return nil

@@ -410,12 +410,15 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			Pos:   node.Pos,
 		}
 
-		// TODO: validate before update type
 		if schemaID != "" {
 			schema, err := LoadSchemaFromID(schemaID)
-			if err == nil {
-				result.Type = schema
+			if err != nil && !allowUntypedManifest {
+				return nil, NewEvaluationError(
+					node,
+					fmt.Sprintf("failed to resolve type for %s.", schemaID),
+				)
 			}
+			result.Type = schema
 		} else if apiVersion != "" && kind != "" {
 			split := strings.Split(apiVersion, "/")
 			var group string
