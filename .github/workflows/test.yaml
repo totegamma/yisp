@@ -21,11 +21,21 @@ jobs:
         go-version: '1.24.2'
       id: go
 
+    - uses: engineerd/setup-kind@v0.6.2
+      with:
+        version: "v0.29.0"
+
     - name: Check out code
       uses: actions/checkout@v2
 
     - name: Go Generate
       run: go generate ./...
+
+    - name: Go install
+      run: go install .
+
+    - name: Run cache-kube-schemas
+      run: yes | yisp cache-kube-schemas
 
     - name: Run tests with coverage
       run: go test -coverprofile=coverage.out ./pkg/...
