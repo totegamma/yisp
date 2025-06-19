@@ -3,6 +3,7 @@ package yisp
 import (
 	"fmt"
 	"github.com/elliotchance/orderedmap/v3"
+	"github.com/totegamma/yisp/internal/yaml"
 )
 
 type YispMap = orderedmap.OrderedMap[string, any]
@@ -70,10 +71,21 @@ const (
 	KindType
 )
 
-type Position struct {
+type Attribute struct {
 	File   string
 	Line   int
 	Column int
+
+	KeyHeadComment string
+	KeyLineComment string
+	KeyFootComment string
+
+	HeadComment string
+	LineComment string
+	FootComment string
+
+	KeyStyle yaml.Style
+	Style    yaml.Style
 }
 
 // YispNode represents a node in the Yisp language
@@ -82,13 +94,13 @@ type YispNode struct {
 	Tag            string
 	Value          any
 	Anchor         string
-	Pos            Position
+	Attr           Attribute
 	IsDocumentRoot bool
 	Type           *Schema
 }
 
 func (n *YispNode) String() string {
-	return fmt.Sprintf("%s | %s:%d:%d", n.Kind, n.Pos.File, n.Pos.Line, n.Pos.Column)
+	return fmt.Sprintf("%s | %s:%d:%d", n.Kind, n.Attr.File, n.Attr.Line, n.Attr.Column)
 }
 
 type TypedSymbol struct {

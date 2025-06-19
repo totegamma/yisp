@@ -47,9 +47,9 @@ func (e *ErrorTypeEvaluation) String() string {
 	column := 0
 
 	if e.Node != nil {
-		file = e.Node.Pos.File
-		line = e.Node.Pos.Line
-		column = e.Node.Pos.Column
+		file = e.Node.Attr.File
+		line = e.Node.Attr.Line
+		column = e.Node.Attr.Column
 	}
 
 	return fmt.Sprintf("%s at %s:%d:%d", e.Message, file, line, column)
@@ -71,10 +71,10 @@ func (e *ErrorTypeEvaluation) Error() string {
 		if e.Node != nil {
 			message += "\n"
 
-			line, err := RenderCode(e.Node.Pos.File, e.Node.Pos.Line, 3, 3, []Comment{
+			line, err := RenderCode(e.Node.Attr.File, e.Node.Attr.Line, 3, 3, []Comment{
 				{
-					Line:   e.Node.Pos.Line,
-					Column: e.Node.Pos.Column,
+					Line:   e.Node.Attr.Line,
+					Column: e.Node.Attr.Column,
 					Text:   e.Message,
 				},
 			})

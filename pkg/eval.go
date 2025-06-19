@@ -51,7 +51,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			Kind:  KindNull,
 			Value: nil,
 			Tag:   node.Tag,
-			Pos:   node.Pos,
+			Attr:  node.Attr,
 		}
 
 	case KindBool:
@@ -63,7 +63,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			Kind:  KindBool,
 			Value: val,
 			Tag:   node.Tag,
-			Pos:   node.Pos,
+			Attr:  node.Attr,
 		}
 
 	case KindFloat:
@@ -87,7 +87,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			Kind:  KindFloat,
 			Value: f,
 			Tag:   node.Tag,
-			Pos:   node.Pos,
+			Attr:  node.Attr,
 		}
 
 	case KindInt:
@@ -111,7 +111,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			Kind:  KindInt,
 			Value: i,
 			Tag:   node.Tag,
-			Pos:   node.Pos,
+			Attr:  node.Attr,
 		}
 
 	case KindString:
@@ -119,7 +119,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			Kind:  KindString,
 			Value: node.Value,
 			Tag:   node.Tag,
-			Pos:   node.Pos,
+			Attr:  node.Attr,
 		}
 
 	case KindArray:
@@ -240,8 +240,8 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 						Body:      bodyNode,
 						Clojure:   env.Clone(),
 					},
-					Tag: node.Tag,
-					Pos: node.Pos,
+					Tag:  node.Tag,
+					Attr: node.Attr,
 				}
 			case "import":
 				for _, node := range nodes[1:] {
@@ -278,7 +278,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 					newEnv := NewEnv()
 
 					var err error
-					_, err = evaluateYispFile(relpath, node.Pos.File, newEnv)
+					_, err = evaluateYispFile(relpath, node.Attr.File, newEnv)
 					if err != nil {
 						return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to include file"), err)
 					}
@@ -332,7 +332,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 				Kind:  KindArray,
 				Value: results,
 				Tag:   node.Tag,
-				Pos:   node.Pos,
+				Attr:  node.Attr,
 			}
 		}
 
@@ -407,7 +407,7 @@ func Eval(node *YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			Kind:  KindMap,
 			Value: results,
 			Tag:   node.Tag,
-			Pos:   node.Pos,
+			Attr:  node.Attr,
 		}
 
 		if schemaID != "" {

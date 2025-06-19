@@ -348,7 +348,7 @@ func opInclude(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		}
 
 		var err error
-		evaluated, err := evaluateYispFile(relpath, node.Pos.File, NewEnv())
+		evaluated, err := evaluateYispFile(relpath, node.Attr.File, NewEnv())
 		if err != nil {
 			return nil, NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to include file"), err)
 		}
@@ -441,7 +441,7 @@ func opMap(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	return &YispNode{
 		Kind:           KindArray,
 		Value:          results,
-		Pos:            fnNode.Pos,
+		Attr:           fnNode.Attr,
 		IsDocumentRoot: isDocumentRoot,
 	}, nil
 }
@@ -609,7 +609,7 @@ func opCmd(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		}, nil
 	} else {
 
-		result, err := evaluateYisp(stdout, env, cdr[0].Pos.File)
+		result, err := evaluateYisp(stdout, env, cdr[0].Attr.File)
 		if err != nil {
 			return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate command output"), err)
 		}
@@ -737,7 +737,7 @@ func opGoRun(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		}, nil
 	} else {
 
-		result, err := evaluateYisp(stdout, env, cdr[0].Pos.File)
+		result, err := evaluateYisp(stdout, env, cdr[0].Attr.File)
 		if err != nil {
 			return nil, NewEvaluationErrorWithParent(cdr[0], fmt.Sprintf("failed to evaluate command output"), err)
 		}
@@ -791,8 +791,8 @@ func opReadFiles(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		}
 
 		path := str
-		if node.Pos.File != "" {
-			path = filepath.Clean(filepath.Join(filepath.Dir(node.Pos.File), str))
+		if node.Attr.File != "" {
+			path = filepath.Clean(filepath.Join(filepath.Dir(node.Attr.File), str))
 		}
 
 		files, err := filepath.Glob(path)
@@ -825,10 +825,10 @@ func opReadFiles(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 			result = append(result, &YispNode{
 				Kind:  KindMap,
 				Value: value,
-				Pos: Position{
+				Attr: Attribute{
 					File:   file,
-					Line:   node.Pos.Line,
-					Column: node.Pos.Column,
+					Line:   node.Attr.Line,
+					Column: node.Attr.Column,
 				},
 			})
 		}
@@ -837,7 +837,7 @@ func opReadFiles(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	return &YispNode{
 		Kind:  KindArray,
 		Value: result,
-		Pos:   cdr[0].Pos,
+		Attr:  cdr[0].Attr,
 	}, nil
 }
 
@@ -858,7 +858,7 @@ func opToEntries(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 				&YispNode{
 					Kind:  KindString,
 					Value: key,
-					Pos:   node.Pos,
+					Attr:  node.Attr,
 				},
 				value,
 			},
@@ -868,7 +868,7 @@ func opToEntries(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	return &YispNode{
 		Kind:  KindArray,
 		Value: result,
-		Pos:   node.Pos,
+		Attr:  node.Attr,
 	}, nil
 }
 
@@ -913,7 +913,7 @@ func opFromEntries(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) 
 	return &YispNode{
 		Kind:  KindMap,
 		Value: result,
-		Pos:   node.Pos,
+		Attr:  node.Attr,
 	}, nil
 }
 
@@ -931,7 +931,7 @@ func opToYaml(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	return &YispNode{
 		Kind:  KindString,
 		Value: yamlStr,
-		Pos:   node.Pos,
+		Attr:  node.Attr,
 	}, nil
 }
 
@@ -1030,7 +1030,7 @@ func opSha256(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	return &YispNode{
 		Kind:  KindString,
 		Value: fmt.Sprintf("%x", hash),
-		Pos:   node.Pos,
+		Attr:  node.Attr,
 	}, nil
 }
 
@@ -1061,7 +1061,7 @@ func opSchema(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	return &YispNode{
 		Kind:  KindType,
 		Value: &schema,
-		Pos:   node.Pos,
+		Attr:  node.Attr,
 	}, nil
 
 }
@@ -1102,7 +1102,7 @@ func opFormat(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	return &YispNode{
 		Kind:  KindString,
 		Value: fmt.Sprintf(formatStr, args...),
-		Pos:   formatNode.Pos,
+		Attr:  formatNode.Attr,
 	}, nil
 
 }
@@ -1228,7 +1228,7 @@ func opGetType(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		return &YispNode{
 			Kind:  KindNull,
 			Value: nil,
-			Pos:   node.Pos,
+			Attr:  node.Attr,
 		}, nil
 	}
 
@@ -1246,13 +1246,13 @@ func opTypeOf(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 		return &YispNode{
 			Kind:  KindNull,
 			Value: nil,
-			Pos:   node.Pos,
+			Attr:  node.Attr,
 		}, nil
 	}
 
 	return &YispNode{
 		Kind:  KindType,
 		Value: node.Type,
-		Pos:   node.Pos,
+		Attr:  node.Attr,
 	}, nil
 }

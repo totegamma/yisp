@@ -12,37 +12,57 @@ func render(node *YispNode) (*yaml.Node, error) {
 	switch node.Kind {
 	case KindNull:
 		return &yaml.Node{
-			Kind:  yaml.ScalarNode,
-			Value: "null",
-			Tag:   "!!null",
+			Kind:        yaml.ScalarNode,
+			Value:       "null",
+			Tag:         "!!null",
+			HeadComment: node.Attr.HeadComment,
+			LineComment: node.Attr.LineComment,
+			FootComment: node.Attr.FootComment,
+			Style:       node.Attr.Style,
 		}, nil
 
 	case KindBool:
 		return &yaml.Node{
-			Kind:  yaml.ScalarNode,
-			Value: fmt.Sprintf("%t", node.Value),
-			Tag:   "!!bool",
+			Kind:        yaml.ScalarNode,
+			Value:       fmt.Sprintf("%t", node.Value),
+			Tag:         "!!bool",
+			HeadComment: node.Attr.HeadComment,
+			LineComment: node.Attr.LineComment,
+			FootComment: node.Attr.FootComment,
+			Style:       node.Attr.Style,
 		}, nil
 
 	case KindInt:
 		return &yaml.Node{
-			Kind:  yaml.ScalarNode,
-			Value: fmt.Sprintf("%d", node.Value),
-			Tag:   "!!int",
+			Kind:        yaml.ScalarNode,
+			Value:       fmt.Sprintf("%d", node.Value),
+			Tag:         "!!int",
+			HeadComment: node.Attr.HeadComment,
+			LineComment: node.Attr.LineComment,
+			FootComment: node.Attr.FootComment,
+			Style:       node.Attr.Style,
 		}, nil
 
 	case KindFloat:
 		return &yaml.Node{
-			Kind:  yaml.ScalarNode,
-			Value: fmt.Sprintf("%f", node.Value),
-			Tag:   "!!float",
+			Kind:        yaml.ScalarNode,
+			Value:       fmt.Sprintf("%f", node.Value),
+			Tag:         "!!float",
+			HeadComment: node.Attr.HeadComment,
+			LineComment: node.Attr.LineComment,
+			FootComment: node.Attr.FootComment,
+			Style:       node.Attr.Style,
 		}, nil
 
 	case KindString:
 		return &yaml.Node{
-			Kind:  yaml.ScalarNode,
-			Value: fmt.Sprintf("%s", node.Value),
-			Tag:   "!!str",
+			Kind:        yaml.ScalarNode,
+			Value:       fmt.Sprintf("%s", node.Value),
+			Tag:         "!!str",
+			HeadComment: node.Attr.HeadComment,
+			LineComment: node.Attr.LineComment,
+			FootComment: node.Attr.FootComment,
+			Style:       node.Attr.Style,
 		}, nil
 
 	case KindArray:
@@ -63,8 +83,12 @@ func render(node *YispNode) (*yaml.Node, error) {
 			}
 		}
 		return &yaml.Node{
-			Kind:    yaml.SequenceNode,
-			Content: results,
+			Kind:        yaml.SequenceNode,
+			Content:     results,
+			HeadComment: node.Attr.HeadComment,
+			LineComment: node.Attr.LineComment,
+			FootComment: node.Attr.FootComment,
+			Style:       node.Attr.Style,
 		}, nil
 	case KindMap:
 		m, ok := node.Value.(*YispMap)
@@ -84,51 +108,80 @@ func render(node *YispNode) (*yaml.Node, error) {
 			}
 
 			results = append(results, &yaml.Node{
-				Kind:  yaml.ScalarNode,
-				Value: key,
+				Kind:        yaml.ScalarNode,
+				Value:       key,
+				HeadComment: node.Attr.KeyHeadComment,
+				LineComment: node.Attr.KeyLineComment,
+				FootComment: node.Attr.KeyFootComment,
+				Style:       node.Attr.KeyStyle,
 			})
 
 			results = append(results, content)
 
 		}
+
 		return &yaml.Node{
-			Kind:    yaml.MappingNode,
-			Content: results,
+			Kind:        yaml.MappingNode,
+			Content:     results,
+			HeadComment: node.Attr.HeadComment,
+			LineComment: node.Attr.LineComment,
+			FootComment: node.Attr.FootComment,
+			Style:       node.Attr.Style,
 		}, nil
 
 	case KindLambda:
 		if renderSpecialObjects {
 			return &yaml.Node{
-				Kind:  yaml.ScalarNode,
-				Value: "(lambda)",
+				Kind:        yaml.ScalarNode,
+				Value:       "(lambda)",
+				HeadComment: node.Attr.HeadComment,
+				LineComment: node.Attr.LineComment,
+				FootComment: node.Attr.FootComment,
+				Style:       node.Attr.Style,
 			}, nil
 		}
 	case KindParameter:
 		if renderSpecialObjects {
 			return &yaml.Node{
-				Kind:  yaml.ScalarNode,
-				Value: "(parameter)",
+				Kind:        yaml.ScalarNode,
+				Value:       "(parameter)",
+				HeadComment: node.Attr.HeadComment,
+				LineComment: node.Attr.LineComment,
+				FootComment: node.Attr.FootComment,
+				Style:       node.Attr.Style,
 			}, nil
 		}
 	case KindSymbol:
 		if renderSpecialObjects {
 			return &yaml.Node{
-				Kind:  yaml.ScalarNode,
-				Value: "(symbol)",
+				Kind:        yaml.ScalarNode,
+				Value:       "(symbol)",
+				HeadComment: node.Attr.HeadComment,
+				LineComment: node.Attr.LineComment,
+				FootComment: node.Attr.FootComment,
+				Style:       node.Attr.Style,
 			}, nil
 		}
 	case KindType:
 		if renderSpecialObjects {
 			return &yaml.Node{
-				Kind:  yaml.ScalarNode,
-				Value: "(type)",
+				Kind:        yaml.ScalarNode,
+				Value:       "(type)",
+				HeadComment: node.Attr.HeadComment,
+				LineComment: node.Attr.LineComment,
+				FootComment: node.Attr.FootComment,
+				Style:       node.Attr.Style,
 			}, nil
 		}
 	default:
 		if renderSpecialObjects {
 			return &yaml.Node{
-				Kind:  yaml.ScalarNode,
-				Value: "(unknown)",
+				Kind:        yaml.ScalarNode,
+				Value:       "(unknown)",
+				HeadComment: node.Attr.HeadComment,
+				LineComment: node.Attr.LineComment,
+				FootComment: node.Attr.FootComment,
+				Style:       node.Attr.Style,
 			}, nil
 		}
 	}

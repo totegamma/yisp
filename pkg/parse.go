@@ -20,6 +20,15 @@ func Parse(filename string, node *yaml.Node) (*YispNode, error) {
 			return nil, nil
 		}
 		result, err = Parse(filename, node.Content[0])
+		result.Attr = Attribute{
+			File:        filename,
+			Line:        node.Line,
+			Column:      node.Column,
+			HeadComment: node.HeadComment,
+			LineComment: node.LineComment,
+			FootComment: node.FootComment,
+			Style:       node.Style,
+		}
 
 	case yaml.SequenceNode:
 		s := make([]any, len(node.Content))
@@ -35,10 +44,14 @@ func Parse(filename string, node *yaml.Node) (*YispNode, error) {
 			Kind:  KindArray,
 			Value: s,
 			Tag:   node.Tag,
-			Pos: Position{
-				File:   filename,
-				Line:   node.Line,
-				Column: node.Column,
+			Attr: Attribute{
+				File:        filename,
+				Line:        node.Line,
+				Column:      node.Column,
+				HeadComment: node.HeadComment,
+				LineComment: node.LineComment,
+				FootComment: node.FootComment,
+				Style:       node.Style,
 			},
 		}
 
@@ -57,6 +70,12 @@ func Parse(filename string, node *yaml.Node) (*YispNode, error) {
 			if err != nil {
 				return nil, err
 			}
+
+			value.Attr.KeyStyle = keyNode.Style
+			value.Attr.KeyHeadComment = keyNode.HeadComment
+			value.Attr.KeyLineComment = keyNode.LineComment
+			value.Attr.KeyFootComment = keyNode.FootComment
+
 			m.Set(key, value)
 		}
 
@@ -64,10 +83,14 @@ func Parse(filename string, node *yaml.Node) (*YispNode, error) {
 			Kind:  KindMap,
 			Value: m,
 			Tag:   node.Tag,
-			Pos: Position{
-				File:   filename,
-				Line:   node.Line,
-				Column: node.Column,
+			Attr: Attribute{
+				File:        filename,
+				Line:        node.Line,
+				Column:      node.Column,
+				HeadComment: node.HeadComment,
+				LineComment: node.LineComment,
+				FootComment: node.FootComment,
+				Style:       node.Style,
 			},
 		}
 
@@ -91,10 +114,14 @@ func Parse(filename string, node *yaml.Node) (*YispNode, error) {
 			Kind:  kind,
 			Value: node.Value,
 			Tag:   node.Tag,
-			Pos: Position{
-				File:   filename,
-				Line:   node.Line,
-				Column: node.Column,
+			Attr: Attribute{
+				File:        filename,
+				Line:        node.Line,
+				Column:      node.Column,
+				HeadComment: node.HeadComment,
+				LineComment: node.LineComment,
+				FootComment: node.FootComment,
+				Style:       node.Style,
 			},
 		}
 
@@ -103,10 +130,14 @@ func Parse(filename string, node *yaml.Node) (*YispNode, error) {
 			Kind:  KindSymbol,
 			Value: node.Value,
 			Tag:   node.Tag,
-			Pos: Position{
-				File:   filename,
-				Line:   node.Line,
-				Column: node.Column,
+			Attr: Attribute{
+				File:        filename,
+				Line:        node.Line,
+				Column:      node.Column,
+				HeadComment: node.HeadComment,
+				LineComment: node.LineComment,
+				FootComment: node.FootComment,
+				Style:       node.Style,
 			},
 		}
 	}
@@ -127,7 +158,7 @@ func ParseAny(filename string, v any) (*YispNode, error) {
 		return &YispNode{
 			Kind:  KindBool,
 			Value: v,
-			Pos: Position{
+			Attr: Attribute{
 				File: filename,
 			},
 		}, nil
@@ -135,7 +166,7 @@ func ParseAny(filename string, v any) (*YispNode, error) {
 		return &YispNode{
 			Kind:  KindInt,
 			Value: v,
-			Pos: Position{
+			Attr: Attribute{
 				File: filename,
 			},
 		}, nil
@@ -143,7 +174,7 @@ func ParseAny(filename string, v any) (*YispNode, error) {
 		return &YispNode{
 			Kind:  KindFloat,
 			Value: v,
-			Pos: Position{
+			Attr: Attribute{
 				File: filename,
 			},
 		}, nil
@@ -151,7 +182,7 @@ func ParseAny(filename string, v any) (*YispNode, error) {
 		return &YispNode{
 			Kind:  KindString,
 			Value: v,
-			Pos: Position{
+			Attr: Attribute{
 				File: filename,
 			},
 		}, nil
@@ -173,7 +204,7 @@ func ParseAny(filename string, v any) (*YispNode, error) {
 		return &YispNode{
 			Kind:  KindMap,
 			Value: m,
-			Pos: Position{
+			Attr: Attribute{
 				File: filename,
 			},
 		}, nil
@@ -195,7 +226,7 @@ func ParseAny(filename string, v any) (*YispNode, error) {
 		return &YispNode{
 			Kind:  KindArray,
 			Value: s,
-			Pos: Position{
+			Attr: Attribute{
 				File: filename,
 			},
 		}, nil

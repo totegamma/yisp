@@ -437,7 +437,7 @@ func (s *Schema) InterpolateDefaults(node *YispNode) error {
 						Kind:  schemaTypeToKind[subSchema.Type],
 						Value: subSchema.Default,
 						Tag:   node.Tag,
-						Pos:   node.Pos,
+						Attr:  node.Attr,
 						Type:  subSchema,
 					}
 					m.Set(key, defaultNode)
