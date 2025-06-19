@@ -246,29 +246,23 @@ func DeepMergeYispNode(dst, src *YispNode, schema *Schema) (*YispNode, error) {
 				allKeys = append(allKeys, key)
 			}
 		}
+
+		properties := make(map[string]*Schema)
+		if schema != nil {
+			properties = schema.GetProperties()
+		}
+
 		result := NewYispMap()
 		for _, key := range allKeys {
 			dstVal, dstOK := dstMap.Get(key)
 			srcVal, srcOK := srcMap.Get(key)
-
-			var subSchema *Schema
-			if schema != nil {
-				subSchema = schema.Properties[key]
-				if subSchema != nil && subSchema.Ref != "" {
-					var err error
-					subSchema, err = LoadSchemaFromID(subSchema.Ref)
-					if err != nil {
-						return nil, fmt.Errorf("failed to load schema for key %s: %v", key, err)
-					}
-				}
-			}
 
 			if dstOK && srcOK {
 				dstNode, dstNodeOK := dstVal.(*YispNode)
 				srcNode, srcNodeOK := srcVal.(*YispNode)
 
 				if dstNodeOK && srcNodeOK {
-					mergedNode, err := DeepMergeYispNode(dstNode, srcNode, subSchema)
+					mergedNode, err := DeepMergeYispNode(dstNode, srcNode, properties[key])
 					if err != nil {
 						return nil, err
 					}
@@ -297,14 +291,7 @@ func DeepMergeYispNode(dst, src *YispNode, schema *Schema) (*YispNode, error) {
 
 		var subSchema *Schema
 		if schema != nil {
-			subSchema = schema.Items
-			if subSchema != nil && subSchema.Ref != "" {
-				var err error
-				subSchema, err = LoadSchemaFromID(subSchema.Ref)
-				if err != nil {
-					return nil, fmt.Errorf("failed to load schema for array items: %v", err)
-				}
-			}
+			subSchema = schema.GetItems()
 		}
 
 		var result []any

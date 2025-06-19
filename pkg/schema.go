@@ -53,6 +53,72 @@ type Schema struct {
 	K8sPatchMergeKey string `json:"x-kubernetes-patch-merge-key,omitempty"`
 }
 
+func (s *Schema) GetProperties() map[string]*Schema {
+	if s.Properties == nil {
+		return make(map[string]*Schema)
+	}
+
+	newProperties := make(map[string]*Schema, len(s.Properties))
+	for key, value := range s.Properties {
+		if value.Ref != "" {
+			refSchema, err := LoadSchemaFromID(value.Ref)
+			if err != nil {
+				fmt.Printf("Error loading schema from ref %s: %v\n", value.Ref, err)
+				continue
+			}
+			newProperties[key] = refSchema
+		} else {
+			newProperties[key] = value
+		}
+	}
+
+	return newProperties
+}
+
+func (s *Schema) GetItems() *Schema {
+	if s.Items != nil && s.Items.Ref != "" {
+		refSchema, err := LoadSchemaFromID(s.Items.Ref)
+		if err != nil {
+			fmt.Printf("Error loading schema from ref %s: %v\n", s.Items.Ref, err)
+			return nil
+		}
+		return refSchema
+	}
+	return s.Items
+}
+
+func (s *Schema) GetAdditionalProperties() any {
+
+	if s.AdditionalProperties == nil {
+		return false
+	}
+
+	switch ap := s.AdditionalProperties.(type) {
+	case bool:
+		return ap
+	default:
+		jsonStr, err := json.Marshal(s.AdditionalProperties)
+		if err != nil {
+			return fmt.Sprintf("failed to marshal additionalProperties: %v", err)
+		}
+		var additionalSchema *Schema
+		err = json.Unmarshal(jsonStr, &additionalSchema)
+		if err != nil {
+			return fmt.Sprintf("failed to unmarshal additionalProperties: %v", err)
+		}
+
+		if additionalSchema.Ref != "" {
+			refSchema, err := LoadSchemaFromID(additionalSchema.Ref)
+			if err != nil {
+				fmt.Printf("Error loading schema from ref %s: %v\n", additionalSchema.Ref, err)
+			}
+			return refSchema
+		}
+
+		return additionalSchema
+	}
+}
+
 func (s *Schema) GetPatchStrategy() string {
 	if s.PatchStrategy != "" {
 		return s.PatchStrategy
@@ -219,23 +285,10 @@ func (s *Schema) Validate(node *YispNode) error {
 			return NewEvaluationError(node, fmt.Sprintf("expected array, got %s", node.Kind))
 		}
 		if s.Items != nil {
-			subSchema := s.Items
+			subSchema := s.GetItems()
 			arr, ok := node.Value.([]any)
 			if !ok {
 				return NewEvaluationError(node, fmt.Sprintf("expected array, got %T", node.Value))
-			}
-
-			if subSchema.Ref != "" {
-				ref := subSchema.Ref
-
-				var err error
-				subSchema, err = LoadSchemaFromID(ref)
-				if err != nil {
-					return NewEvaluationError(node, fmt.Sprintf("failed to load schema from ref %s: %v", ref, err))
-				}
-				if subSchema == nil {
-					return NewEvaluationError(node, fmt.Sprintf("schema not found for ref %s", ref))
-				}
 			}
 
 			for _, item := range arr {
@@ -258,7 +311,7 @@ func (s *Schema) Validate(node *YispNode) error {
 		}
 
 		processed := make(map[string]bool)
-		for key, subSchema := range s.Properties {
+		for key, subSchema := range s.GetProperties() {
 			item, ok := m.Get(key)
 			if !ok {
 				if slices.Contains(s.Required, key) {
@@ -270,19 +323,6 @@ func (s *Schema) Validate(node *YispNode) error {
 			itemNode, ok := item.(*YispNode)
 			if !ok {
 				return NewEvaluationError(node, fmt.Sprintf("[object]expected YispNode, got %T", item))
-			}
-
-			if subSchema.Ref != "" {
-				ref := subSchema.Ref
-
-				var err error
-				subSchema, err = LoadSchemaFromID(ref)
-				if err != nil {
-					return NewEvaluationError(node, fmt.Sprintf("failed to load schema from ref %s: %v", ref, err))
-				}
-				if subSchema == nil {
-					return NewEvaluationError(node, fmt.Sprintf("schema not found for ref %s", ref))
-				}
 			}
 
 			if err := subSchema.Validate(itemNode); err != nil {
@@ -299,46 +339,25 @@ func (s *Schema) Validate(node *YispNode) error {
 		}
 
 		if left.Len() != 0 {
-			if s.AdditionalProperties == nil {
-				return NewEvaluationError(node, fmt.Sprintf("unexpected properties: %v", left.Keys()))
-			}
-			switch ap := s.AdditionalProperties.(type) {
+			additionalProperties := s.GetAdditionalProperties()
+
+			switch ap := additionalProperties.(type) {
 			case bool:
 				if !ap {
 					return NewEvaluationError(node, fmt.Sprintf("unexpected properties: %v", left.Keys()))
 				}
-			default:
-				// re-endode the additional properties schema
-				jsonStr, err := json.Marshal(s.AdditionalProperties)
-				if err != nil {
-					return NewEvaluationError(node, fmt.Sprintf("failed to marshal additionalProperties: %v", err))
-				}
-				var additionalSchema *Schema
-				err = json.Unmarshal(jsonStr, &additionalSchema)
-				if err != nil {
-					return NewEvaluationError(node, fmt.Sprintf("failed to unmarshal additionalProperties: %v", err))
-				}
+			case *Schema:
 				for key, item := range left.AllFromFront() {
 					itemNode, ok := item.(*YispNode)
 					if !ok {
 						return NewEvaluationError(node, fmt.Sprintf("expected YispNode, got %T", item))
 					}
-					if additionalSchema.Ref != "" {
-						ref := additionalSchema.Ref
-
-						var err error
-						additionalSchema, err = LoadSchemaFromID(ref)
-						if err != nil {
-							return NewEvaluationError(node, fmt.Sprintf("failed to load schema from ref %s: %v", ref, err))
-						}
-						if additionalSchema == nil {
-							return NewEvaluationError(node, fmt.Sprintf("schema not found for ref %s", ref))
-						}
-					}
-					if err := additionalSchema.Validate(itemNode); err != nil {
+					if err := ap.Validate(itemNode); err != nil {
 						return NewEvaluationError(node, fmt.Sprintf("additional property %s does not match schema: %v", key, err))
 					}
 				}
+			default:
+				return NewEvaluationError(node, fmt.Sprintf("unexpected additionalProperties type: %T", ap))
 			}
 		}
 
