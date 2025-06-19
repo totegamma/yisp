@@ -131,9 +131,17 @@ func render(node *YispNode) (*yaml.Node, error) {
 
 	case KindLambda:
 		if renderSpecialObjects {
+			value := "λ"
+			lambda := node.Value.(*Lambda)
+			for i, arg := range lambda.Arguments {
+				value += arg.Name
+				if i < len(lambda.Arguments)-1 {
+					value += ","
+				}
+			}
 			return &yaml.Node{
 				Kind:        yaml.ScalarNode,
-				Value:       "(lambda)",
+				Value:       value,
 				HeadComment: node.Attr.HeadComment,
 				LineComment: node.Attr.LineComment,
 				FootComment: node.Attr.FootComment,
