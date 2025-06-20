@@ -74,6 +74,7 @@ func init() {
 	operators["<="] = opLessThanOrEqual
 	operators[">"] = opGreaterThan
 	operators[">="] = opGreaterThanOrEqual
+	operators["??"] = opNullCoalesce
 	operators["and"] = opAnd
 	operators["or"] = opOr
 	operators["not"] = opNot
@@ -102,6 +103,62 @@ func init() {
 	operators["assert-type"] = opAssertType
 	operators["get-type"] = opGetType
 	operators["typeof"] = opTypeOf
+	operators["escape"] = opEscape
+}
+
+func opEscape(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+	if len(cdr) != 1 {
+		return nil, NewEvaluationError(nil, fmt.Sprintf("escape requires 1 argument, got %d", len(cdr)))
+	}
+
+	value := ""
+	switch cdr[0].Kind {
+	case KindString:
+		value, _ = cdr[0].Value.(string)
+	case KindInt:
+		value = fmt.Sprintf("%d", cdr[0].Value)
+	case KindFloat:
+		value = fmt.Sprintf("%f", cdr[0].Value)
+	case KindBool:
+		if cdr[0].Value.(bool) {
+			value = "true"
+		} else {
+			value = "false"
+		}
+	default:
+		value = fmt.Sprintf("%v", cdr[0].Value)
+	}
+
+	node := cdr[0]
+	str := fmt.Sprintf("%q", value)
+	str = strings.Trim(str, "\"")
+	str = strings.Trim(str, "'")
+
+	return &YispNode{
+		Kind:  KindString,
+		Value: str,
+		Attr:  node.Attr,
+	}, nil
+}
+
+func opNullCoalesce(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
+	if len(cdr) == 0 {
+		return &YispNode{
+			Kind:  KindNull,
+			Value: nil,
+		}, nil
+	}
+
+	for _, node := range cdr {
+		if node.Kind != KindNull {
+			return node, nil
+		}
+	}
+
+	return &YispNode{
+		Kind:  KindNull,
+		Value: nil,
+	}, nil
 }
 
 // opConcat concatenates strings

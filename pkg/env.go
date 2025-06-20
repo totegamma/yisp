@@ -88,15 +88,35 @@ func (e *Env) Set(key string, value *YispNode) {
 func (e *Env) Get(key string) (*YispNode, bool) {
 
 	split := strings.Split(key, ".")
+
+	fst := split[0]
+	optional := false
+	if fst[len(fst)-1] == '?' {
+		fst = fst[:len(fst)-1]
+		optional = true
+	}
+
 	value, ok := e.Vars[split[0]]
 	if !ok {
 		if e.Parent != nil {
 			return e.Parent.Get(key)
 		}
+		if optional {
+			return &YispNode{
+				Kind:  KindNull,
+				Value: nil,
+			}, true
+		}
 		return nil, false
 	}
 
 	for _, key := range split[1:] {
+		if key[len(key)-1] == '?' {
+			key = key[:len(key)-1]
+			optional = true
+		} else {
+			optional = false
+		}
 
 		maps, ok := value.Value.(map[string]*YispNode)
 		if !ok {
@@ -116,7 +136,14 @@ func (e *Env) Get(key string) (*YispNode, bool) {
 
 		value, ok = maps[key]
 		if !ok {
-			return nil, false
+			if optional {
+				return &YispNode{
+					Kind:  KindNull,
+					Value: nil,
+				}, true
+			} else {
+				return nil, false
+			}
 		}
 	}
 
