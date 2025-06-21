@@ -63,47 +63,80 @@ var operators = make(map[string]OperatorFunc)
 
 // init initializes the operators map
 func init() {
-	operators["concat"] = opConcat
+	// basic arithmetic operators
 	operators["+"] = opAdd
+	operators["add"] = opAdd
 	operators["-"] = opSubtract
+	operators["sub"] = opSubtract
 	operators["*"] = opMultiply
+	operators["mul"] = opMultiply
 	operators["/"] = opDivide
+	operators["div"] = opDivide
+
+	// comparison operators
 	operators["=="] = opEqual
+	operators["eq"] = opEqual
 	operators["!="] = opNotEqual
+	operators["neq"] = opNotEqual
 	operators["<"] = opLessThan
+	operators["lt"] = opLessThan
 	operators["<="] = opLessThanOrEqual
+	operators["lte"] = opLessThanOrEqual
 	operators[">"] = opGreaterThan
+	operators["gt"] = opGreaterThan
 	operators[">="] = opGreaterThanOrEqual
+	operators["gte"] = opGreaterThanOrEqual
+
+	// null coalesce operators
 	operators["??"] = opNullCoalesce
+	operators["default"] = opNullCoalesce
+
+	// logical operators
 	operators["and"] = opAnd
 	operators["or"] = opOr
 	operators["not"] = opNot
+
+	// list operators
 	operators["car"] = opCar
 	operators["cdr"] = opCdr
 	operators["cons"] = opCons
-	operators["discard"] = opDiscard
-	operators["progn"] = opProgn
-	operators["include"] = opInclude
-	operators["cmd"] = opCmd
-	operators["mapping-get"] = opMappingGet
-	operators["merge"] = opMerge
+
 	operators["map"] = opMap
 	operators["flatten"] = opFlatten
-	operators["read-files"] = opReadFiles
+
+	// string and operators
+	operators["concat"] = opConcat
+	operators["format"] = opFormat
+	operators["escape"] = opEscape
+
+	// special operators
+	operators["include"] = opInclude
+	operators["as-document-root"] = opAsDocumentRoot
+	operators["progn"] = opProgn
+	operators["pipeline"] = opPipeline
+
+	// command and execution operators
+	operators["cmd"] = opCmd
+	operators["go-run"] = opGoRun
+
+	// map and entries operators
 	operators["to-entries"] = opToEntries
 	operators["from-entries"] = opFromEntries
-	operators["to-yaml"] = opToYaml
-	operators["sha256"] = opSha256
-	operators["schema"] = opSchema
-	operators["go-run"] = opGoRun
-	operators["pipeline"] = opPipeline
-	operators["format"] = opFormat
+	operators["merge"] = opMerge
 	operators["patch"] = opPatch
-	operators["as-document-root"] = opAsDocumentRoot
+	operators["mapping-get"] = opMappingGet
+
+	// type and schema operators
+	operators["schema"] = opSchema
 	operators["assert-type"] = opAssertType
 	operators["get-type"] = opGetType
 	operators["typeof"] = opTypeOf
-	operators["escape"] = opEscape
+
+	// other operators
+	operators["read-files"] = opReadFiles
+	operators["to-yaml"] = opToYaml
+	operators["sha256"] = opSha256
+
 }
 
 func opEscape(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
@@ -380,14 +413,6 @@ func opCons(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
 	return &YispNode{
 		Kind:  KindArray,
 		Value: newArr,
-	}, nil
-}
-
-// opDiscard evaluates all arguments and returns nil
-func opDiscard(cdr []*YispNode, env *Env, mode EvalMode) (*YispNode, error) {
-	return &YispNode{
-		Kind:  KindNull,
-		Value: nil,
 	}, nil
 }
 

@@ -572,27 +572,6 @@ map: !yisp
 
 ## Miscellaneous Operators
 
-### `discard`
-
-Evaluates all arguments and returns nil. Useful for side effects.
-
-**Syntax:**
-```yaml
-!yisp
-- discard
-- arg1
-- arg2
-- ...
-```
-
-**Example:**
-```yaml
-!yisp
-- discard
-- some_operation
-- with_side_effects
-```
-
 ### `progn`
 
 Evaluates all arguments in sequence and returns the value of the last one.
