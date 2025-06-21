@@ -1,0 +1,15 @@
+!yisp &main
+- lambda
+- [props]
+- !quote
+  apiVersion: v1
+  kind: Service
+  metadata:
+    name: *props.name
+  spec:
+    selector:
+      name: *props.name
+    ports:
+      - port: *props.port
+        targetPort: *props.port
+    type: !yisp [default, *props.lbtype?, LoadBalancer]

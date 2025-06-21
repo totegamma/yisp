@@ -1,0 +1,35 @@
+!yisp
+- import
+- [deployment, deployment.yaml]
+- [service, service.yaml]
+- [statefulset, statefulset.yaml]
+
+---
+!yisp &AppProps
+- schema
+- !quote
+  type: object
+  properties:
+    type:
+      type: string
+      enum: [deployment, statefulset]
+    name:
+      type: string
+    image:
+      type: string
+    port:
+      type: integer
+
+---
+!yisp &app
+- lambda
+- [!AppProps props]
+- - as-document-root
+  - - if
+    - [eq, *props.type?, "statefulset"]
+    - - *statefulset.main
+      - *props
+    - - *deployment.main
+      - *props
+  - - *service.main
+    - *props

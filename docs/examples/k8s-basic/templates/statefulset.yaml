@@ -1,0 +1,29 @@
+!yisp &main
+- lambda
+- [props]
+- !quote
+  apiVersion: apps/v1
+  kind: StatefulSet
+  metadata:
+    name: *props.name
+  spec:
+    replicas: !yisp [default, *props.replicas?, 1]
+    selector:
+      matchLabels:
+        app: *props.name
+    template:
+      metadata:
+        labels:
+          name: *props.name
+      spec:
+        containers:
+          - name: *props.name
+            image: *props.image
+            <<: !yisp
+              - if
+              - *props.port?
+              - !quote
+                ports:
+                - containerPort: *props.port
+              - null
+
