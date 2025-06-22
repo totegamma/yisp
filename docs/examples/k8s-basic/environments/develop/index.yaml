@@ -1,0 +1,15 @@
+!yisp
+- import
+- [template, ../../templates]
+---
+!yisp
+- *template.app
+- !quote
+  name: myapp
+  image: myapp:latest
+  port: 8080
+---
+!yisp
+- *template.configmap-generator
+- name: myapp-config
+  path: ./cm-files/*

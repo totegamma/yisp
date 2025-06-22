@@ -33,3 +33,23 @@
       - *props
   - - *service.main
     - *props
+
+---
+!yisp &configmap-generator
+- lambda
+- [props]
+- !quote
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: *props.name
+  data: !yisp
+    - from-entries
+    - - map
+      - - lambda
+        - [file]
+        - !quote
+          - *file.name
+          - *file.body
+      - - read-files
+        - *props.path
