@@ -1,6 +1,7 @@
 package yisp
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -63,6 +64,31 @@ func EvaluateFileToAny(path string) (any, error) {
 	}
 
 	result, err := ToNative(evaluated)
+	if err != nil {
+		return "", err
+	}
+
+	return result, nil
+}
+
+func EvaluateBytesToYaml(data []byte, global map[string]any) (string, error) {
+	env := NewEnv()
+
+	for key, value := range global {
+		node, err := ParseAny("", value)
+		if err != nil {
+			return "", fmt.Errorf("failed to parse global variable %s: %v", key, err)
+		}
+		env.Set(key, node)
+	}
+
+	reader := io.NopCloser(bytes.NewReader(data))
+	evaluated, err := evaluateYisp(reader, env, "inline")
+	if err != nil {
+		return "", err
+	}
+
+	result, err := Render(evaluated)
 	if err != nil {
 		return "", err
 	}
