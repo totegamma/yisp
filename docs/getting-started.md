@@ -34,7 +34,7 @@ Let's create a simple YISP file to demonstrate the basics:
 
 ```yaml
 message: !yisp
-  - concat
+  - strings.concat
   - "Hello, "
   - "YISP!"
 
@@ -126,7 +126,7 @@ You can define functions using the `lambda` operator:
 !yisp &greet
 - lambda
 - [name]
-- - concat
+- - strings.concat
   - "Hello, "
   - *name
   - "!"
