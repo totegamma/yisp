@@ -1,10 +1,12 @@
-package yisp
+package core
 
 import (
 	"fmt"
 	"github.com/elliotchance/orderedmap/v3"
 	"github.com/totegamma/yisp/internal/yaml"
 )
+
+type YispOperator func([]*YispNode, *Env, EvalMode, Engine) (*YispNode, error)
 
 type YispMap = orderedmap.OrderedMap[string, any]
 

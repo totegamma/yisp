@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/totegamma/yisp/pkg"
 	"path/filepath"
 	"strings"
+
+	"github.com/totegamma/yisp/engine"
 )
 
 var buildCmd = &cobra.Command{
@@ -17,33 +18,30 @@ var buildCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 
+		showTrace, _ := cmd.Flags().GetBool("show-trace")
+		renderSpecialObjects, _ := cmd.Flags().GetBool("render-special-objects")
+		allowUntypedManifest, _ := cmd.Flags().GetBool("allow-untyped-manifest")
+
+		e := engine.NewEngine(engine.Options{
+			ShowTrace:            showTrace,
+			RenderSpecialObjects: renderSpecialObjects,
+			AllowUntypedManifest: allowUntypedManifest,
+		})
+
 		allowCmd, err := cmd.Flags().GetBool("allow-cmd")
 		if err == nil {
-			yisp.SetAllowCmd(allowCmd)
+			e.SetOption("net.gammalab.yisp.exec.allow_cmd", allowCmd)
 		}
 
-		showTrace, err := cmd.Flags().GetBool("show-trace")
+		allowedGoPkgs := viper.GetStringSlice("AllowedGoPkgs")
 		if err == nil {
-			yisp.SetShowTrace(showTrace)
-		}
-
-		renderSpecialObjects, err := cmd.Flags().GetBool("render-special-objects")
-		if err == nil {
-			yisp.SetRenderSpecialObjects(renderSpecialObjects)
-		}
-
-		allowUntypedManifest, err := cmd.Flags().GetBool("allow-untyped-manifest")
-		if err == nil {
-			yisp.SetAllowUntypedManifest(allowUntypedManifest)
+			e.SetOption("net.gammalab.yisp.exec.allowed_go_pkgs", allowedGoPkgs)
 		}
 
 		output, err := cmd.Flags().GetString("output")
 		if err != nil {
 			output = "yaml"
 		}
-
-		allowedGoPkgs := viper.GetStringSlice("AllowedGoPkgs")
-		yisp.SetAllowedPkgs(allowedGoPkgs)
 
 		yamlFile := args[0]
 		if yamlFile == "" {
@@ -59,16 +57,17 @@ var buildCmd = &cobra.Command{
 			}
 		}
 
-		if output == "yaml" {
-			result, err := yisp.EvaluateFileToYaml(yamlFile)
+		switch output {
+		case "yaml":
+			result, err := e.EvaluateFileToYaml(yamlFile)
 			if err != nil {
 				fmt.Println("Error:", err)
 				return
 			}
 
 			fmt.Println(result)
-		} else if output == "json" {
-			resultAny, err := yisp.EvaluateFileToAny(yamlFile)
+		case "json":
+			resultAny, err := e.EvaluateFileToAny(yamlFile)
 			if err != nil {
 				fmt.Println("Error:", err)
 				return
@@ -97,7 +96,7 @@ var buildCmd = &cobra.Command{
 			}
 
 			fmt.Println(string(jsonResult))
-		} else {
+		default:
 			fmt.Println("Error: Unsupported output format. Use 'yaml' or 'json'.")
 			return
 		}

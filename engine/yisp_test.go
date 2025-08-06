@@ -1,4 +1,4 @@
-package yisp
+package engine
 
 import (
 	"errors"
@@ -36,7 +36,9 @@ func getWholeYamlDocument(str string) (any, error) {
 
 func TestYisp(t *testing.T) {
 
-	allowUntypedManifest = true
+	e := NewEngine(Options{
+		AllowUntypedManifest: true,
+	})
 
 	files, err := filepath.Glob("../testdata/*.test.yaml")
 	if err != nil {
@@ -54,7 +56,7 @@ func TestYisp(t *testing.T) {
 				t.Fatalf("Error getting absolute path for file %s: %v", file, err)
 			}
 
-			renderedStr, err := EvaluateFileToYaml(abspath)
+			renderedStr, err := e.EvaluateFileToYaml(abspath)
 			if err != nil {
 				t.Fatalf("Error evaluating Yisp file %s: %v", file, err)
 			}

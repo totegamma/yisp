@@ -1,16 +1,17 @@
-package yisp
+package engine
 
 import (
 	"bytes"
 	"fmt"
 
+	"github.com/totegamma/yisp/core"
 	"github.com/totegamma/yisp/internal/yaml"
 )
 
 // Render converts a YispNode to a native Go value
-func render(node *YispNode) (*yaml.Node, error) {
+func render(node *core.YispNode, renderSpecialObjects bool) (*yaml.Node, error) {
 	switch node.Kind {
-	case KindNull:
+	case core.KindNull:
 		return &yaml.Node{
 			Kind:        yaml.ScalarNode,
 			Value:       "null",
@@ -21,7 +22,7 @@ func render(node *YispNode) (*yaml.Node, error) {
 			Style:       node.Attr.Style,
 		}, nil
 
-	case KindBool:
+	case core.KindBool:
 		return &yaml.Node{
 			Kind:        yaml.ScalarNode,
 			Value:       fmt.Sprintf("%t", node.Value),
@@ -32,7 +33,7 @@ func render(node *YispNode) (*yaml.Node, error) {
 			Style:       node.Attr.Style,
 		}, nil
 
-	case KindInt:
+	case core.KindInt:
 		return &yaml.Node{
 			Kind:        yaml.ScalarNode,
 			Value:       fmt.Sprintf("%d", node.Value),
@@ -43,7 +44,7 @@ func render(node *YispNode) (*yaml.Node, error) {
 			Style:       node.Attr.Style,
 		}, nil
 
-	case KindFloat:
+	case core.KindFloat:
 		return &yaml.Node{
 			Kind:        yaml.ScalarNode,
 			Value:       fmt.Sprintf("%f", node.Value),
@@ -54,7 +55,7 @@ func render(node *YispNode) (*yaml.Node, error) {
 			Style:       node.Attr.Style,
 		}, nil
 
-	case KindString:
+	case core.KindString:
 		return &yaml.Node{
 			Kind:        yaml.ScalarNode,
 			Value:       fmt.Sprintf("%s", node.Value),
@@ -65,19 +66,19 @@ func render(node *YispNode) (*yaml.Node, error) {
 			Style:       node.Attr.Style,
 		}, nil
 
-	case KindArray:
+	case core.KindArray:
 		arr, ok := node.Value.([]any)
 		if !ok {
 			return nil, fmt.Errorf("invalid array value. Actual type: %T", node.Value)
 		}
 		results := make([]*yaml.Node, len(arr))
 		for i, item := range arr {
-			node, ok := item.(*YispNode)
+			node, ok := item.(*core.YispNode)
 			if !ok {
 				return nil, fmt.Errorf("invalid item type: %T", item)
 			}
 			var err error
-			results[i], err = render(node)
+			results[i], err = render(node, renderSpecialObjects)
 			if err != nil {
 				return nil, err
 			}
@@ -90,19 +91,19 @@ func render(node *YispNode) (*yaml.Node, error) {
 			FootComment: node.Attr.FootComment,
 			Style:       node.Attr.Style,
 		}, nil
-	case KindMap:
-		m, ok := node.Value.(*YispMap)
+	case core.KindMap:
+		m, ok := node.Value.(*core.YispMap)
 		if !ok {
 			return nil, fmt.Errorf("invalid map value")
 		}
 		results := make([]*yaml.Node, 0)
 		for key, item := range m.AllFromFront() {
-			node, ok := item.(*YispNode)
+			node, ok := item.(*core.YispNode)
 			if !ok {
 				return nil, fmt.Errorf("invalid item type: %T", item)
 			}
 
-			content, err := render(node)
+			content, err := render(node, renderSpecialObjects)
 			if err != nil {
 				return nil, err
 			}
@@ -129,10 +130,10 @@ func render(node *YispNode) (*yaml.Node, error) {
 			Style:       node.Attr.Style,
 		}, nil
 
-	case KindLambda:
+	case core.KindLambda:
 		if renderSpecialObjects {
 			value := "λ"
-			lambda := node.Value.(*Lambda)
+			lambda := node.Value.(*core.Lambda)
 			for i, arg := range lambda.Arguments {
 				value += arg.Name
 				if i < len(lambda.Arguments)-1 {
@@ -148,7 +149,7 @@ func render(node *YispNode) (*yaml.Node, error) {
 				Style:       node.Attr.Style,
 			}, nil
 		}
-	case KindParameter:
+	case core.KindParameter:
 		if renderSpecialObjects {
 			return &yaml.Node{
 				Kind:        yaml.ScalarNode,
@@ -159,7 +160,7 @@ func render(node *YispNode) (*yaml.Node, error) {
 				Style:       node.Attr.Style,
 			}, nil
 		}
-	case KindSymbol:
+	case core.KindSymbol:
 		if renderSpecialObjects {
 			return &yaml.Node{
 				Kind:        yaml.ScalarNode,
@@ -170,7 +171,7 @@ func render(node *YispNode) (*yaml.Node, error) {
 				Style:       node.Attr.Style,
 			}, nil
 		}
-	case KindType:
+	case core.KindType:
 		if renderSpecialObjects {
 			return &yaml.Node{
 				Kind:        yaml.ScalarNode,
@@ -197,9 +198,9 @@ func render(node *YispNode) (*yaml.Node, error) {
 	return nil, nil
 }
 
-func Render(node *YispNode) (string, error) {
+func (e *engine) Render(node *core.YispNode) (string, error) {
 
-	if node.Kind == KindArray {
+	if node.Kind == core.KindArray {
 		arr, ok := node.Value.([]any)
 		if !ok {
 			return "", fmt.Errorf("invalid array value(root)")
@@ -209,11 +210,11 @@ func Render(node *YispNode) (string, error) {
 		enc := yaml.NewEncoder(&buf)
 		enc.SetIndent(2)
 		for _, item := range arr {
-			node, ok := item.(*YispNode)
+			node, ok := item.(*core.YispNode)
 			if !ok {
 				return "", fmt.Errorf("invalid item type: %T", item)
 			}
-			rendered, err := render(node)
+			rendered, err := render(node, e.renderSpecialObjects)
 			if err != nil {
 				return "", err
 			}
@@ -228,7 +229,7 @@ func Render(node *YispNode) (string, error) {
 		return buf.String(), nil
 
 	} else {
-		rendered, err := render(node)
+		rendered, err := render(node, e.renderSpecialObjects)
 		if err != nil {
 			return "", err
 		}
