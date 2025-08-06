@@ -318,6 +318,31 @@ result: !yisp
 # Evaluates to: result: "default value"
 ```
 
+## Conditional Operators
+
+### `if`
+
+Evaluates a condition and returns one of two values based on the result.
+
+**Syntax:**
+```yaml
+!yisp
+- if
+- condition
+- true_value
+- false_value
+```
+
+**Example:**
+```yaml
+result: !yisp
+  - if
+  - !yisp [<, 5, 10]
+  - "Less"
+  - "Greater or Equal"
+# Evaluates to: result: "Less"
+```
+
 ## Special Operators
 
 ### `include`
@@ -339,6 +364,25 @@ results: !yisp
   - include
   - "config/database.yaml"
   - "config/server.yaml"
+```
+
+### `import`
+
+Imports modules, making their definitions available in the current environment.
+
+**Syntax:**
+```yaml
+!yisp
+- import
+- ["module_name", "path/to/module.yaml"]
+- ...
+```
+
+**Example:**
+```yaml
+!yisp
+- import
+- ["utils", "./utils.yaml"]
 ```
 
 ### `progn`
@@ -400,4 +444,59 @@ Marks the result as a document root for YAML output.
 - value1
 - value2
 - ...
+```
+
+## Lambda Functions
+
+### `lambda`
+
+Creates a lambda function that can be called later.
+
+**Syntax:**
+```yaml
+!yisp &function_name
+- lambda
+- [param1, param2, ...]
+- body
+```
+
+**Example:**
+```yaml
+!yisp &add
+- lambda
+- [a, b]
+- - +
+  - *a
+  - *b
+
+result: !yisp
+  - *add
+  - 3
+  - 4
+# Evaluates to: result: 7
+```
+
+### Calling Lambda Functions
+
+Lambda functions are called using the `*` prefix followed by the function name:
+
+```yaml
+result: !yisp
+  - *function_name
+  - arg1
+  - arg2
+```
+
+### Variable References
+
+In lambda functions, parameters are referenced using the `*` prefix:
+
+```yaml
+!yisp &greet
+- lambda
+- [name]
+- - strings.concat
+  - "Hello, "
+  - *name
+  - "!"
 ```
