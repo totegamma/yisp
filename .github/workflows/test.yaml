@@ -38,5 +38,5 @@ jobs:
       run: yes | yisp cache-kube-schemas
 
     - name: Run tests with coverage
-      run: go test -coverprofile=coverage.out ./pkg/...
+      run: go test -coverprofile=coverage.out ./...
 

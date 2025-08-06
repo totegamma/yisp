@@ -1,15 +1,15 @@
 !yisp
-- cmd
+- exec.cmd
 - cmd: date
 ---
 !yisp
-- cmd
+- exec.cmd
 - cmd: echo
   args: !quote
     - "hogehoge"
 ---
 !yisp
-- cmd
+- exec.cmd
 - cmd: echo
   args: !quote
     - "-n"

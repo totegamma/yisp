@@ -4,10 +4,10 @@
   - [a, b]
   - - if
     - *a
-    - - cons
-      - [car, *a]
+    - - lists.cons
+      - [lists.car, *a]
       - - *append
-        - [cdr, *a]
+        - [lists.cdr, *a]
         - *b
     - *b
 - !quote [1, 2, 3]

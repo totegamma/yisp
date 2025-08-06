@@ -25,7 +25,7 @@
 
 ---
 !yisp
-- merge
+- maps.merge
 - !namedItems
   items: !quote
     - name: item1

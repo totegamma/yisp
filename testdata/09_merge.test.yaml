@@ -1,5 +1,5 @@
 !yisp
-- merge
+- maps.merge
 - !quote
   app:
     name: myapp

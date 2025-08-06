@@ -1,4 +1,4 @@
-package yisp
+package core
 
 import (
 	"fmt"
