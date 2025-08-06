@@ -1,6 +1,6 @@
 !yisp
-- assert-type
-- - typeof
+- types.assert
+- - types.of
   - !quote
     apiVersion: apps/v1
     kind: Deployment

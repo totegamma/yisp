@@ -1,6 +1,6 @@
 !yisp
 - as-document-root
-- - patch
+- - maps.patch
   - !quote
     - apiVersion: apps/v1
       kind: Deployment

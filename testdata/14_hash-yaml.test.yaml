@@ -1,6 +1,6 @@
 !yisp
-- sha256
-- - to-yaml
+- crypto.sha256
+- - yaml.marshal
   - hoge: piyo
     a: 1
     b: 2

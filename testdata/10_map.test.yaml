@@ -4,14 +4,14 @@
 ---
 !yisp
 &num
-- map
+- lists.map
 - +
 - !quote [1, 2, 3]
 - !quote [4, 5, 6]
 # -> [5, 7, 9]
 ---
 !yisp
-- map
+- lists.map
 - *f.fib
 - *num
 # -> [5, 13, 34]

@@ -1,6 +1,6 @@
 !yisp
-- from-entries
-- - to-entries
+- maps.from-entries
+- - maps.to-entries
   - apple: りんご
     banana: バナナ
     chocolate: チョコレート
