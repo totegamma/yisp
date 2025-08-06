@@ -71,7 +71,7 @@ Sometimes you need to modify existing Kubernetes manifests without completely re
 !yisp &selective-patch
 - lambda
 - [props]
-- - map
+- - lists.map
   - - lambda
     - [x]
     - - if
@@ -87,7 +87,7 @@ Sometimes you need to modify existing Kubernetes manifests without completely re
 
 This function:
 - Takes a `props` object containing `input` (the manifests to patch), `kind` (the resource kind to target), and `patch` (the changes to apply)
-- Uses `map` to iterate through each manifest in the input
+- Uses `lists.map` to iterate through each manifest in the input
 - For each manifest, checks if its `kind` matches the target kind
 - If it matches, merges the original manifest with the patch
 - If it doesn't match, returns the original manifest unchanged
@@ -105,8 +105,8 @@ This function:
         metadata:
           annotations:
             checksum/config:
-              - sha256
-              - - to-yaml
+              - crypto.sha256
+              - - yaml.marshal
                 - *config
 ```
 
@@ -134,22 +134,22 @@ ConfigMaps are commonly used to store configuration files in Kubernetes. YISP ca
   metadata:
     name: *props.name
   data: !yisp
-    - from-entries
-    - - map
+    - maps.from-entries
+    - - lists.map
       - - lambda
         - [file]
         - !quote
           - *file.name
           - *file.body
-      - - read-files
+      - - files.glob
         - *props.dir
 ```
 
 This function:
 - Takes a `props` object with `name` (the ConfigMap name) and `dir` (the directory containing configuration files)
-- Uses `read-files` to read all files in the specified directory
+- Uses `files.glob` to read all files in the specified directory
 - Maps each file to a key-value pair where the key is the filename and the value is the file content
-- Converts these pairs to a map using `from-entries`
+- Converts these pairs to a map using `maps.from-entries`
 - Embeds this map in a ConfigMap resource
 
 **Usage:**
@@ -243,7 +243,7 @@ Wildcard patterns (*) are supported in the allowlist.
       - *props.release
       - *props.version
     stdin:
-      - to-yaml
+      - yaml.marshal
       - *props.values
 ```
 
@@ -269,39 +269,13 @@ YISP's functional approach makes it well-suited for data transformation tasks. H
 ```yaml
 # Map a function over a list
 doubled: !yisp
-  - map
+  - lists.map
   - - lambda
     - [x]
     - - *
       - *x
       - 2
   - !quote [1, 2, 3, 4, 5]
-# Result: doubled: [2, 4, 6, 8, 10]
-
-# Filter a list
-evens: !yisp
-  - filter
-  - - lambda
-    - [x]
-    - - ==
-      - - %
-        - *x
-        - 2
-      - 0
-  - !quote [1, 2, 3, 4, 5, 6]
-# Result: evens: [2, 4, 6]
-
-# Reduce a list
-sum: !yisp
-  - reduce
-  - - lambda
-    - [acc, x]
-    - - +
-      - *acc
-      - *x
-  - 0
-  - !quote [1, 2, 3, 4, 5]
-# Result: sum: 15
 ```
 
 ### Map Transformations
@@ -309,8 +283,8 @@ sum: !yisp
 ```yaml
 # Convert a map to entries and back
 transformed: !yisp
-  - from-entries
-  - - map
+  - maps.from-entries
+  - - lists.map
     - - lambda
       - [entry]
       - !quote
@@ -319,7 +293,7 @@ transformed: !yisp
           - +
           - *entry.1
           - 10
-    - - to-entries
+    - - maps.to-entries
       - !quote
           a: 1
           b: 2

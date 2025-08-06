@@ -43,7 +43,7 @@ To embed unevaluated YAML structures inside expressions, you can use the `!quote
 hello_world.yaml
 ```yaml
 mystring: !yisp
-  - concat
+  - strings.concat
   - hello
   - ' '
   - world
