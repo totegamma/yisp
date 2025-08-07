@@ -21,3 +21,22 @@ yaml: !yisp
     a: 1
 # Evaluates to: yaml: "hoge: piyo\na: 1\n"
 ```
+
+## `yaml.unmarshal`
+
+Parses a YAML string into a structured data object.
+
+**Syntax:**
+```yaml
+!yisp
+- yaml.unmarshal
+- yaml_string
+```
+
+**Example:**
+```yaml
+data: !yisp
+  - yaml.unmarshal
+  - "name: Alice\nage: 30"
+# Evaluates to: data: {name: "Alice", age: 30}
+```
