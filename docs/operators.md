@@ -18,6 +18,7 @@
 - [**Exec**](operators/exec.md) - `exec.*` operators
 - [**Types**](operators/types.md) - `types.*` operators
 - [**YAML**](operators/yaml.md) - `yaml.*` operators
+- [**k8s**](operators/k8s.md) - `k8s.*` operators
 
 ## Migration Note
 

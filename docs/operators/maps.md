@@ -52,18 +52,6 @@ result: !yisp
 # Evaluates to: result: {app: {name: myapp, version: 1.1, description: "Updated app"}}
 ```
 
-## `maps.patch`
-
-Applies a patch to a map, similar to merge but with more advanced merging capabilities.
-
-**Syntax:**
-```yaml
-!yisp
-- maps.patch
-- base_map
-- patch_map
-```
-
 ## `maps.to-entries`
 
 Converts a map to an array of key-value pairs.

@@ -44,12 +44,12 @@
   metadata:
     name: *props.name
   data: !yisp
-    - from-entries
-    - - map
+    - maps.from-entries
+    - - lists.map
       - - lambda
         - [file]
         - !quote
           - *file.name
           - *file.body
-      - - read-files
+      - - files.glob
         - *props.path

@@ -10,7 +10,6 @@ func init() {
 	register("maps", "to-entries", opToEntries)
 	register("maps", "from-entries", opFromEntries)
 	register("maps", "merge", opMerge)
-	register("maps", "patch", opPatch)
 	register("maps", "get", opMappingGet)
 }
 
@@ -103,63 +102,6 @@ func opMerge(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Eng
 	}
 
 	return result, nil
-}
-
-func opPatch(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
-	if len(cdr) != 2 {
-		return nil, core.NewEvaluationError(nil, fmt.Sprintf("patch requires 2 arguments, got %d", len(cdr)))
-	}
-
-	targets := cdr[0]
-	patches := cdr[1]
-
-	if targets.Kind != core.KindArray || patches.Kind != core.KindArray {
-		return nil, core.NewEvaluationError(nil, "patch requires both target and patch to be maps")
-	}
-
-	targetArray, ok := targets.Value.([]any)
-	if !ok {
-		return nil, core.NewEvaluationError(targets, fmt.Sprintf("invalid target type: %T", targets.Value))
-	}
-
-	patchArray, ok := patches.Value.([]any)
-	if !ok {
-		return nil, core.NewEvaluationError(patches, fmt.Sprintf("invalid patch type: %T", patches.Value))
-	}
-
-	for _, patchAny := range patchArray {
-		patchNode, ok := patchAny.(*core.YispNode)
-		if !ok {
-			return nil, core.NewEvaluationError(patches, fmt.Sprintf("invalid patch item type: %T", patchAny))
-		}
-
-		patchID, err := core.GetManifestID(patchNode)
-		if err != nil {
-			return nil, core.NewEvaluationErrorWithParent(patchNode, "failed to get GVK from patch", err)
-		}
-
-		for i, targetAny := range targetArray {
-			targetNode, ok := targetAny.(*core.YispNode)
-			if !ok {
-				return nil, core.NewEvaluationError(targets, fmt.Sprintf("invalid target item type: %T", targetAny))
-			}
-
-			targetID, err := core.GetManifestID(targetNode)
-			if err != nil {
-				return nil, core.NewEvaluationErrorWithParent(targetNode, "failed to get GVK from target", err)
-			}
-
-			if patchID == targetID {
-				targetArray[i], err = core.DeepMergeYispNode(targetNode, patchNode, targetNode.Type)
-				if err != nil {
-					return nil, core.NewEvaluationErrorWithParent(patchNode, "failed to apply patch", err)
-				}
-
-			}
-		}
-	}
-
-	return targets, nil
 }
 
 func opMappingGet(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
