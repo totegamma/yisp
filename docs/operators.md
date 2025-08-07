@@ -1,7 +1,5 @@
 # YISP Operators
 
-⚠️ **Important**: This documentation is now organized into separate files. For detailed operator documentation, please visit the [operators directory](operators/).
-
 ## Quick Links
 
 - [**Overview**](operators/README.md) - Complete operator reference with migration guide
@@ -20,15 +18,3 @@
 - [**YAML**](operators/yaml.md) - `yaml.*` operators
 - [**k8s**](operators/k8s.md) - `k8s.*` operators
 
-## Migration Note
-
-**Breaking Change**: Many operators that were previously available without prefixes now require module prefixes:
-
-- `concat` → `strings.concat`
-- `car` → `lists.car`
-- `mapping-get` → `maps.get`
-- `to-yaml` → `yaml.marshal`
-- `sha256` → `crypto.sha256`
-- And more...
-
-See the [full migration guide](operators/README.md#migration-from-previous-versions) for complete details.

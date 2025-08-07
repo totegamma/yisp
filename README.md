@@ -109,19 +109,43 @@ package main
 
 import (
 	"fmt"
-	"github.com/totegamma/yisp/pkg"
+	"github.com/totegamma/yisp/engine"
 )
 
 func main() {
-	evaluated, err := yisp.EvaluateFileToYaml("test.yaml")
+
+	e := engine.NewEngine(engine.Options{})
+
+	evaluated, err := e.EvaluateFileToYaml("test.yaml")
 	if err != nil {
 		panic(err)
 	}
 
 	fmt.Println("Evaluated YAML:")
 	fmt.Println(evaluated)
+
 }
 ```
 
-also you can use `yisp.EvaluateFileToAny` to get the result as go `any` type.
+also you can use `engine.EvaluateFileToAny` to get the result as go `any` type.
+
+## Migration from Previous Versions
+
+If you're updating from a previous version where operators didn't require module prefixes, you'll need to update your code:
+
+- `concat` → `strings.concat`
+- `car` → `lists.car`
+- `cdr` → `lists.cdr`
+- `cons` → `lists.cons`
+- `flatten` → `lists.flatten`
+- `map` → `lists.map`
+- `mapping-get` → `maps.get`
+- `merge` → `maps.merge`
+- `to-entries` → `maps.to-entries`
+- `from-entries` → `maps.from-entries`
+- `to-yaml` → `yaml.marshal`
+- `sha256` → `crypto.sha256`
+- `cmd` → `exec.cmd`
+- `read-files` → `files.glob`
+- `patch` → `k8s.patch`
 
