@@ -1,0 +1,8 @@
+"hoge: piyo\na: 1\nb: 2\nc:\n    d: 3\n    e: 4\n"
+---
+hoge: piyo
+a: 1
+b: 2
+c:
+  d: 3
+  e: 4

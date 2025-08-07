@@ -1,0 +1,20 @@
+!yisp
+- yaml.marshal
+- hoge: piyo
+  a: 1
+  b: 2
+  c:
+    d: 3
+    e: 4
+
+---
+!yisp
+- yaml.unmarshal
+- |
+  hoge: piyo
+  a: 1
+  b: 2
+  c:
+    d: 3
+    e: 4
+
