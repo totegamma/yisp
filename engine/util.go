@@ -146,68 +146,6 @@ func compareNumbers(cdr []*core.YispNode, opName string, cmp func(float64, float
 	}, nil
 }
 
-// isTruthy determines if a value is considered "truthy" in a boolean context
-func isTruthy(node *core.YispNode) (bool, error) {
-	switch node.Kind {
-	case core.KindNull:
-		return false, nil
-	case core.KindBool:
-		v, ok := node.Value.(bool)
-		if !ok {
-			return false, fmt.Errorf("expected bool, got %T", node.Value)
-		}
-		return v, nil
-	case core.KindInt:
-		v, ok := node.Value.(int)
-		if !ok {
-			return false, fmt.Errorf("expected int, got %T", node.Value)
-		}
-		return v != 0, nil
-	case core.KindFloat:
-		v, ok := node.Value.(float64)
-		if !ok {
-			return false, fmt.Errorf("expected float64, got %T", node.Value)
-		}
-		return v != 0.0, nil
-	case core.KindString:
-		v, ok := node.Value.(string)
-		if !ok {
-			return false, fmt.Errorf("expected string, got %T", node.Value)
-		}
-		return v != "", nil
-	case core.KindArray:
-		v, ok := node.Value.([]any)
-		if !ok {
-			return false, fmt.Errorf("expected []any, got %T", node.Value)
-		}
-		return len(v) != 0, nil
-	case core.KindMap:
-		v, ok := node.Value.(*core.YispMap)
-		if !ok {
-			return false, fmt.Errorf("expected *core.YispMap, got %T", node.Value)
-		}
-		return v.Len() != 0, nil
-	case core.KindLambda:
-		// Lambda functions are always considered isTruthy
-		return true, nil
-	case core.KindParameter:
-		// Parameters are always considered isTruthy
-		return true, nil
-	case core.KindSymbol:
-		// Symbols are always considered isTruthy
-		return true, nil
-	case core.KindType:
-		// Types are always considered isTruthy
-		return true, nil
-	default:
-		// Any other non-nil value is considered isTruthy
-		if node.Value != nil {
-			return true, nil
-		}
-		return false, nil
-	}
-}
-
 func pad(length int) string {
 	result := ""
 	for range length {

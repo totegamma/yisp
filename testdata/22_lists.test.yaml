@@ -1,0 +1,60 @@
+!yisp
+- lists.car
+- !quote [1, 2, 3]
+# 1
+
+---
+!yisp
+- lists.cdr
+- !quote [1, 2, 3]
+# [2, 3]
+
+---
+!yisp
+- lists.cons
+- 0
+- !quote [1, 2, 3]
+# [0, 1, 2, 3]
+
+---
+!yisp
+- lists.filter
+- !quote [1, 2, 3, 4, 5]
+- - lambda
+  - - x
+  - - "gt"
+    - *x
+    - 2
+# [3, 4, 5]
+
+--- 
+!yisp
+- lists.flatten
+- !quote [1, 2]
+- !quote [3, 4]
+- 5
+# [1, 2, 3, 4, 5]
+
+---
+!yisp
+- lists.map
+- !quote [1, 2, 3, 4]
+- - lambda
+  - - x
+  - - mul
+    - *x
+    - 2
+# [2, 4, 6, 8]
+
+---
+!yisp
+- lists.reduce
+- !quote [1, 2, 3, 4]
+- - lambda
+  - [x, y]
+  - - +
+    - *x
+    - *y
+# 10
+
+

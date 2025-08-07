@@ -10,8 +10,10 @@ func init() {
 	register("lists", "car", opCar)
 	register("lists", "cdr", opCdr)
 	register("lists", "cons", opCons)
-	register("lists", "map", opMap)
+	register("lists", "filter", opFilter)
 	register("lists", "flatten", opFlatten)
+	register("lists", "map", opMap)
+	register("lists", "reduce", opReduce)
 }
 
 // opCar returns the first element of a list
@@ -100,70 +102,56 @@ func opCons(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engi
 	}, nil
 }
 
-func opMap(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
+func opFilter(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
 	if len(cdr) < 2 {
-		return nil, core.NewEvaluationError(nil, fmt.Sprintf("map requires more than 1 argument, got %d", len(cdr)))
+		return nil, core.NewEvaluationError(nil, fmt.Sprintf("filter requires at least 2 arguments, got %d", len(cdr)))
 	}
 
-	fnNode := cdr[0]
-
+	arrNode := cdr[0]
+	fnNode := cdr[1]
 	isDocumentRoot := true
-	argList := make([][]any, len(cdr)-1)
-	for i, node := range cdr[1:] {
+	filtered := make([]any, 0)
 
-		if !node.IsDocumentRoot {
+	if arrNode.Kind != core.KindArray {
+		return nil, core.NewEvaluationError(arrNode, fmt.Sprintf("filter requires an array as the first argument, got %v", arrNode.Kind))
+	}
+
+	if fnNode.Kind != core.KindLambda {
+		return nil, core.NewEvaluationError(fnNode, "filter requires a function as the second argument")
+	}
+
+	arr, ok := arrNode.Value.([]any)
+	if !ok {
+		return nil, core.NewEvaluationError(arrNode, fmt.Sprintf("invalid array value: %T", arrNode.Value))
+	}
+
+	for _, item := range arr {
+		itemNode, ok := item.(*core.YispNode)
+		if !ok {
+			return nil, core.NewEvaluationError(arrNode, fmt.Sprintf("invalid item type: %T", item))
+		}
+		if !itemNode.IsDocumentRoot {
 			isDocumentRoot = false
 		}
-
-		if node.Kind != core.KindArray {
-			return nil, core.NewEvaluationError(node, fmt.Sprintf("map requires an array argument, got %v", node.Kind))
-		}
-
-		arg, ok := node.Value.([]any)
-		if !ok {
-			return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid argument type: %T", node.Value))
-		}
-		yispList := make([]any, len(arg))
-		for j, item := range arg {
-			itemNode, ok := item.(*core.YispNode)
-			if !ok {
-				return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
-			}
-			itemNode.Tag = "!quote"
-			yispList[j] = itemNode
-		}
-
-		if i > 0 {
-			if len(yispList) != len(argList[0]) {
-				return nil, core.NewEvaluationError(node, "map requires all arguments to have the same length")
-			}
-		}
-
-		argList[i] = yispList
-	}
-
-	results := make([]any, len(argList[0]))
-	for i := range len(argList[0]) {
-		args := []*core.YispNode{}
-		for j := range argList {
-			node, ok := argList[j][i].(*core.YispNode)
-			if !ok {
-				return nil, core.NewEvaluationError(fnNode, fmt.Sprintf("invalid item type: %T", argList[j][i]))
-			}
-			args = append(args, node)
-		}
-		result, err := e.Apply(fnNode, args, env, mode)
-
+		args := []*core.YispNode{itemNode}
+		rawResult, err := e.Apply(fnNode, args, env, mode)
 		if err != nil {
-			return nil, core.NewEvaluationErrorWithParent(fnNode, "failed to evaluate map argument", err)
+			return nil, core.NewEvaluationErrorWithParent(fnNode, "failed to evaluate filter function", err)
 		}
-		results[i] = result
+
+		result, err := core.IsTruthy(rawResult)
+		if err != nil {
+			return nil, core.NewEvaluationErrorWithParent(fnNode, "failed to evaluate filter function", err)
+		}
+
+		if result {
+			filtered = append(filtered, itemNode)
+		}
 	}
 
 	return &core.YispNode{
 		Kind:           core.KindArray,
-		Value:          results,
-		Attr:           fnNode.Attr,
+		Value:          filtered,
 		IsDocumentRoot: isDocumentRoot,
 	}, nil
 }
@@ -200,4 +188,92 @@ func opFlatten(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.E
 		Value:          flattened,
 		IsDocumentRoot: isDocumentRoot,
 	}, nil
+}
+
+func opMap(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
+	if len(cdr) < 2 {
+		return nil, core.NewEvaluationError(nil, fmt.Sprintf("map requires more than 1 argument, got %d", len(cdr)))
+	}
+
+	arrNode := cdr[0]
+	fnNode := cdr[1]
+
+	if arrNode.Kind != core.KindArray {
+		return nil, core.NewEvaluationError(arrNode, fmt.Sprintf("map requires an array as the first argument, got %v", arrNode.Kind))
+	}
+
+	if fnNode.Kind != core.KindLambda {
+		return nil, core.NewEvaluationError(fnNode, "map requires a function as the second argument")
+	}
+
+	arr, ok := arrNode.Value.([]any)
+	if !ok {
+		return nil, core.NewEvaluationError(arrNode, fmt.Sprintf("invalid array value: %T", arrNode.Value))
+	}
+
+	results := make([]any, len(arr))
+
+	for i, item := range arr {
+		itemNode, ok := item.(*core.YispNode)
+		if !ok {
+			return nil, core.NewEvaluationError(arrNode, fmt.Sprintf("invalid item type: %T", item))
+		}
+
+		args := []*core.YispNode{itemNode}
+		result, err := e.Apply(fnNode, args, env, mode)
+		if err != nil {
+			return nil, core.NewEvaluationErrorWithParent(fnNode, "failed to evaluate map function", err)
+		}
+
+		results[i] = result
+	}
+
+	return &core.YispNode{
+		Kind:           core.KindArray,
+		Attr:           arrNode.Attr,
+		Value:          results,
+		IsDocumentRoot: arrNode.IsDocumentRoot,
+	}, nil
+
+}
+
+// opReduce applies a function cumulatively to the elements of a list, reducing it to a single value
+func opReduce(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
+	if len(cdr) < 2 {
+		return nil, core.NewEvaluationError(nil, fmt.Sprintf("reduce requires at least 2 arguments, got %d", len(cdr)))
+	}
+
+	listNode := cdr[0]
+	if listNode.Kind != core.KindArray {
+		return nil, core.NewEvaluationError(listNode, fmt.Sprintf("reduce requires an array as the first argument, got %v", listNode.Kind))
+	}
+
+	fnNode := cdr[1]
+	if fnNode.Kind != core.KindLambda { // [prev, current] -> result
+		return nil, core.NewEvaluationError(fnNode, "reduce requires a function as the second argument")
+	}
+
+	arr, ok := listNode.Value.([]any)
+	if !ok {
+		return nil, core.NewEvaluationError(listNode, fmt.Sprintf("invalid array value: %T", listNode.Value))
+	}
+
+	if len(arr) == 0 {
+		return nil, core.NewEvaluationError(listNode, "reduce: empty list")
+	}
+
+	accumulator := arr[0] // Start with the first element
+	for _, item := range arr[1:] {
+		itemNode, ok := item.(*core.YispNode)
+		if !ok {
+			return nil, core.NewEvaluationError(listNode, fmt.Sprintf("invalid item type: %T", item))
+		}
+		result, err := e.Apply(fnNode, []*core.YispNode{accumulator.(*core.YispNode), itemNode}, env, mode)
+		if err != nil {
+			return nil, core.NewEvaluationErrorWithParent(fnNode, "failed to evaluate reduce function", err)
+		}
+		accumulator = result
+	}
+
+	return accumulator.(*core.YispNode), nil
 }

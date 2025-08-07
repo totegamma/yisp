@@ -159,7 +159,7 @@ func (e *engine) Eval(node *core.YispNode, env *core.Env, mode core.EvalMode) (*
 					return nil, core.NewEvaluationErrorWithParent(nodes[1], "failed to evaluate condition", err)
 				}
 
-				cond, err := isTruthy(condNode)
+				cond, err := core.IsTruthy(condNode)
 				if err != nil {
 					return nil, core.NewEvaluationErrorWithParent(nodes[1], "failed to evaluate condition", err)
 				}

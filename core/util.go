@@ -318,3 +318,65 @@ func fetchRemote(rawURL string) (io.ReadCloser, error) {
 	}
 	return resp.Body, nil
 }
+
+// isTruthy determines if a value is considered "truthy" in a boolean context
+func IsTruthy(node *YispNode) (bool, error) {
+	switch node.Kind {
+	case KindNull:
+		return false, nil
+	case KindBool:
+		v, ok := node.Value.(bool)
+		if !ok {
+			return false, fmt.Errorf("expected bool, got %T", node.Value)
+		}
+		return v, nil
+	case KindInt:
+		v, ok := node.Value.(int)
+		if !ok {
+			return false, fmt.Errorf("expected int, got %T", node.Value)
+		}
+		return v != 0, nil
+	case KindFloat:
+		v, ok := node.Value.(float64)
+		if !ok {
+			return false, fmt.Errorf("expected float64, got %T", node.Value)
+		}
+		return v != 0.0, nil
+	case KindString:
+		v, ok := node.Value.(string)
+		if !ok {
+			return false, fmt.Errorf("expected string, got %T", node.Value)
+		}
+		return v != "", nil
+	case KindArray:
+		v, ok := node.Value.([]any)
+		if !ok {
+			return false, fmt.Errorf("expected []any, got %T", node.Value)
+		}
+		return len(v) != 0, nil
+	case KindMap:
+		v, ok := node.Value.(*YispMap)
+		if !ok {
+			return false, fmt.Errorf("expected *YispMap, got %T", node.Value)
+		}
+		return v.Len() != 0, nil
+	case KindLambda:
+		// Lambda functions are always considered isTruthy
+		return true, nil
+	case KindParameter:
+		// Parameters are always considered isTruthy
+		return true, nil
+	case KindSymbol:
+		// Symbols are always considered isTruthy
+		return true, nil
+	case KindType:
+		// Types are always considered isTruthy
+		return true, nil
+	default:
+		// Any other non-nil value is considered isTruthy
+		if node.Value != nil {
+			return true, nil
+		}
+		return false, nil
+	}
+}

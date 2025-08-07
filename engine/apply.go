@@ -304,7 +304,7 @@ func opAnd(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engin
 	}
 
 	for _, node := range cdr {
-		truthy, err := isTruthy(node)
+		truthy, err := core.IsTruthy(node)
 		if err != nil {
 			return nil, err
 		}
@@ -333,7 +333,7 @@ func opOr(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine
 	}
 
 	for _, node := range cdr {
-		truthy, err := isTruthy(node)
+		truthy, err := core.IsTruthy(node)
 		if err != nil {
 			return nil, err
 		}
@@ -359,7 +359,7 @@ func opNot(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engin
 	}
 
 	node := cdr[0]
-	truthy, err := isTruthy(node)
+	truthy, err := core.IsTruthy(node)
 	if err != nil {
 		return nil, err
 	}
