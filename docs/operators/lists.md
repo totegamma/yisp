@@ -115,3 +115,47 @@ result: !yisp
   - !quote [4, 5, 6]
 # Evaluates to: result: [5, 7, 9]
 ```
+
+## `lists.filter`
+
+Filters a list by keeping only elements that match a predicate function.
+
+**Syntax:**
+```yaml
+!yisp
+- lists.filter
+- predicate_function
+- list
+```
+
+**Example:**
+```yaml
+evens: !yisp
+  - lists.filter
+  - eq 0
+  - !quote [1, 2, 3, 4, 5, 6]
+# Note: This would require a more complex predicate setup
+```
+
+## `lists.reduce`
+
+Reduces a list to a single value by applying a function cumulatively.
+
+**Syntax:**
+```yaml
+!yisp
+- lists.reduce
+- function
+- initial_value
+- list
+```
+
+**Example:**
+```yaml
+sum: !yisp
+  - lists.reduce
+  - +
+  - 0
+  - !quote [1, 2, 3, 4, 5]
+# Evaluates to: sum: 15
+```

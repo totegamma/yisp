@@ -92,3 +92,41 @@ map: !yisp
     - ["b", 2]
 # Evaluates to: map: {a: 1, b: 2}
 ```
+
+## `maps.keys`
+
+Returns a list of all keys from a map.
+
+**Syntax:**
+```yaml
+!yisp
+- maps.keys
+- map
+```
+
+**Example:**
+```yaml
+keys: !yisp
+  - maps.keys
+  - !quote {a: 1, b: 2, c: 3}
+# Evaluates to: keys: ["a", "b", "c"]
+```
+
+## `maps.values`
+
+Returns a list of all values from a map.
+
+**Syntax:**
+```yaml
+!yisp
+- maps.values
+- map
+```
+
+**Example:**
+```yaml
+values: !yisp
+  - maps.values
+  - !quote {a: 1, b: 2, c: 3}
+# Evaluates to: values: [1, 2, 3]
+```

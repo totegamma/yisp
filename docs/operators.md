@@ -12,7 +12,6 @@
 - [**Lists**](operators/lists.md) - `lists.*` operators  
 - [**Maps**](operators/maps.md) - `maps.*` operators
 - [**Files**](operators/files.md) - `files.*` operators
-- [**Crypto**](operators/crypto.md) - `crypto.*` operators
 - [**Exec**](operators/exec.md) - `exec.*` operators
 - [**Types**](operators/types.md) - `types.*` operators
 - [**YAML**](operators/yaml.md) - `yaml.*` operators
