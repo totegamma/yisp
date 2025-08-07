@@ -16,7 +16,6 @@ Library operators are organized into modules and require a module prefix (e.g., 
 - [Lists](lists.md) - List manipulation operators (`lists.*`)
 - [Maps](maps.md) - Map/object manipulation operators (`maps.*`)
 - [Files](files.md) - File system operations (`files.*`)
-- [Crypto](crypto.md) - Cryptographic functions (`crypto.*`)
 - [Exec](exec.md) - Command execution (`exec.*`)
 - [Types](types.md) - Type checking and conversion (`types.*`)
 - [YAML](yaml.md) - YAML serialization (`yaml.*`)

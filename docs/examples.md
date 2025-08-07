@@ -105,7 +105,7 @@ This function:
         metadata:
           annotations:
             checksum/config:
-              - crypto.sha256
+              - strings.sha256
               - - yaml.marshal
                 - *config
 ```
