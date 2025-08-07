@@ -1,0 +1,79 @@
+!yisp
+- strings.concat
+- A
+- B
+# AB
+
+---
+!yisp
+- strings.contains
+- "Hello, World!"
+- "World"
+# true
+
+---
+!yisp
+- strings.contains
+- "Hello, World!"
+- "Universe"
+# false
+
+---
+!yisp
+- strings.escape
+- 8080
+# "8080"
+
+---
+!yisp
+- strings.format
+- "Hello, %s! %d"
+- "World"
+- 42
+# "Hello, World! 42"
+
+---
+!yisp
+- strings.join
+- !quote ["apple", "banana", "cherry"]
+- ", "
+# "apple, banana, cherry"
+
+---
+!yisp
+- strings.replace
+- "Hello, World!"
+- "World"
+- "Universe"
+# "Hello, Universe!"
+
+---
+!yisp
+- strings.sha256
+- "Hello, World!"
+# dffd6021bb2bd5b0af676290809ec3a53191dd81c7f70a4b28688a362182986f
+
+---
+!yisp
+- strings.split
+- "apple, banana, cherry"
+- ", "
+# ["apple", "banana", "cherry"]
+
+---
+!yisp
+- strings.toUpper
+- "Hello, World!"
+# "HELLO, WORLD!"
+
+---
+!yisp
+- strings.toLower
+- "Hello, World!"
+# "hello, world!"
+
+---
+!yisp
+- strings.trim
+- "   Hello, World!   "
+# "Hello, World!"
