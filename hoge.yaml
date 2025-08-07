@@ -1,9 +1,0 @@
-!yisp
-- crypto.sha256
-- - yaml.marshal
-  - hoge: piyo
-    a: 1
-    b: 2
-    c:
-      d: 3
-      e: 4
