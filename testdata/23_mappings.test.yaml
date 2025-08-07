@@ -1,4 +1,31 @@
 !yisp
+- maps.from-entries
+- !quote
+  - - "a"
+    - 1
+  - - "b"
+    - 2
+# {a: 1, b: 2}
+
+---
+!yisp
+- maps.get
+- hoge: piyo
+  fuga: miyo
+  neko: nyan
+- hoge
+# piyo
+
+---
+!yisp
+- maps.keys
+- hoge: piyo
+  fuga: miyo
+  neko: nyan
+# [hoge, fuga, neko]
+
+---
+!yisp
 - maps.merge
 - !quote
   app:
@@ -36,3 +63,21 @@
       port: 6379
   newSection:
     enabled: true
+
+---
+!yisp
+- maps.to-entries
+- a: 1
+  b: 2
+# - key: a
+#   value: 1
+# - key: b
+#   value: 2
+
+---
+!yisp
+- maps.values
+- a: 1
+  b: 2
+# [1, 2]
+

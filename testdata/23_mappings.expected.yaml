@@ -1,3 +1,13 @@
+a: 1
+b: 2
+
+---
+piyo
+
+---
+[hoge, fuga, neko]
+
+---
 app:
   name: myapp               # input1 にしかないので残る
   version: 1.1              # input2 で上書き
@@ -17,3 +27,12 @@ servers:
     port: 6379
 newSection:
   enabled: true             # input2 新規
+
+---
+- - a
+  - 1
+- - b
+  - 2
+
+---
+[1, 2]
