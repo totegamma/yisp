@@ -20,7 +20,7 @@
 
 ---
 !yisp
-- strings.escape
+- strings.quote
 - 8080
 # "8080"
 
