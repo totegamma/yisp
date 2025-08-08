@@ -11,7 +11,7 @@ import (
 func init() {
 	register("strings", "concat", opConcat)
 	register("strings", "contains", opContains)
-	register("strings", "escape", opEscape)
+	register("strings", "quote", opQuote)
 	register("strings", "format", opFormat)
 	register("strings", "join", opJoin)
 	register("strings", "replace", opReplace)
@@ -64,9 +64,9 @@ func opContains(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.
 	}, nil
 }
 
-func opEscape(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
+func opQuote(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
 	if len(cdr) != 1 {
-		return nil, core.NewEvaluationError(nil, fmt.Sprintf("escape requires 1 argument, got %d", len(cdr)))
+		return nil, core.NewEvaluationError(nil, fmt.Sprintf("quote requires 1 argument, got %d", len(cdr)))
 	}
 
 	value := ""

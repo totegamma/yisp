@@ -48,23 +48,23 @@ message: !yisp
 # Evaluates to: message: "User Alice has 150 points"
 ```
 
-## `strings.escape`
+## `strings.quote`
 
 Escapes a value for safe use in strings, converting it to a string representation.
 
 **Syntax:**
 ```yaml
 !yisp
-- strings.escape
+- strings.quote
 - value
 ```
 
 **Example:**
 ```yaml
-escaped: !yisp
-  - strings.escape
+quoted: !yisp
+  - strings.quote
   - 42
-# Evaluates to: escaped: "42"
+# Evaluates to: quoted: "42"
 ```
 
 ## `strings.sha256`
