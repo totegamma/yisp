@@ -308,4 +308,3 @@ func opIota(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engi
 		Value: result,
 	}, nil
 }
-

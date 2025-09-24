@@ -184,16 +184,12 @@ func opGoRun(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Eng
 	allowedGoPkgs := []string{}
 	allowedGoPkgsAny, ok := e.GetOption("net.gammalab.yisp.exec.allowed_go_pkgs")
 	if ok {
-		allowedGoPkgsSlice, ok := allowedGoPkgsAny.([]any)
+		allowedGoPkgsSlice, ok := allowedGoPkgsAny.([]string)
 		if !ok {
 			return nil, core.NewEvaluationError(cdr[0], fmt.Sprintf("invalid net.gammalab.yisp.exec.allowedGoPkgs option type: %T", allowedGoPkgsAny))
 		}
 		for _, item := range allowedGoPkgsSlice {
-			str, ok := item.(string)
-			if !ok {
-				return nil, core.NewEvaluationError(cdr[0], fmt.Sprintf("invalid allowedGoPkgs item type: %T", item))
-			}
-			allowedGoPkgs = append(allowedGoPkgs, str)
+			allowedGoPkgs = append(allowedGoPkgs, item)
 		}
 	}
 
