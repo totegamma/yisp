@@ -14,6 +14,7 @@ func init() {
 	register("lists", "flatten", opFlatten)
 	register("lists", "map", opMap)
 	register("lists", "reduce", opReduce)
+	register("lists", "iota", opIota)
 }
 
 // opCar returns the first element of a list
@@ -266,3 +267,45 @@ func opReduce(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.En
 
 	return accumulator.(*core.YispNode), nil
 }
+
+// opIota generates a list of integers from 0 to n-1
+func opIota(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
+	if len(cdr) < 1 {
+		return nil, core.NewEvaluationError(nil, fmt.Sprintf("iota requires at least 1 argument, got %d", len(cdr)))
+	}
+
+	nNode := cdr[0]
+	n, ok := nNode.Value.(int)
+	if !ok {
+		return nil, core.NewEvaluationError(nNode, fmt.Sprintf("iota requires an integer argument, got %T", nNode.Value))
+	}
+
+	if n < 0 {
+		return nil, core.NewEvaluationError(nNode, "iota requires a non-negative integer")
+	}
+
+	start := 0
+	if len(cdr) >= 2 {
+		startNode := cdr[1]
+		start, ok = startNode.Value.(int)
+		if !ok {
+			return nil, core.NewEvaluationError(startNode, fmt.Sprintf("iota requires an integer start argument, got %T", startNode.Value))
+		}
+		if start < 0 {
+			return nil, core.NewEvaluationError(startNode, "iota requires a non-negative start integer")
+		}
+	}
+
+	result := make([]any, n)
+	for i := 0; i < n; i++ {
+		result[i] = &core.YispNode{
+			Kind:  core.KindInt,
+			Value: start + i,
+		}
+	}
+	return &core.YispNode{
+		Kind:  core.KindArray,
+		Value: result,
+	}, nil
+}
+
