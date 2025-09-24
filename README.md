@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./docs/assets/yisp-wordmark.png" alt="yisp logo" width="400px"/>
+  <img src="./docs/assets/yisp-logo.png" alt="yisp logo" width="280px"/>
   
   # YISP - A Lisp-inspired Functional Engine for YAML
   [![Test](https://github.com/totegamma/yisp/actions/workflows/test.yaml/badge.svg)](https://github.com/totegamma/yisp/actions/workflows/test.yaml)
@@ -128,24 +128,3 @@ func main() {
 ```
 
 also you can use `engine.EvaluateFileToAny` to get the result as go `any` type.
-
-## Migration from Previous Versions
-
-If you're updating from a previous version where operators didn't require module prefixes, you'll need to update your code:
-
-- `concat` → `strings.concat`
-- `car` → `lists.car`
-- `cdr` → `lists.cdr`
-- `cons` → `lists.cons`
-- `flatten` → `lists.flatten`
-- `map` → `lists.map`
-- `mapping-get` → `maps.get`
-- `merge` → `maps.merge`
-- `to-entries` → `maps.to-entries`
-- `from-entries` → `maps.from-entries`
-- `to-yaml` → `yaml.marshal`
-- `sha256` → `crypto.sha256`
-- `cmd` → `exec.cmd`
-- `read-files` → `files.glob`
-- `patch` → `k8s.patch`
-
