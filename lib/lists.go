@@ -116,10 +116,6 @@ func opFilter(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.En
 		return nil, core.NewEvaluationError(arrNode, fmt.Sprintf("filter requires an array as the first argument, got %v", arrNode.Kind))
 	}
 
-	if fnNode.Kind != core.KindLambda {
-		return nil, core.NewEvaluationError(fnNode, "filter requires a function as the second argument")
-	}
-
 	arr, ok := arrNode.Value.([]any)
 	if !ok {
 		return nil, core.NewEvaluationError(arrNode, fmt.Sprintf("invalid array value: %T", arrNode.Value))
@@ -202,10 +198,6 @@ func opMap(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engin
 		return nil, core.NewEvaluationError(arrNode, fmt.Sprintf("map requires an array as the first argument, got %v", arrNode.Kind))
 	}
 
-	if fnNode.Kind != core.KindLambda {
-		return nil, core.NewEvaluationError(fnNode, "map requires a function as the second argument")
-	}
-
 	arr, ok := arrNode.Value.([]any)
 	if !ok {
 		return nil, core.NewEvaluationError(arrNode, fmt.Sprintf("invalid array value: %T", arrNode.Value))
@@ -249,9 +241,6 @@ func opReduce(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.En
 	}
 
 	fnNode := cdr[1]
-	if fnNode.Kind != core.KindLambda { // [prev, current] -> result
-		return nil, core.NewEvaluationError(fnNode, "reduce requires a function as the second argument")
-	}
 
 	arr, ok := listNode.Value.([]any)
 	if !ok {
