@@ -15,6 +15,9 @@ func init() {
 	register("lists", "map", opMap)
 	register("lists", "reduce", opReduce)
 	register("lists", "iota", opIota)
+	register("lists", "length", opLength)
+	register("lists", "at", opAt)
+	register("lists", "to-root", opToRoot)
 }
 
 // opCar returns the first element of a list
@@ -307,4 +310,77 @@ func opIota(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engi
 		Kind:  core.KindArray,
 		Value: result,
 	}, nil
+}
+
+func opLength(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
+	if len(cdr) != 1 {
+		return nil, core.NewEvaluationError(nil, fmt.Sprintf("length requires 1 argument, got %d", len(cdr)))
+	}
+
+	listNode := cdr[0]
+	if listNode.Kind != core.KindArray {
+		return nil, core.NewEvaluationError(listNode, fmt.Sprintf("length requires a list argument, got %v", listNode.Kind))
+	}
+
+	arr, ok := listNode.Value.([]any)
+	if !ok {
+		return nil, core.NewEvaluationError(listNode, fmt.Sprintf("invalid array value: %T", listNode.Value))
+	}
+
+	return &core.YispNode{
+		Kind:  core.KindInt,
+		Value: len(arr),
+		Attr:  listNode.Attr,
+	}, nil
+}
+
+func opAt(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
+	if len(cdr) != 2 {
+		return nil, core.NewEvaluationError(nil, fmt.Sprintf("at requires 2 arguments, got %d", len(cdr)))
+	}
+
+	listNode := cdr[0]
+	if listNode.Kind != core.KindArray {
+		return nil, core.NewEvaluationError(listNode, fmt.Sprintf("at requires a list argument as the first argument, got %v", listNode.Kind))
+	}
+
+	indexNode := cdr[1]
+	if indexNode.Kind != core.KindInt {
+		return nil, core.NewEvaluationError(indexNode, fmt.Sprintf("at requires a number argument as the second argument, got %v", indexNode.Kind))
+	}
+
+	arr, ok := listNode.Value.([]any)
+	if !ok {
+		return nil, core.NewEvaluationError(listNode, fmt.Sprintf("invalid array value: %T", listNode.Value))
+	}
+
+	index, ok := indexNode.Value.(int)
+	if !ok {
+		return nil, core.NewEvaluationError(indexNode, fmt.Sprintf("invalid index value: %T", indexNode.Value))
+	}
+
+	if index < 0 || index >= len(arr) {
+		return nil, core.NewEvaluationError(indexNode, fmt.Sprintf("index out of bounds: %d", index))
+	}
+
+	elem, ok := arr[index].(*core.YispNode)
+	if !ok {
+		return nil, core.NewEvaluationError(listNode, fmt.Sprintf("invalid element type: %T", arr[index]))
+	}
+
+	return elem, nil
+}
+
+func opToRoot(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
+	if len(cdr) != 1 {
+		return nil, core.NewEvaluationError(nil, fmt.Sprintf("expand requires 1 argument, got %d", len(cdr)))
+	}
+
+	listNode := cdr[0]
+	if listNode.Kind != core.KindArray {
+		return nil, core.NewEvaluationError(listNode, fmt.Sprintf("expand requires a list argument, got %v", listNode.Kind))
+	}
+
+	listNode.IsDocumentRoot = true
+	return listNode, nil
 }

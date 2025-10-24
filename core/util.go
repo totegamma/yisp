@@ -300,11 +300,28 @@ func CallEngineByPath(path, base string, env *Env, e Engine) (*YispNode, error) 
 	}
 
 	extension := filepath.Ext(targetURL.Path)
-	if extension == "json" {
+	switch extension {
+	case ".yml", ".yaml", ".yisp":
+		return e.Run(reader, env, targetURL.String())
+	case ".json":
 		return ParseJson(targetURL.String(), reader)
+	default:
+		text, err := io.ReadAll(reader)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read txt file: %v", err)
+		}
+
+		return &YispNode{
+			Kind: KindArray,
+			Value: []any{
+				&YispNode{
+					Kind:  KindString,
+					Value: string(text),
+				},
+			},
+		}, nil
 	}
 
-	return e.Run(reader, env, targetURL.String())
 }
 
 func fetchRemote(rawURL string) (io.ReadCloser, error) {
