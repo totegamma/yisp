@@ -312,13 +312,8 @@ func CallEngineByPath(path, base string, env *Env, e Engine) (*YispNode, error) 
 		}
 
 		return &YispNode{
-			Kind: KindArray,
-			Value: []any{
-				&YispNode{
-					Kind:  KindString,
-					Value: string(text),
-				},
-			},
+			Kind:  KindString,
+			Value: string(text),
 		}, nil
 	}
 

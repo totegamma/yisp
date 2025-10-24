@@ -269,21 +269,23 @@ func opInclude(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.E
 			return nil, core.NewEvaluationErrorWithParent(node, "failed to include file", err)
 		}
 
-		if evaluated.Kind != core.KindArray {
-			return nil, core.NewEvaluationError(node, fmt.Sprintf("include requires an array result, got %v", evaluated.Kind))
-		}
-		arr, ok := evaluated.Value.([]any)
-		if !ok {
-			return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid array value: %T", evaluated.Value))
-		}
-
-		for _, item := range arr {
-			itemNode, ok := item.(*core.YispNode)
+		if evaluated.Kind == core.KindArray {
+			arr, ok := evaluated.Value.([]any)
 			if !ok {
-				return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
+				return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid array value: %T", evaluated.Value))
 			}
-			itemNode.Tag = "!quote"
-			results = append(results, itemNode)
+
+			for _, item := range arr {
+				itemNode, ok := item.(*core.YispNode)
+				if !ok {
+					return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
+				}
+				itemNode.Tag = "!quote"
+				results = append(results, itemNode)
+			}
+		} else {
+			evaluated.Tag = "!quote"
+			results = append(results, evaluated)
 		}
 	}
 
