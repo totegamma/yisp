@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/elliotchance/orderedmap/v3"
 	"github.com/totegamma/yisp/internal/yaml"
+	"os"
+	"path/filepath"
 )
 
 type YispOperator func([]*YispNode, *Env, EvalMode, Engine) (*YispNode, error)
@@ -103,6 +105,21 @@ type YispNode struct {
 
 func (n *YispNode) String() string {
 	return fmt.Sprintf("%s | %s:%d:%d", n.Kind, n.Attr.File, n.Attr.Line, n.Attr.Column)
+}
+
+func (n *YispNode) Sourcemap() string {
+
+	if n.Attr.File == "" {
+		return ""
+	}
+
+	currentDir, err := os.Getwd()
+	if err != nil {
+		currentDir = "."
+	}
+	localPath, err := filepath.Rel(currentDir, n.Attr.File)
+
+	return fmt.Sprintf("%s:%d:%d", localPath, n.Attr.Line, n.Attr.Column)
 }
 
 type TypedSymbol struct {

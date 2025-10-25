@@ -20,11 +20,13 @@ var buildCmd = &cobra.Command{
 
 		showTrace, _ := cmd.Flags().GetBool("show-trace")
 		renderSpecialObjects, _ := cmd.Flags().GetBool("render-special-objects")
+		renderSourceMap, _ := cmd.Flags().GetBool("enable-sourcemap")
 		allowUntypedManifest, _ := cmd.Flags().GetBool("allow-untyped-manifest")
 
 		e := engine.NewEngine(engine.Options{
 			ShowTrace:            showTrace,
 			RenderSpecialObjects: renderSpecialObjects,
+			RenderSources:        renderSourceMap,
 			AllowUntypedManifest: allowUntypedManifest,
 		})
 
@@ -108,6 +110,7 @@ func init() {
 	buildCmd.Flags().BoolP("allow-cmd", "", false, "Allow command execution")
 	buildCmd.Flags().BoolP("show-trace", "", false, "Show trace")
 	buildCmd.Flags().BoolP("render-special-objects", "", false, "Show special objects (e.g. type, lambda, etc.)")
+	buildCmd.Flags().BoolP("enable-sourcemap", "", false, "Enable source map comments in output YAML")
 	buildCmd.Flags().BoolP("allow-untyped-manifest", "", false, "Allow untyped manifest")
 	buildCmd.Flags().StringP("output", "o", "yaml", "Output format (yaml, json)")
 }

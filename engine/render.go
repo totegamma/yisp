@@ -8,8 +8,16 @@ import (
 	"github.com/totegamma/yisp/internal/yaml"
 )
 
-// Render converts a YispNode to a native Go value
-func render(node *core.YispNode, renderSpecialObjects bool) (*yaml.Node, error) {
+func (e *engine) getLineComment(node *core.YispNode) string {
+	lineComment := node.Attr.LineComment
+	if e.renderSources {
+		lineComment += node.Sourcemap()
+	}
+	return lineComment
+}
+
+// Render converts a YispNode to a yaml.Node
+func (e *engine) renderYamlNodes(node *core.YispNode) (*yaml.Node, error) {
 	switch node.Kind {
 	case core.KindNull:
 		return &yaml.Node{
@@ -17,7 +25,7 @@ func render(node *core.YispNode, renderSpecialObjects bool) (*yaml.Node, error) 
 			Value:       "null",
 			Tag:         "!!null",
 			HeadComment: node.Attr.HeadComment,
-			LineComment: node.Attr.LineComment,
+			LineComment: e.getLineComment(node),
 			FootComment: node.Attr.FootComment,
 			Style:       node.Attr.Style,
 		}, nil
@@ -28,7 +36,7 @@ func render(node *core.YispNode, renderSpecialObjects bool) (*yaml.Node, error) 
 			Value:       fmt.Sprintf("%t", node.Value),
 			Tag:         "!!bool",
 			HeadComment: node.Attr.HeadComment,
-			LineComment: node.Attr.LineComment,
+			LineComment: e.getLineComment(node),
 			FootComment: node.Attr.FootComment,
 			Style:       node.Attr.Style,
 		}, nil
@@ -39,7 +47,7 @@ func render(node *core.YispNode, renderSpecialObjects bool) (*yaml.Node, error) 
 			Value:       fmt.Sprintf("%d", node.Value),
 			Tag:         "!!int",
 			HeadComment: node.Attr.HeadComment,
-			LineComment: node.Attr.LineComment,
+			LineComment: e.getLineComment(node),
 			FootComment: node.Attr.FootComment,
 			Style:       node.Attr.Style,
 		}, nil
@@ -50,7 +58,7 @@ func render(node *core.YispNode, renderSpecialObjects bool) (*yaml.Node, error) 
 			Value:       fmt.Sprintf("%f", node.Value),
 			Tag:         "!!float",
 			HeadComment: node.Attr.HeadComment,
-			LineComment: node.Attr.LineComment,
+			LineComment: e.getLineComment(node),
 			FootComment: node.Attr.FootComment,
 			Style:       node.Attr.Style,
 		}, nil
@@ -61,7 +69,7 @@ func render(node *core.YispNode, renderSpecialObjects bool) (*yaml.Node, error) 
 			Value:       fmt.Sprintf("%s", node.Value),
 			Tag:         "!!str",
 			HeadComment: node.Attr.HeadComment,
-			LineComment: node.Attr.LineComment,
+			LineComment: e.getLineComment(node),
 			FootComment: node.Attr.FootComment,
 			Style:       node.Attr.Style,
 		}, nil
@@ -78,7 +86,7 @@ func render(node *core.YispNode, renderSpecialObjects bool) (*yaml.Node, error) 
 				return nil, fmt.Errorf("invalid item type: %T", item)
 			}
 			var err error
-			results[i], err = render(node, renderSpecialObjects)
+			results[i], err = e.renderYamlNodes(node)
 			if err != nil {
 				return nil, err
 			}
@@ -87,7 +95,7 @@ func render(node *core.YispNode, renderSpecialObjects bool) (*yaml.Node, error) 
 			Kind:        yaml.SequenceNode,
 			Content:     results,
 			HeadComment: node.Attr.HeadComment,
-			LineComment: node.Attr.LineComment,
+			LineComment: e.getLineComment(node),
 			FootComment: node.Attr.FootComment,
 			Style:       node.Attr.Style,
 		}, nil
@@ -103,7 +111,7 @@ func render(node *core.YispNode, renderSpecialObjects bool) (*yaml.Node, error) 
 				return nil, fmt.Errorf("invalid item type: %T", item)
 			}
 
-			content, err := render(node, renderSpecialObjects)
+			content, err := e.renderYamlNodes(node)
 			if err != nil {
 				return nil, err
 			}
@@ -112,7 +120,7 @@ func render(node *core.YispNode, renderSpecialObjects bool) (*yaml.Node, error) 
 				Kind:        yaml.ScalarNode,
 				Value:       key,
 				HeadComment: node.Attr.KeyHeadComment,
-				LineComment: node.Attr.KeyLineComment,
+				LineComment: e.getLineComment(node),
 				FootComment: node.Attr.KeyFootComment,
 				Style:       node.Attr.KeyStyle,
 			})
@@ -125,13 +133,13 @@ func render(node *core.YispNode, renderSpecialObjects bool) (*yaml.Node, error) 
 			Kind:        yaml.MappingNode,
 			Content:     results,
 			HeadComment: node.Attr.HeadComment,
-			LineComment: node.Attr.LineComment,
+			LineComment: e.getLineComment(node),
 			FootComment: node.Attr.FootComment,
 			Style:       node.Attr.Style,
 		}, nil
 
 	case core.KindLambda:
-		if renderSpecialObjects {
+		if e.renderSpecialObjects {
 			value := "λ"
 			lambda := node.Value.(*core.Lambda)
 			for i, arg := range lambda.Arguments {
@@ -144,51 +152,51 @@ func render(node *core.YispNode, renderSpecialObjects bool) (*yaml.Node, error) 
 				Kind:        yaml.ScalarNode,
 				Value:       value,
 				HeadComment: node.Attr.HeadComment,
-				LineComment: node.Attr.LineComment,
+				LineComment: e.getLineComment(node),
 				FootComment: node.Attr.FootComment,
 				Style:       node.Attr.Style,
 			}, nil
 		}
 	case core.KindParameter:
-		if renderSpecialObjects {
+		if e.renderSpecialObjects {
 			return &yaml.Node{
 				Kind:        yaml.ScalarNode,
 				Value:       "(parameter)",
 				HeadComment: node.Attr.HeadComment,
-				LineComment: node.Attr.LineComment,
+				LineComment: e.getLineComment(node),
 				FootComment: node.Attr.FootComment,
 				Style:       node.Attr.Style,
 			}, nil
 		}
 	case core.KindSymbol:
-		if renderSpecialObjects {
+		if e.renderSpecialObjects {
 			return &yaml.Node{
 				Kind:        yaml.ScalarNode,
 				Value:       "(symbol)",
 				HeadComment: node.Attr.HeadComment,
-				LineComment: node.Attr.LineComment,
+				LineComment: e.getLineComment(node),
 				FootComment: node.Attr.FootComment,
 				Style:       node.Attr.Style,
 			}, nil
 		}
 	case core.KindType:
-		if renderSpecialObjects {
+		if e.renderSpecialObjects {
 			return &yaml.Node{
 				Kind:        yaml.ScalarNode,
 				Value:       "(type)",
 				HeadComment: node.Attr.HeadComment,
-				LineComment: node.Attr.LineComment,
+				LineComment: e.getLineComment(node),
 				FootComment: node.Attr.FootComment,
 				Style:       node.Attr.Style,
 			}, nil
 		}
 	default:
-		if renderSpecialObjects {
+		if e.renderSpecialObjects {
 			return &yaml.Node{
 				Kind:        yaml.ScalarNode,
 				Value:       "(unknown)",
 				HeadComment: node.Attr.HeadComment,
-				LineComment: node.Attr.LineComment,
+				LineComment: e.getLineComment(node),
 				FootComment: node.Attr.FootComment,
 				Style:       node.Attr.Style,
 			}, nil
@@ -214,7 +222,7 @@ func (e *engine) Render(node *core.YispNode) (string, error) {
 			if !ok {
 				return "", fmt.Errorf("invalid item type: %T", item)
 			}
-			rendered, err := render(node, e.renderSpecialObjects)
+			rendered, err := e.renderYamlNodes(node)
 			if err != nil {
 				return "", err
 			}
@@ -229,7 +237,7 @@ func (e *engine) Render(node *core.YispNode) (string, error) {
 		return buf.String(), nil
 
 	} else {
-		rendered, err := render(node, e.renderSpecialObjects)
+		rendered, err := e.renderYamlNodes(node)
 		if err != nil {
 			return "", err
 		}

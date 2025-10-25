@@ -13,12 +13,14 @@ import (
 type engine struct {
 	execOptions          map[string]any
 	showTrace            bool
+	renderSources        bool
 	renderSpecialObjects bool
 	allowUntypedManifest bool
 }
 
 type Options struct {
 	ShowTrace            bool
+	RenderSources        bool
 	RenderSpecialObjects bool
 	AllowUntypedManifest bool
 }
@@ -28,6 +30,7 @@ func NewEngine(opts Options) *engine {
 		execOptions:          make(map[string]any),
 		showTrace:            opts.ShowTrace,
 		renderSpecialObjects: opts.RenderSpecialObjects,
+		renderSources:        opts.RenderSources,
 		allowUntypedManifest: opts.AllowUntypedManifest,
 	}
 }
