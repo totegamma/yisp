@@ -280,7 +280,7 @@ func (e *engine) Eval(node *core.YispNode, env *core.Env, mode core.EvalMode) (*
 					newEnv := core.NewEnv()
 
 					var err error
-					_, err = core.CallEngineByPath(relpath, node.Attr.File, newEnv, e)
+					_, err = core.CallEngineByPath(relpath, node.Attr.File(), newEnv, e)
 					if err != nil {
 						return nil, core.NewEvaluationErrorWithParent(node, "failed to include file", err)
 					}

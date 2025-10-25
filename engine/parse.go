@@ -19,9 +19,13 @@ func Parse(filename string, node *yaml.Node) (*core.YispNode, error) {
 		}
 		result, err = Parse(filename, node.Content[0])
 		result.Attr = core.Attribute{
-			File:        filename,
-			Line:        node.Line,
-			Column:      node.Column,
+			Sources: []core.FilePos{
+				{
+					File:   filename,
+					Line:   node.Line,
+					Column: node.Column,
+				},
+			},
 			HeadComment: node.HeadComment,
 			LineComment: node.LineComment,
 			FootComment: node.FootComment,
@@ -43,9 +47,13 @@ func Parse(filename string, node *yaml.Node) (*core.YispNode, error) {
 			Value: s,
 			Tag:   node.Tag,
 			Attr: core.Attribute{
-				File:        filename,
-				Line:        node.Line,
-				Column:      node.Column,
+				Sources: []core.FilePos{
+					{
+						File:   filename,
+						Line:   node.Line,
+						Column: node.Column,
+					},
+				},
 				HeadComment: node.HeadComment,
 				LineComment: node.LineComment,
 				FootComment: node.FootComment,
@@ -82,9 +90,13 @@ func Parse(filename string, node *yaml.Node) (*core.YispNode, error) {
 			Value: m,
 			Tag:   node.Tag,
 			Attr: core.Attribute{
-				File:        filename,
-				Line:        node.Line,
-				Column:      node.Column,
+				Sources: []core.FilePos{
+					{
+						File:   filename,
+						Line:   node.Line,
+						Column: node.Column,
+					},
+				},
 				HeadComment: node.HeadComment,
 				LineComment: node.LineComment,
 				FootComment: node.FootComment,
@@ -113,9 +125,13 @@ func Parse(filename string, node *yaml.Node) (*core.YispNode, error) {
 			Value: node.Value,
 			Tag:   node.Tag,
 			Attr: core.Attribute{
-				File:        filename,
-				Line:        node.Line,
-				Column:      node.Column,
+				Sources: []core.FilePos{
+					{
+						File:   filename,
+						Line:   node.Line,
+						Column: node.Column,
+					},
+				},
 				HeadComment: node.HeadComment,
 				LineComment: node.LineComment,
 				FootComment: node.FootComment,
@@ -129,9 +145,13 @@ func Parse(filename string, node *yaml.Node) (*core.YispNode, error) {
 			Value: node.Value,
 			Tag:   node.Tag,
 			Attr: core.Attribute{
-				File:        filename,
-				Line:        node.Line,
-				Column:      node.Column,
+				Sources: []core.FilePos{
+					{
+						File:   filename,
+						Line:   node.Line,
+						Column: node.Column,
+					},
+				},
 				HeadComment: node.HeadComment,
 				LineComment: node.LineComment,
 				FootComment: node.FootComment,

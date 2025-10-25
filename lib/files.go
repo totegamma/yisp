@@ -23,8 +23,8 @@ func opReadFiles(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core
 		}
 
 		path := str
-		if node.Attr.File != "" {
-			path = filepath.Clean(filepath.Join(filepath.Dir(node.Attr.File), str))
+		if node.Attr.File() != "" {
+			path = filepath.Clean(filepath.Join(filepath.Dir(node.Attr.File()), str))
 		}
 
 		files, err := filepath.Glob(path)
@@ -58,9 +58,13 @@ func opReadFiles(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core
 				Kind:  core.KindMap,
 				Value: value,
 				Attr: core.Attribute{
-					File:   file,
-					Line:   node.Attr.Line,
-					Column: node.Attr.Column,
+					Sources: []core.FilePos{
+						{
+							File:   file,
+							Line:   node.Attr.Line(),
+							Column: node.Attr.Column(),
+						},
+					},
 				},
 			})
 		}
