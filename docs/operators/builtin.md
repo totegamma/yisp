@@ -513,16 +513,3 @@ Creates a schema for type validation.
 - schema
 - schema_definition
 ```
-
-### `as-document-root`
-
-Marks the result as a document root for YAML output.
-
-**Syntax:**
-```yaml
-!yisp
-- as-document-root
-- value1
-- value2
-- ...
-```

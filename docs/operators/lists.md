@@ -224,21 +224,23 @@ element: !yisp
 # Evaluates to: element: c
 ```
 
-## `lists.to-root`
+## `lists.as-toplevel`
 
-Marks a list as a document root for YAML output, causing its elements to be output as separate YAML documents.
+Flattens and marks the result as a top-level document root for YAML output, causing elements to be output as separate YAML documents.
 
 **Syntax:**
 ```yaml
 !yisp
-- lists.to-root
-- list
+- lists.as-toplevel
+- value1
+- value2
+- ...
 ```
 
 **Example:**
 ```yaml
 documents: !yisp
-  - lists.to-root
+  - lists.as-toplevel
   - !quote
     - kind: ConfigMap
       name: config1
