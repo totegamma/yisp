@@ -73,19 +73,25 @@ func cacheKube() (string, error) {
 
 func saveSchemas(openapi open) error {
 
-	home, err := os.UserHomeDir()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error getting home directory: %v\n", err)
-		os.Exit(1)
+	cacheDir, _ := rootCmd.PersistentFlags().GetString("cache-dir")
+	if cacheDir == "" {
+
+		home, err := os.UserHomeDir()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error getting home directory: %v\n", err)
+			os.Exit(1)
+		}
+
+		cacheDir = filepath.Join(home, ".cache", "yisp")
 	}
 
-	schemasPath := filepath.Join(home, ".cache", "yisp", "schemas")
+	schemasPath := filepath.Join(cacheDir, "schemas")
 	if err := os.MkdirAll(schemasPath, 0755); err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating schemas directory: %v\n", err)
 		os.Exit(1)
 	}
 
-	gvkPath := filepath.Join(home, ".cache", "yisp", "gvk")
+	gvkPath := filepath.Join(cacheDir, "gvk")
 	if err := os.MkdirAll(gvkPath, 0755); err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating GVK directory: %v\n", err)
 		os.Exit(1)

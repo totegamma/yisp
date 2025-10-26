@@ -21,25 +21,34 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.PersistentFlags().String("cache-dir", "", "Directory to use for caching schemas and other data")
+	rootCmd.PersistentFlags().StringP("config", "c", "", "Config file (default is $HOME/.config/yisp/config.yaml)")
 	cobra.OnInitialize(initConfig)
 }
 
 func initConfig() {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		panic(err)
-	}
-	configPath := filepath.Join(home, ".config", "yisp")
-	if _, err := os.Stat(configPath); os.IsNotExist(err) {
-		err := os.MkdirAll(configPath, os.ModePerm)
+
+	configPath, _ := rootCmd.PersistentFlags().GetString("config")
+
+	if configPath == "" {
+		home, err := os.UserHomeDir()
 		if err != nil {
 			panic(err)
 		}
+		configDir := filepath.Join(home, ".config", "yisp")
+		if _, err := os.Stat(configDir); os.IsNotExist(err) {
+			err := os.MkdirAll(configDir, os.ModePerm)
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		configPath = filepath.Join(configDir, "config.yaml")
 	}
 
-	viper.SetConfigFile(filepath.Join(configPath, "config.yaml"))
+	viper.SetConfigFile(configPath)
 
-	err = viper.ReadInConfig()
+	err := viper.ReadInConfig()
 	if err != nil {
 		viper.SetDefault("AllowedGoPkgs", []string{})
 		_ = viper.WriteConfig()
