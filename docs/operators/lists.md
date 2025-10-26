@@ -145,17 +145,104 @@ Reduces a list to a single value by applying a function cumulatively.
 ```yaml
 !yisp
 - lists.reduce
-- function
-- initial_value
 - list
+- function
 ```
 
 **Example:**
 ```yaml
 sum: !yisp
   - lists.reduce
-  - +
-  - 0
   - !quote [1, 2, 3, 4, 5]
+  - +
 # Evaluates to: sum: 15
+```
+
+## `lists.iota`
+
+Generates a list of integers from start to start+n-1. If only one argument is provided, starts from 0.
+
+**Syntax:**
+```yaml
+!yisp
+- lists.iota
+- n
+- start  # optional, defaults to 0
+```
+
+**Example:**
+```yaml
+numbers: !yisp
+  - lists.iota
+  - 5
+# Evaluates to: numbers: [0, 1, 2, 3, 4]
+
+numbersFrom10: !yisp
+  - lists.iota
+  - 5
+  - 10
+# Evaluates to: numbersFrom10: [10, 11, 12, 13, 14]
+```
+
+## `lists.length`
+
+Returns the length of a list.
+
+**Syntax:**
+```yaml
+!yisp
+- lists.length
+- list
+```
+
+**Example:**
+```yaml
+len: !yisp
+  - lists.length
+  - !quote [a, b, c, d]
+# Evaluates to: len: 4
+```
+
+## `lists.at`
+
+Gets an element from a list at the specified index (0-based).
+
+**Syntax:**
+```yaml
+!yisp
+- lists.at
+- list
+- index
+```
+
+**Example:**
+```yaml
+element: !yisp
+  - lists.at
+  - !quote [a, b, c, d]
+  - 2
+# Evaluates to: element: c
+```
+
+## `lists.to-root`
+
+Marks a list as a document root for YAML output, causing its elements to be output as separate YAML documents.
+
+**Syntax:**
+```yaml
+!yisp
+- lists.to-root
+- list
+```
+
+**Example:**
+```yaml
+documents: !yisp
+  - lists.to-root
+  - !quote
+    - kind: ConfigMap
+      name: config1
+    - kind: ConfigMap
+      name: config2
+# Outputs multiple YAML documents
 ```
