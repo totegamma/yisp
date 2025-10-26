@@ -107,30 +107,9 @@ func init() {
 
 	// special operators
 	operators["include"] = opInclude
-	operators["as-document-root"] = opAsDocumentRoot
 	operators["progn"] = opProgn
 	operators["pipeline"] = opPipeline
 	operators["schema"] = opSchema
-}
-
-func opNullCoalesce(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
-	if len(cdr) == 0 {
-		return &core.YispNode{
-			Kind:  core.KindNull,
-			Value: nil,
-		}, nil
-	}
-
-	for _, node := range cdr {
-		if node.Kind != core.KindNull {
-			return node, nil
-		}
-	}
-
-	return &core.YispNode{
-		Kind:  core.KindNull,
-		Value: nil,
-	}, nil
 }
 
 // opAdd adds numbers
@@ -250,49 +229,23 @@ func opGreaterThanOrEqual(cdr []*core.YispNode, env *core.Env, mode core.EvalMod
 	return compareNumbers(cdr, ">=", func(a, b float64) bool { return a >= b })
 }
 
-func opProgn(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
-	return cdr[len(cdr)-1], nil
-}
+func opNullCoalesce(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
+	if len(cdr) == 0 {
+		return &core.YispNode{
+			Kind:  core.KindNull,
+			Value: nil,
+		}, nil
+	}
 
-// opInclude includes files
-func opInclude(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
-	results := make([]any, 0)
 	for _, node := range cdr {
-		relpath, ok := node.Value.(string)
-		if !ok {
-			return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid path type: %T", node.Value))
-		}
-
-		var err error
-		evaluated, err := core.CallEngineByPath(relpath, node.Attr.File, core.NewEnv(), e)
-		if err != nil {
-			return nil, core.NewEvaluationErrorWithParent(node, "failed to include file", err)
-		}
-
-		if evaluated.Kind == core.KindArray {
-			arr, ok := evaluated.Value.([]any)
-			if !ok {
-				return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid array value: %T", evaluated.Value))
-			}
-
-			for _, item := range arr {
-				itemNode, ok := item.(*core.YispNode)
-				if !ok {
-					return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
-				}
-				itemNode.Tag = "!quote"
-				results = append(results, itemNode)
-			}
-		} else {
-			evaluated.Tag = "!quote"
-			results = append(results, evaluated)
+		if node.Kind != core.KindNull {
+			return node, nil
 		}
 	}
 
 	return &core.YispNode{
-		Kind:           core.KindArray,
-		Value:          results,
-		IsDocumentRoot: true,
+		Kind:  core.KindNull,
+		Value: nil,
 	}, nil
 }
 
@@ -372,6 +325,67 @@ func opNot(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engin
 	}, nil
 }
 
+// opInclude includes files
+func opInclude(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
+	results := make([]any, 0)
+	for _, node := range cdr {
+		relpath, ok := node.Value.(string)
+		if !ok {
+			return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid path type: %T", node.Value))
+		}
+
+		var err error
+		evaluated, err := core.CallEngineByPath(relpath, node.Attr.File(), core.NewEnv(), e)
+		if err != nil {
+			return nil, core.NewEvaluationErrorWithParent(node, "failed to include file", err)
+		}
+
+		if evaluated.Kind == core.KindArray {
+			arr, ok := evaluated.Value.([]any)
+			if !ok {
+				return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid array value: %T", evaluated.Value))
+			}
+
+			for _, item := range arr {
+				itemNode, ok := item.(*core.YispNode)
+				if !ok {
+					return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
+				}
+				itemNode.Tag = "!quote"
+				results = append(results, itemNode)
+			}
+		} else {
+			evaluated.Tag = "!quote"
+			results = append(results, evaluated)
+		}
+	}
+
+	return &core.YispNode{
+		Kind:           core.KindArray,
+		Value:          results,
+		IsDocumentRoot: true,
+	}, nil
+}
+
+func opProgn(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
+	return cdr[len(cdr)-1], nil
+}
+
+func opPipeline(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
+
+	value := cdr[0]
+
+	for _, fn := range cdr[1:] {
+		var err error
+		value, err = e.Apply(fn, []*core.YispNode{value}, env, mode)
+		if err != nil {
+			return nil, core.NewEvaluationErrorWithParent(fn, "failed to evaluate pipeline", err)
+		}
+	}
+
+	return value, nil
+}
+
 func opSchema(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
 	if len(cdr) != 1 {
 		return nil, core.NewEvaluationError(nil, fmt.Sprintf("sha256 requires 1 argument, got %d", len(cdr)))
@@ -402,51 +416,4 @@ func opSchema(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.En
 		Attr:  node.Attr,
 	}, nil
 
-}
-
-func opPipeline(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
-
-	value := cdr[0]
-	isDocumentRoot := value.IsDocumentRoot
-
-	for _, fn := range cdr[1:] {
-		var err error
-		value, err = e.Apply(fn, []*core.YispNode{value}, env, mode)
-		if err != nil {
-			return nil, core.NewEvaluationErrorWithParent(fn, "failed to evaluate pipeline", err)
-		}
-	}
-
-	value.IsDocumentRoot = isDocumentRoot
-
-	return value, nil
-}
-
-func opAsDocumentRoot(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
-
-	flattened := make([]any, 0)
-
-	for _, node := range cdr {
-		if node.Kind == core.KindArray {
-			arr, ok := node.Value.([]any)
-			if !ok {
-				return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid argument type for flatten: %T", node))
-			}
-			for _, item := range arr {
-				itemNode, ok := item.(*core.YispNode)
-				if !ok {
-					return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
-				}
-				flattened = append(flattened, itemNode)
-			}
-		} else {
-			flattened = append(flattened, node)
-		}
-	}
-
-	return &core.YispNode{
-		Kind:           core.KindArray,
-		Value:          flattened,
-		IsDocumentRoot: true,
-	}, nil
 }

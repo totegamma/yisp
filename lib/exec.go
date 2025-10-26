@@ -145,7 +145,7 @@ func opCmd(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engin
 		}, nil
 	} else {
 
-		result, err := e.Run(stdout, env, cdr[0].Attr.File)
+		result, err := e.Run(stdout, env, cdr[0].Attr.File())
 		if err != nil {
 			return nil, core.NewEvaluationErrorWithParent(cdr[0], "failed to evaluate command output", err)
 		}
@@ -285,7 +285,7 @@ func opGoRun(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Eng
 		}, nil
 	} else {
 
-		result, err := e.Run(stdout, env, cdr[0].Attr.File)
+		result, err := e.Run(stdout, env, cdr[0].Attr.File())
 		if err != nil {
 			return nil, core.NewEvaluationErrorWithParent(cdr[0], "failed to evaluate command output", err)
 		}

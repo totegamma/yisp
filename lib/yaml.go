@@ -50,7 +50,7 @@ func opUnmarshal(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core
 		return nil, core.NewEvaluationErrorWithParent(node, "failed to unmarshal yaml", err)
 	}
 
-	resultNode, err := core.ParseAny(node.Attr.File, result)
+	resultNode, err := core.ParseAny(node.Attr.File(), result)
 	if err != nil {
 		return nil, core.NewEvaluationErrorWithParent(node, "failed to parse yaml result", err)
 	}

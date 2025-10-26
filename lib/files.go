@@ -9,10 +9,11 @@ import (
 )
 
 func init() {
-	register("files", "glob", opReadFiles)
+	register("files", "glob", opGlob)
+	register("files", "read", opReadAll)
 }
 
-func opReadFiles(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
+func opGlob(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
 
 	result := make([]any, 0)
 
@@ -23,8 +24,8 @@ func opReadFiles(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core
 		}
 
 		path := str
-		if node.Attr.File != "" {
-			path = filepath.Clean(filepath.Join(filepath.Dir(node.Attr.File), str))
+		if node.Attr.File() != "" {
+			path = filepath.Clean(filepath.Join(filepath.Dir(node.Attr.File()), str))
 		}
 
 		files, err := filepath.Glob(path)
@@ -58,9 +59,13 @@ func opReadFiles(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core
 				Kind:  core.KindMap,
 				Value: value,
 				Attr: core.Attribute{
-					File:   file,
-					Line:   node.Attr.Line,
-					Column: node.Attr.Column,
+					Sources: []core.FilePos{
+						{
+							File:   file,
+							Line:   node.Attr.Line(),
+							Column: node.Attr.Column(),
+						},
+					},
 				},
 			})
 		}
@@ -70,5 +75,41 @@ func opReadFiles(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core
 		Kind:  core.KindArray,
 		Value: result,
 		Attr:  cdr[0].Attr,
+	}, nil
+}
+
+func opReadAll(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
+
+	if len(cdr) != 1 {
+		return nil, core.NewEvaluationError(cdr[0], "read-file expects exactly one argument")
+	}
+
+	str, ok := cdr[0].Value.(string)
+	if !ok {
+		return nil, core.NewEvaluationError(cdr[0], fmt.Sprintf("invalid argument type for read-file: %T", cdr[0]))
+	}
+
+	path := str
+	if cdr[0].Attr.File() != "" {
+		path = filepath.Clean(filepath.Join(filepath.Dir(cdr[0].Attr.File()), str))
+	}
+
+	body, err := os.ReadFile(path)
+	if err != nil {
+		return nil, core.NewEvaluationError(cdr[0], fmt.Sprintf("failed to read file: %s", path))
+	}
+
+	return &core.YispNode{
+		Kind:  core.KindString,
+		Value: string(body),
+		Attr: core.Attribute{
+			Sources: []core.FilePos{
+				{
+					File:   path,
+					Line:   cdr[0].Attr.Line(),
+					Column: cdr[0].Attr.Column(),
+				},
+			},
+		},
 	}, nil
 }

@@ -75,10 +75,14 @@ const (
 	KindType
 )
 
-type Attribute struct {
+type FilePos struct {
 	File   string
 	Line   int
 	Column int
+}
+
+type Attribute struct {
+	Sources []FilePos
 
 	KeyHeadComment string
 	KeyLineComment string
@@ -90,6 +94,42 @@ type Attribute struct {
 
 	KeyStyle yaml.Style
 	Style    yaml.Style
+}
+
+func (a Attribute) Merge(other Attribute) Attribute {
+	merged := a
+
+	merged.Sources = append(merged.Sources, other.Sources...)
+
+	merged.HeadComment += other.HeadComment
+	merged.LineComment += other.LineComment
+	merged.FootComment += other.FootComment
+	if other.Style != 0 {
+		merged.Style = other.Style
+	}
+
+	return merged
+}
+
+func (a *Attribute) File() string {
+	if len(a.Sources) == 0 {
+		return ""
+	}
+	return a.Sources[0].File
+}
+
+func (a *Attribute) Line() int {
+	if len(a.Sources) == 0 {
+		return 0
+	}
+	return a.Sources[0].Line
+}
+
+func (a *Attribute) Column() int {
+	if len(a.Sources) == 0 {
+		return 0
+	}
+	return a.Sources[0].Column
 }
 
 // YispNode represents a node in the Yisp language
@@ -104,12 +144,17 @@ type YispNode struct {
 }
 
 func (n *YispNode) String() string {
-	return fmt.Sprintf("%s | %s:%d:%d", n.Kind, n.Attr.File, n.Attr.Line, n.Attr.Column)
+	if len(n.Attr.Sources) == 0 {
+		return fmt.Sprintf("%s | <unknown>", n.Kind)
+	} else {
+		pos := n.Attr.Sources[0]
+		return fmt.Sprintf("%s | %s:%d:%d", n.Kind, pos.File, pos.Line, pos.Column)
+	}
 }
 
 func (n *YispNode) Sourcemap() string {
 
-	if n.Attr.File == "" {
+	if len(n.Attr.Sources) == 0 {
 		return ""
 	}
 
@@ -117,9 +162,21 @@ func (n *YispNode) Sourcemap() string {
 	if err != nil {
 		currentDir = "."
 	}
-	localPath, err := filepath.Rel(currentDir, n.Attr.File)
 
-	return fmt.Sprintf("%s:%d:%d", localPath, n.Attr.Line, n.Attr.Column)
+	output := ""
+
+	for i, pos := range n.Attr.Sources {
+		localPath, err := filepath.Rel(currentDir, pos.File)
+		if err != nil {
+			localPath = pos.File
+		}
+		if i > 0 {
+			output += ", "
+		}
+		output += fmt.Sprintf("%s:%d:%d", localPath, pos.Line, pos.Column)
+	}
+
+	return output
 }
 
 type TypedSymbol struct {

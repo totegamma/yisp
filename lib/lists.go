@@ -17,7 +17,7 @@ func init() {
 	register("lists", "iota", opIota)
 	register("lists", "length", opLength)
 	register("lists", "at", opAt)
-	register("lists", "to-root", opToRoot)
+	register("lists", "as-toplevel", opAsToplevel)
 }
 
 // opCar returns the first element of a list
@@ -371,16 +371,32 @@ func opAt(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine
 	return elem, nil
 }
 
-func opToRoot(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
-	if len(cdr) != 1 {
-		return nil, core.NewEvaluationError(nil, fmt.Sprintf("expand requires 1 argument, got %d", len(cdr)))
+func opAsToplevel(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
+
+	flattened := make([]any, 0)
+
+	for _, node := range cdr {
+		if node.Kind == core.KindArray {
+			arr, ok := node.Value.([]any)
+			if !ok {
+				return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid argument type for flatten: %T", node))
+			}
+			for _, item := range arr {
+				itemNode, ok := item.(*core.YispNode)
+				if !ok {
+					return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
+				}
+				flattened = append(flattened, itemNode)
+			}
+		} else {
+			flattened = append(flattened, node)
+		}
 	}
 
-	listNode := cdr[0]
-	if listNode.Kind != core.KindArray {
-		return nil, core.NewEvaluationError(listNode, fmt.Sprintf("expand requires a list argument, got %v", listNode.Kind))
-	}
+	return &core.YispNode{
+		Kind:           core.KindArray,
+		Value:          flattened,
+		IsDocumentRoot: true,
+	}, nil
 
-	listNode.IsDocumentRoot = true
-	return listNode, nil
 }

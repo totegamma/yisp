@@ -17,7 +17,11 @@ func ParseAny(filename string, v any) (*YispNode, error) {
 			Kind:  KindBool,
 			Value: v,
 			Attr: Attribute{
-				File: filename,
+				Sources: []FilePos{
+					{
+						File: filename,
+					},
+				},
 			},
 		}, nil
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
@@ -25,7 +29,11 @@ func ParseAny(filename string, v any) (*YispNode, error) {
 			Kind:  KindInt,
 			Value: v,
 			Attr: Attribute{
-				File: filename,
+				Sources: []FilePos{
+					{
+						File: filename,
+					},
+				},
 			},
 		}, nil
 	case reflect.Float32, reflect.Float64:
@@ -33,7 +41,11 @@ func ParseAny(filename string, v any) (*YispNode, error) {
 			Kind:  KindFloat,
 			Value: v,
 			Attr: Attribute{
-				File: filename,
+				Sources: []FilePos{
+					{
+						File: filename,
+					},
+				},
 			},
 		}, nil
 	case reflect.String:
@@ -41,7 +53,11 @@ func ParseAny(filename string, v any) (*YispNode, error) {
 			Kind:  KindString,
 			Value: v,
 			Attr: Attribute{
-				File: filename,
+				Sources: []FilePos{
+					{
+						File: filename,
+					},
+				},
 			},
 		}, nil
 	case reflect.Map:
@@ -63,7 +79,11 @@ func ParseAny(filename string, v any) (*YispNode, error) {
 			Kind:  KindMap,
 			Value: m,
 			Attr: Attribute{
-				File: filename,
+				Sources: []FilePos{
+					{
+						File: filename,
+					},
+				},
 			},
 		}, nil
 	case reflect.Slice, reflect.Array:
@@ -85,7 +105,11 @@ func ParseAny(filename string, v any) (*YispNode, error) {
 			Kind:  KindArray,
 			Value: s,
 			Attr: Attribute{
-				File: filename,
+				Sources: []FilePos{
+					{
+						File: filename,
+					},
+				},
 			},
 		}, nil
 	default:
