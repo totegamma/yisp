@@ -1,5 +1,5 @@
 !yisp
-- as-document-root
+- lists.as-toplevel
 - - k8s.patch
   - !quote
     - apiVersion: apps/v1

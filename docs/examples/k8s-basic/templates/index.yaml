@@ -24,7 +24,7 @@
 !yisp &app
 - lambda
 - [!AppProps props]
-- - as-document-root
+- - lists.as-toplevel
   - - if
     - [eq, *props.type?, "statefulset"]
     - - *statefulset.main
@@ -46,10 +46,10 @@
   data: !yisp
     - maps.from-entries
     - - lists.map
+      - - files.glob
+        - *props.path
       - - lambda
         - [file]
         - !quote
           - *file.name
           - *file.body
-      - - files.glob
-        - *props.path
