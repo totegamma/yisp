@@ -466,25 +466,6 @@ results: !yisp
   - "config/server.yaml"
 ```
 
-### `import`
-
-Imports modules, making their definitions available in the current environment.
-
-**Syntax:**
-```yaml
-!yisp
-- import
-- ["module_name", "path/to/module.yaml"]
-- ...
-```
-
-**Example:**
-```yaml
-!yisp
-- import
-- ["utils", "./utils.yaml"]
-```
-
 ### `progn`
 
 Evaluates all arguments in sequence and returns the value of the last one.
