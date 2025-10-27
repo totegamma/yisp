@@ -263,48 +263,60 @@ func RenderCode(file string, line, after, before int, comments []Comment) (strin
 func CallEngineByPath(path, base string, env *Env, e Engine) (*YispNode, error) {
 
 	var reader io.Reader
-	var err error
 
-	targetURL, err := url.Parse(path)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse URL: %v", err)
-	}
+	extension := ".yaml"
+	source := ""
 
-	if base != "" {
-		baseURL, err := url.Parse(base)
+	if path == "-" {
+		var err error
+		reader = os.Stdin
+		source, err = os.Getwd()
 		if err != nil {
-			return nil, fmt.Errorf("failed to parse base URL: %v", err)
-		}
-		targetURL = baseURL.ResolveReference(targetURL)
-	}
-
-	if targetURL.Scheme == "http" || targetURL.Scheme == "https" {
-		reader, err = fetchRemote(targetURL.String())
-		if err != nil {
-			return nil, fmt.Errorf("failed to fetch remote file: %v", err)
+			return nil, fmt.Errorf("failed to get current working directory: %v", err)
 		}
 	} else {
-
-		stat, err := os.Stat(targetURL.Path)
+		targetURL, err := url.Parse(path)
 		if err != nil {
-			return nil, fmt.Errorf("failed to stat file: %v", err)
+			return nil, fmt.Errorf("failed to parse URL: %v", err)
 		}
 
-		if stat.IsDir() {
-			targetURL = &url.URL{Path: filepath.Join(targetURL.Path, "index.yaml")}
+		if base != "" {
+			baseURL, err := url.Parse(base)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse base URL: %v", err)
+			}
+			targetURL = baseURL.ResolveReference(targetURL)
 		}
-		reader, err = os.Open(targetURL.Path)
-		if err != nil {
-			return nil, fmt.Errorf("failed to open file: %v", err)
+
+		if targetURL.Scheme == "http" || targetURL.Scheme == "https" {
+			reader, err = fetchRemote(targetURL.String())
+			if err != nil {
+				return nil, fmt.Errorf("failed to fetch remote file: %v", err)
+			}
+		} else {
+
+			stat, err := os.Stat(targetURL.Path)
+			if err != nil {
+				return nil, fmt.Errorf("failed to stat file: %v", err)
+			}
+
+			if stat.IsDir() {
+				targetURL = &url.URL{Path: filepath.Join(targetURL.Path, "index.yaml")}
+			}
+			reader, err = os.Open(targetURL.Path)
+			if err != nil {
+				return nil, fmt.Errorf("failed to open file: %v", err)
+			}
 		}
+		extension = filepath.Ext(targetURL.Path)
+		source = targetURL.String()
 	}
 
-	extension := filepath.Ext(targetURL.Path)
 	switch extension {
 	case ".yml", ".yaml", ".yisp":
-		return e.Run(reader, env, targetURL.String())
+		return e.Run(reader, env, source)
 	case ".json":
-		return ParseJson(targetURL.String(), reader)
+		return ParseJson(source, reader)
 	default:
 		text, err := io.ReadAll(reader)
 		if err != nil {

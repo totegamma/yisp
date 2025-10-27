@@ -51,7 +51,7 @@ var buildCmd = &cobra.Command{
 			return
 		}
 
-		if !strings.HasPrefix(yamlFile, "http://") && !strings.HasPrefix(yamlFile, "https://") {
+		if yamlFile != "-" && !strings.HasPrefix(yamlFile, "http://") && !strings.HasPrefix(yamlFile, "https://") {
 			yamlFile, err = filepath.Abs(yamlFile)
 			if err != nil {
 				fmt.Println("Error:", err)
