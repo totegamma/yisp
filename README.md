@@ -128,3 +128,34 @@ func main() {
 ```
 
 also you can use `engine.EvaluateFileToAny` to get the result as go `any` type.
+
+## Use yisp from Kustomize
+
+You can call yisp via KRM function callings.
+
+```yaml
+apiVersion: krm.yisp.gammalab.net/v1
+kind: Yisp
+metadata:
+  name: add-labels-transformer
+  annotations:
+    config.kubernetes.io/function: |
+      container:
+        image: ghcr.io/totegamma/yisp
+spec:
+  allowUntypedManifest: true
+  yisp: |
+    !yisp
+    - lists.map
+    - *items
+    - - lambda
+      - [item]
+      - - maps.merge
+        - *item
+        - !quote
+          metadata:
+            labels:
+              added-by: yisp-transformer
+```
+
+[full example is here](https://github.com/totegamma/yisp/tree/main/docs/examples/krm)
