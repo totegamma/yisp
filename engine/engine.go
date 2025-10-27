@@ -61,6 +61,21 @@ func (e *engine) EvaluateFileToYaml(path string) (string, error) {
 	return result, nil
 }
 
+func (e *engine) EvaluateReaderToYaml(reader io.Reader, location string) (string, error) {
+	env := core.NewEnv()
+	evaluated, err := e.Run(reader, env, location)
+	if err != nil {
+		return "", err
+	}
+
+	result, err := e.Render(evaluated)
+	if err != nil {
+		return "", err
+	}
+
+	return result, nil
+}
+
 func (e *engine) EvaluateFileToAny(path string) (any, error) {
 	env := core.NewEnv()
 	evaluated, err := core.CallEngineByPath(path, "", env, e)
