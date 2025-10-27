@@ -1,0 +1,25 @@
+apiVersion: krm.yisp.gammalab.net/v1
+kind: Yisp
+metadata:
+  name: generate-config
+  annotations:
+    config.kubernetes.io/function: |
+      container:
+        image: ghcr.io/totegamma/yisp
+        mounts:
+          - type: bind
+            src: ./
+            dst: /work
+spec:
+  allowUntypedManifest: true
+  yisp: |
+    !yisp
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: my-config
+    data:
+      myaddition:
+        - add
+        - 3
+        - 4

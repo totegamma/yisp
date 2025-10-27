@@ -46,9 +46,27 @@ func (e *engine) GetOption(key string) (any, bool) {
 	return nil, false
 }
 
+func (e *engine) EvaluateFileToYamlWithEnv(path string, env *core.Env) (string, error) {
+	evaluated, err := core.CallEngineByPath(path, "", env, e)
+	if err != nil {
+		return "", err
+	}
+
+	result, err := e.Render(evaluated)
+	if err != nil {
+		return "", err
+	}
+
+	return result, nil
+}
+
 func (e *engine) EvaluateFileToYaml(path string) (string, error) {
 	env := core.NewEnv()
-	evaluated, err := core.CallEngineByPath(path, "", env, e)
+	return e.EvaluateFileToYamlWithEnv(path, env)
+}
+
+func (e *engine) EvaluateReaderToYamlWithEnv(reader io.Reader, env *core.Env, location string) (string, error) {
+	evaluated, err := e.Run(reader, env, location)
 	if err != nil {
 		return "", err
 	}
@@ -63,17 +81,7 @@ func (e *engine) EvaluateFileToYaml(path string) (string, error) {
 
 func (e *engine) EvaluateReaderToYaml(reader io.Reader, location string) (string, error) {
 	env := core.NewEnv()
-	evaluated, err := e.Run(reader, env, location)
-	if err != nil {
-		return "", err
-	}
-
-	result, err := e.Render(evaluated)
-	if err != nil {
-		return "", err
-	}
-
-	return result, nil
+	return e.EvaluateReaderToYamlWithEnv(reader, env, location)
 }
 
 func (e *engine) EvaluateFileToAny(path string) (any, error) {

@@ -1,0 +1,26 @@
+apiVersion: krm.yisp.gammalab.net/v1
+kind: Yisp
+metadata:
+  name: add-labels
+  annotations:
+    config.kubernetes.io/function: |
+      container:
+        image: ghcr.io/totegamma/yisp
+        mounts:
+          - type: bind
+            src: ./
+            dst: /work
+spec:
+  allowUntypedManifest: true
+  yisp: |
+    !yisp
+    - lists.map
+    - *items
+    - - lambda
+      - [item]
+      - - maps.merge
+        - *item
+        - !quote
+          metadata:
+            labels:
+              added-by: yisp-transformer

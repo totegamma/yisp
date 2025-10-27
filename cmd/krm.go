@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/totegamma/yisp/core"
 	"github.com/totegamma/yisp/engine"
 	"github.com/totegamma/yisp/internal/yaml"
 	"io"
@@ -33,6 +34,7 @@ type KRMInput struct {
 	ApiVersion     string         `yaml:"apiVersion"`
 	Kind           string         `yaml:"kind"`
 	FunctionConfig FunctionConfig `yaml:"functionConfig"`
+	Items          []any          `yaml:"items"`
 }
 
 var krmCmd = &cobra.Command{
@@ -40,13 +42,13 @@ var krmCmd = &cobra.Command{
 	Args: cobra.ExactArgs(0),
 	Run: func(cmd *cobra.Command, args []string) {
 
-		input, err := io.ReadAll(os.Stdin)
+		inputStr, err := io.ReadAll(os.Stdin)
 		if err != nil {
 			panic(err)
 		}
 
 		var krmInput KRMInput
-		err = yaml.Unmarshal(input, &krmInput)
+		err = yaml.Unmarshal(inputStr, &krmInput)
 		if err != nil {
 			panic(err)
 		}
@@ -57,6 +59,30 @@ var krmCmd = &cobra.Command{
 			RenderSources:        false,
 			AllowUntypedManifest: krmInput.FunctionConfig.Spec.AllowUntypedManifest,
 		})
+
+		env := core.NewEnv()
+
+		wd, err := os.Getwd()
+		if err != nil {
+			panic(err)
+		}
+
+		var items []any
+		for _, item := range krmInput.Items {
+			apiVersion, ok := item.(map[string]any)["apiVersion"]
+			if ok && apiVersion == "krm.yisp.gammalab.net/v1" {
+				continue
+			}
+			items = append(items, item)
+		}
+
+		itemNodes, err := core.ParseAny(filepath.Join(wd, "items.krm.yaml"), items)
+		if err != nil {
+			panic(err)
+		}
+		itemNodes.IsDocumentRoot = true
+
+		env.Set("items", itemNodes)
 
 		if krmInput.FunctionConfig.Spec.YispScript == "" {
 
@@ -73,7 +99,7 @@ var krmCmd = &cobra.Command{
 				}
 			}
 
-			result, err := e.EvaluateFileToYaml(target)
+			result, err := e.EvaluateFileToYamlWithEnv(target, env)
 			if err != nil {
 				panic(err)
 			}
@@ -81,16 +107,12 @@ var krmCmd = &cobra.Command{
 			fmt.Println(result)
 
 		} else {
-			scriptReader := strings.NewReader(krmInput.FunctionConfig.Spec.YispScript)
 
-			wd, err := os.Getwd()
-			if err != nil {
-				panic(err)
-			}
+			scriptReader := strings.NewReader(krmInput.FunctionConfig.Spec.YispScript)
 
 			tmp := filepath.Join(wd, "stdin.krm.yaml")
 
-			result, err := e.EvaluateReaderToYaml(scriptReader, tmp)
+			result, err := e.EvaluateReaderToYamlWithEnv(scriptReader, env, tmp)
 			if err != nil {
 				panic(err)
 			}
