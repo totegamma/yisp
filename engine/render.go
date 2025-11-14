@@ -208,7 +208,7 @@ func (e *engine) renderYamlNodes(node *core.YispNode) (*yaml.Node, error) {
 
 func (e *engine) Render(node *core.YispNode) (string, error) {
 
-	if node.Kind == core.KindArray {
+	if node.Kind == core.KindArray && node.IsDocumentRoot {
 		arr, ok := node.Value.([]any)
 		if !ok {
 			return "", fmt.Errorf("invalid array value(root)")
