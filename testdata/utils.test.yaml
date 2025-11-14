@@ -263,3 +263,15 @@
 #         Name: instance-1
 #         Environment: Production
 #         Owner: DevOps
+---
+# single patch object input (not array)
+!yisp
+- utils.op-patch
+- hoge: 0
+  piyo: 1
+- op: add
+  path: /fuga
+  value: 2
+# hoge: 0
+# piyo: 1
+# fuga: 2

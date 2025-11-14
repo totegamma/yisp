@@ -1,0 +1,5 @@
+op: add
+path: /resource/aws_instance/*/tags
+value:
+  Environment: Production
+  Owner: DevOps Team
