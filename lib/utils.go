@@ -79,8 +79,9 @@ func getValue(node *core.YispNode, path string) (*core.YispNode, error) {
 	return current, nil
 }
 
-// setValue sets a value in a YispNode using a JSON Pointer path
-func setValue(node *core.YispNode, path string, value *core.YispNode) error {
+// addValue adds a value in a YispNode using a JSON Pointer path (RFC 6902 add operation)
+// For arrays, supports appending when index equals array length
+func addValue(node *core.YispNode, path string, value *core.YispNode) error {
 	tokens, err := parsePointer(path)
 	if err != nil {
 		return err
@@ -132,6 +133,97 @@ func setValue(node *core.YispNode, path string, value *core.YispNode) error {
 		m, ok := current.Value.(*core.YispMap)
 		if !ok {
 			return fmt.Errorf("expected map, got %T", current.Value)
+		}
+		m.Set(lastToken, value)
+	} else if current.Kind == core.KindArray {
+		arr, ok := current.Value.([]any)
+		if !ok {
+			return fmt.Errorf("expected array, got %T", current.Value)
+		}
+		idx, err := strconv.Atoi(lastToken)
+		if err != nil {
+			return fmt.Errorf("invalid array index: %s", lastToken)
+		}
+		// RFC 6902: allow appending to array when index equals array length
+		if idx < 0 || idx > len(arr) {
+			return fmt.Errorf("array index out of bounds: %d", idx)
+		}
+		if idx == len(arr) {
+			// Append to array
+			current.Value = append(arr, value)
+		} else {
+			// Insert at index, shifting elements to the right
+			newArr := make([]any, len(arr)+1)
+			copy(newArr, arr[:idx])
+			newArr[idx] = value
+			copy(newArr[idx+1:], arr[idx:])
+			current.Value = newArr
+		}
+	} else {
+		return fmt.Errorf("cannot set value in %s", current.Kind)
+	}
+	
+	return nil
+}
+
+// replaceValue replaces a value in a YispNode using a JSON Pointer path (RFC 6902 replace operation)
+// Unlike add, this only works if the target path already exists
+func replaceValue(node *core.YispNode, path string, value *core.YispNode) error {
+	tokens, err := parsePointer(path)
+	if err != nil {
+		return err
+	}
+	
+	if len(tokens) == 0 {
+		return fmt.Errorf("cannot replace root node")
+	}
+	
+	current := node
+	for i := 0; i < len(tokens)-1; i++ {
+		token := tokens[i]
+		if current.Kind == core.KindMap {
+			m, ok := current.Value.(*core.YispMap)
+			if !ok {
+				return fmt.Errorf("expected map, got %T", current.Value)
+			}
+			val, ok := m.Get(token)
+			if !ok {
+				return fmt.Errorf("key not found: %s", token)
+			}
+			current, ok = val.(*core.YispNode)
+			if !ok {
+				return fmt.Errorf("expected YispNode, got %T", val)
+			}
+		} else if current.Kind == core.KindArray {
+			arr, ok := current.Value.([]any)
+			if !ok {
+				return fmt.Errorf("expected array, got %T", current.Value)
+			}
+			idx, err := strconv.Atoi(token)
+			if err != nil {
+				return fmt.Errorf("invalid array index: %s", token)
+			}
+			if idx < 0 || idx >= len(arr) {
+				return fmt.Errorf("array index out of bounds: %d", idx)
+			}
+			current, ok = arr[idx].(*core.YispNode)
+			if !ok {
+				return fmt.Errorf("expected YispNode, got %T", arr[idx])
+			}
+		} else {
+			return fmt.Errorf("cannot navigate through %s", current.Kind)
+		}
+	}
+	
+	lastToken := tokens[len(tokens)-1]
+	if current.Kind == core.KindMap {
+		m, ok := current.Value.(*core.YispMap)
+		if !ok {
+			return fmt.Errorf("expected map, got %T", current.Value)
+		}
+		// Check if key exists
+		if _, ok := m.Get(lastToken); !ok {
+			return fmt.Errorf("key not found for replace: %s", lastToken)
 		}
 		m.Set(lastToken, value)
 	} else if current.Kind == core.KindArray {
@@ -311,7 +403,7 @@ func opOpPatch(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.E
 				return nil, core.NewEvaluationError(patchNode, fmt.Sprintf("expected YispNode for value, got %T", valueAny))
 			}
 			
-			err := setValue(target, path, valueNode)
+			err := addValue(target, path, valueNode)
 			if err != nil {
 				return nil, core.NewEvaluationError(patchNode, fmt.Sprintf("add operation failed: %v", err))
 			}
@@ -333,14 +425,9 @@ func opOpPatch(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.E
 				return nil, core.NewEvaluationError(patchNode, fmt.Sprintf("expected YispNode for value, got %T", valueAny))
 			}
 			
-			// Replace is equivalent to remove + add
-			err := deleteValue(target, path)
+			err := replaceValue(target, path, valueNode)
 			if err != nil {
-				return nil, core.NewEvaluationError(patchNode, fmt.Sprintf("replace operation (remove) failed: %v", err))
-			}
-			err = setValue(target, path, valueNode)
-			if err != nil {
-				return nil, core.NewEvaluationError(patchNode, fmt.Sprintf("replace operation (add) failed: %v", err))
+				return nil, core.NewEvaluationError(patchNode, fmt.Sprintf("replace operation failed: %v", err))
 			}
 			
 		case "move":
@@ -369,7 +456,7 @@ func opOpPatch(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.E
 				return nil, core.NewEvaluationError(patchNode, fmt.Sprintf("move operation (remove) failed: %v", err))
 			}
 			// Add to 'path'
-			err = setValue(target, path, value)
+			err = addValue(target, path, value)
 			if err != nil {
 				return nil, core.NewEvaluationError(patchNode, fmt.Sprintf("move operation (add) failed: %v", err))
 			}
@@ -395,7 +482,7 @@ func opOpPatch(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.E
 				return nil, core.NewEvaluationError(patchNode, fmt.Sprintf("copy operation (get) failed: %v", err))
 			}
 			// Add to 'path'
-			err = setValue(target, path, value)
+			err = addValue(target, path, value)
 			if err != nil {
 				return nil, core.NewEvaluationError(patchNode, fmt.Sprintf("copy operation (add) failed: %v", err))
 			}
