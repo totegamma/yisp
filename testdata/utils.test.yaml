@@ -112,3 +112,154 @@
     from: /hoge
 # hoge: 1
 # piyo: 1
+---
+# wildcard - add to all map entries
+!yisp
+- utils.op-patch
+- !quote
+  resource:
+    my-object0:
+      attr: hoge
+    my-object1:
+      attr: piyo
+- !quote
+  - op: add
+    path: /resource/*
+    value:
+      tag: my-tag
+# resource:
+#   my-object0:
+#     attr: hoge
+#     tag: my-tag
+#   my-object1:
+#     attr: piyo
+#     tag: my-tag
+---
+# wildcard - replace all map entries
+!yisp
+- utils.op-patch
+- !quote
+  items:
+    item1: old-value1
+    item2: old-value2
+- !quote
+  - op: replace
+    path: /items/*
+    value: new-value
+# items:
+#   item1: new-value
+#   item2: new-value
+---
+# wildcard - remove specific field from all entries
+!yisp
+- utils.op-patch
+- !quote
+  data:
+    entry1:
+      name: first
+      temp: remove-me
+    entry2:
+      name: second
+      temp: remove-me
+- !quote
+  - op: remove
+    path: /data/*/temp
+# data:
+#   entry1:
+#     name: first
+#   entry2:
+#     name: second
+---
+# wildcard - add to all array elements
+!yisp
+- utils.op-patch
+- !quote
+  items:
+    - name: item1
+    - name: item2
+    - name: item3
+- !quote
+  - op: add
+    path: /items/*
+    value:
+      enabled: true
+# items:
+#   - name: item1
+#     enabled: true
+#   - name: item2
+#     enabled: true
+#   - name: item3
+#     enabled: true
+---
+# wildcard - replace all array elements
+!yisp
+- utils.op-patch
+- !quote
+  values:
+    - old1
+    - old2
+    - old3
+- !quote
+  - op: replace
+    path: /values/*
+    value: replaced
+# values:
+#   - replaced
+#   - replaced
+#   - replaced
+---
+# wildcard in middle - add field to nested objects
+!yisp
+- utils.op-patch
+- !quote
+  resource:
+    server1:
+      labels:
+        env: prod
+    server2:
+      labels:
+        env: dev
+- !quote
+  - op: add
+    path: /resource/*/labels/team
+    value: platform
+# resource:
+#   server1:
+#     labels:
+#       env: prod
+#       team: platform
+#   server2:
+#     labels:
+#       env: dev
+#       team: platform
+---
+# wildcard in middle - merge multiple fields preserving existing
+!yisp
+- utils.op-patch
+- !quote
+  resource:
+    aws_instance:
+      example0:
+        tags:
+          Name: instance-0
+      example1:
+        tags:
+          Name: instance-1
+- !quote
+  - op: add
+    path: /resource/aws_instance/*/tags
+    value:
+      Environment: Production
+      Owner: DevOps
+# resource:
+#   aws_instance:
+#     example0:
+#       tags:
+#         Name: instance-0
+#         Environment: Production
+#         Owner: DevOps
+#     example1:
+#       tags:
+#         Name: instance-1
+#         Environment: Production
+#         Owner: DevOps

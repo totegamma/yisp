@@ -32,3 +32,57 @@ items:
 ---
 hoge: 1
 piyo: 1
+---
+resource:
+  my-object0:
+    attr: hoge
+    tag: my-tag
+  my-object1:
+    attr: piyo
+    tag: my-tag
+---
+items:
+  item1: new-value
+  item2: new-value
+---
+data:
+  entry1:
+    name: first
+  entry2:
+    name: second
+---
+items:
+  - name: item1
+    enabled: true
+  - name: item2
+    enabled: true
+  - name: item3
+    enabled: true
+---
+values:
+  - replaced
+  - replaced
+  - replaced
+---
+resource:
+  server1:
+    labels:
+      env: prod
+      team: platform
+  server2:
+    labels:
+      env: dev
+      team: platform
+---
+resource:
+  aws_instance:
+    example0:
+      tags:
+        Name: instance-0
+        Environment: Production
+        Owner: DevOps
+    example1:
+      tags:
+        Name: instance-1
+        Environment: Production
+        Owner: DevOps
