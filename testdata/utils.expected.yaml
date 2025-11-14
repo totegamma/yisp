@@ -50,3 +50,26 @@ data:
     name: first
   entry2:
     name: second
+---
+items:
+  - name: item1
+    enabled: true
+  - name: item2
+    enabled: true
+  - name: item3
+    enabled: true
+---
+values:
+  - replaced
+  - replaced
+  - replaced
+---
+resource:
+  server1:
+    labels:
+      env: prod
+      team: platform
+  server2:
+    labels:
+      env: dev
+      team: platform

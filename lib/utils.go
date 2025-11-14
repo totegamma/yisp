@@ -228,64 +228,120 @@ func addValueWithWildcard(node *core.YispNode, tokens []string, wildcardIndex in
 	}
 	
 	// At this point, current is the node where wildcard should match
-	if current.Kind != core.KindMap {
-		return fmt.Errorf("wildcard can only be used with maps, got %s", current.Kind)
-	}
-	
-	m, ok := current.Value.(*core.YispMap)
-	if !ok {
-		return fmt.Errorf("expected map, got %T", current.Value)
-	}
-	
-	// If this is the last token, add/merge value to all matching keys
-	if wildcardIndex == len(tokens)-1 {
-		// Iterate over all keys and add/merge the value
-		for key, val := range m.AllFromFront() {
-			targetNode, ok := val.(*core.YispNode)
-			if !ok {
-				return fmt.Errorf("expected YispNode, got %T", val)
+	if current.Kind == core.KindMap {
+		m, ok := current.Value.(*core.YispMap)
+		if !ok {
+			return fmt.Errorf("expected map, got %T", current.Value)
+		}
+		
+		// If this is the last token, add/merge value to all matching keys
+		if wildcardIndex == len(tokens)-1 {
+			// Iterate over all keys and add/merge the value
+			for key, val := range m.AllFromFront() {
+				targetNode, ok := val.(*core.YispNode)
+				if !ok {
+					return fmt.Errorf("expected YispNode, got %T", val)
+				}
+				
+				// If value is a map, merge it with the existing value
+				if value.Kind == core.KindMap && targetNode.Kind == core.KindMap {
+					targetMap, ok := targetNode.Value.(*core.YispMap)
+					if !ok {
+						return fmt.Errorf("expected map, got %T", targetNode.Value)
+					}
+					valueMap, ok := value.Value.(*core.YispMap)
+					if !ok {
+						return fmt.Errorf("expected map, got %T", value.Value)
+					}
+					// Merge value map into target map
+					for vKey, vVal := range valueMap.AllFromFront() {
+						targetMap.Set(vKey, vVal)
+					}
+				} else {
+					// Replace the entire value
+					m.Set(key, value)
+				}
 			}
-			
-			// If value is a map, merge it with the existing value
-			if value.Kind == core.KindMap && targetNode.Kind == core.KindMap {
-				targetMap, ok := targetNode.Value.(*core.YispMap)
+		} else {
+			// Wildcard is in the middle, need to apply remaining path to all matching keys
+			remainingTokens := tokens[wildcardIndex+1:]
+			for key, val := range m.AllFromFront() {
+				targetNode, ok := val.(*core.YispNode)
 				if !ok {
-					return fmt.Errorf("expected map, got %T", targetNode.Value)
+					return fmt.Errorf("expected YispNode, got %T", val)
 				}
-				valueMap, ok := value.Value.(*core.YispMap)
+				
+				// Construct path for remaining tokens
+				remainingPath := ""
+				for _, t := range remainingTokens {
+					remainingPath += "/" + strings.ReplaceAll(strings.ReplaceAll(t, "~", "~0"), "/", "~1")
+				}
+				
+				// Recursively apply add to this node with remaining path
+				err := addValue(targetNode, remainingPath, value)
+				if err != nil {
+					return fmt.Errorf("failed to add to key %s: %v", key, err)
+				}
+			}
+		}
+	} else if current.Kind == core.KindArray {
+		arr, ok := current.Value.([]any)
+		if !ok {
+			return fmt.Errorf("expected array, got %T", current.Value)
+		}
+		
+		// If this is the last token, add/merge value to all array elements
+		if wildcardIndex == len(tokens)-1 {
+			// Iterate over all array elements and add/merge the value
+			for i, elem := range arr {
+				targetNode, ok := elem.(*core.YispNode)
 				if !ok {
-					return fmt.Errorf("expected map, got %T", value.Value)
+					return fmt.Errorf("expected YispNode, got %T", elem)
 				}
-				// Merge value map into target map
-				for vKey, vVal := range valueMap.AllFromFront() {
-					targetMap.Set(vKey, vVal)
+				
+				// If value is a map, merge it with the existing value
+				if value.Kind == core.KindMap && targetNode.Kind == core.KindMap {
+					targetMap, ok := targetNode.Value.(*core.YispMap)
+					if !ok {
+						return fmt.Errorf("expected map, got %T", targetNode.Value)
+					}
+					valueMap, ok := value.Value.(*core.YispMap)
+					if !ok {
+						return fmt.Errorf("expected map, got %T", value.Value)
+					}
+					// Merge value map into target map
+					for vKey, vVal := range valueMap.AllFromFront() {
+						targetMap.Set(vKey, vVal)
+					}
+				} else {
+					// Replace the entire value
+					arr[i] = value
 				}
-			} else {
-				// Replace the entire value
-				m.Set(key, value)
+			}
+		} else {
+			// Wildcard is in the middle, need to apply remaining path to all array elements
+			remainingTokens := tokens[wildcardIndex+1:]
+			for i, elem := range arr {
+				targetNode, ok := elem.(*core.YispNode)
+				if !ok {
+					return fmt.Errorf("expected YispNode, got %T", elem)
+				}
+				
+				// Construct path for remaining tokens
+				remainingPath := ""
+				for _, t := range remainingTokens {
+					remainingPath += "/" + strings.ReplaceAll(strings.ReplaceAll(t, "~", "~0"), "/", "~1")
+				}
+				
+				// Recursively apply add to this node with remaining path
+				err := addValue(targetNode, remainingPath, value)
+				if err != nil {
+					return fmt.Errorf("failed to add to array index %d: %v", i, err)
+				}
 			}
 		}
 	} else {
-		// Wildcard is in the middle, need to apply remaining path to all matching keys
-		remainingTokens := tokens[wildcardIndex+1:]
-		for key, val := range m.AllFromFront() {
-			targetNode, ok := val.(*core.YispNode)
-			if !ok {
-				return fmt.Errorf("expected YispNode, got %T", val)
-			}
-			
-			// Construct path for remaining tokens
-			remainingPath := ""
-			for _, t := range remainingTokens {
-				remainingPath += "/" + strings.ReplaceAll(strings.ReplaceAll(t, "~", "~0"), "/", "~1")
-			}
-			
-			// Recursively apply add to this node with remaining path
-			err := addValue(targetNode, remainingPath, value)
-			if err != nil {
-				return fmt.Errorf("failed to add to key %s: %v", key, err)
-			}
-		}
+		return fmt.Errorf("wildcard can only be used with maps or arrays, got %s", current.Kind)
 	}
 	
 	return nil
@@ -427,42 +483,76 @@ func replaceValueWithWildcard(node *core.YispNode, tokens []string, wildcardInde
 	}
 	
 	// At this point, current is the node where wildcard should match
-	if current.Kind != core.KindMap {
-		return fmt.Errorf("wildcard can only be used with maps, got %s", current.Kind)
-	}
-	
-	m, ok := current.Value.(*core.YispMap)
-	if !ok {
-		return fmt.Errorf("expected map, got %T", current.Value)
-	}
-	
-	// If this is the last token, replace value for all matching keys
-	if wildcardIndex == len(tokens)-1 {
-		// Iterate over all keys and replace the value
-		for key := range m.AllFromFront() {
-			m.Set(key, value)
+	if current.Kind == core.KindMap {
+		m, ok := current.Value.(*core.YispMap)
+		if !ok {
+			return fmt.Errorf("expected map, got %T", current.Value)
+		}
+		
+		// If this is the last token, replace value for all matching keys
+		if wildcardIndex == len(tokens)-1 {
+			// Iterate over all keys and replace the value
+			for key := range m.AllFromFront() {
+				m.Set(key, value)
+			}
+		} else {
+			// Wildcard is in the middle, need to apply remaining path to all matching keys
+			remainingTokens := tokens[wildcardIndex+1:]
+			for key, val := range m.AllFromFront() {
+				targetNode, ok := val.(*core.YispNode)
+				if !ok {
+					return fmt.Errorf("expected YispNode, got %T", val)
+				}
+				
+				// Construct path for remaining tokens
+				remainingPath := ""
+				for _, t := range remainingTokens {
+					remainingPath += "/" + strings.ReplaceAll(strings.ReplaceAll(t, "~", "~0"), "/", "~1")
+				}
+				
+				// Recursively apply replace to this node with remaining path
+				err := replaceValue(targetNode, remainingPath, value)
+				if err != nil {
+					return fmt.Errorf("failed to replace in key %s: %v", key, err)
+				}
+			}
+		}
+	} else if current.Kind == core.KindArray {
+		arr, ok := current.Value.([]any)
+		if !ok {
+			return fmt.Errorf("expected array, got %T", current.Value)
+		}
+		
+		// If this is the last token, replace value for all array elements
+		if wildcardIndex == len(tokens)-1 {
+			// Iterate over all array elements and replace the value
+			for i := range arr {
+				arr[i] = value
+			}
+		} else {
+			// Wildcard is in the middle, need to apply remaining path to all array elements
+			remainingTokens := tokens[wildcardIndex+1:]
+			for i, elem := range arr {
+				targetNode, ok := elem.(*core.YispNode)
+				if !ok {
+					return fmt.Errorf("expected YispNode, got %T", elem)
+				}
+				
+				// Construct path for remaining tokens
+				remainingPath := ""
+				for _, t := range remainingTokens {
+					remainingPath += "/" + strings.ReplaceAll(strings.ReplaceAll(t, "~", "~0"), "/", "~1")
+				}
+				
+				// Recursively apply replace to this node with remaining path
+				err := replaceValue(targetNode, remainingPath, value)
+				if err != nil {
+					return fmt.Errorf("failed to replace in array index %d: %v", i, err)
+				}
+			}
 		}
 	} else {
-		// Wildcard is in the middle, need to apply remaining path to all matching keys
-		remainingTokens := tokens[wildcardIndex+1:]
-		for key, val := range m.AllFromFront() {
-			targetNode, ok := val.(*core.YispNode)
-			if !ok {
-				return fmt.Errorf("expected YispNode, got %T", val)
-			}
-			
-			// Construct path for remaining tokens
-			remainingPath := ""
-			for _, t := range remainingTokens {
-				remainingPath += "/" + strings.ReplaceAll(strings.ReplaceAll(t, "~", "~0"), "/", "~1")
-			}
-			
-			// Recursively apply replace to this node with remaining path
-			err := replaceValue(targetNode, remainingPath, value)
-			if err != nil {
-				return fmt.Errorf("failed to replace in key %s: %v", key, err)
-			}
-		}
+		return fmt.Errorf("wildcard can only be used with maps or arrays, got %s", current.Kind)
 	}
 	
 	return nil
@@ -606,47 +696,79 @@ func deleteValueWithWildcard(node *core.YispNode, tokens []string, wildcardIndex
 	}
 	
 	// At this point, current is the node where wildcard should match
-	if current.Kind != core.KindMap {
-		return fmt.Errorf("wildcard can only be used with maps, got %s", current.Kind)
-	}
-	
-	m, ok := current.Value.(*core.YispMap)
-	if !ok {
-		return fmt.Errorf("expected map, got %T", current.Value)
-	}
-	
-	// If this is the last token, delete all matching keys
-	if wildcardIndex == len(tokens)-1 {
-		// Collect all keys first (to avoid modification during iteration)
-		keys := []string{}
-		for key := range m.AllFromFront() {
-			keys = append(keys, key)
+	if current.Kind == core.KindMap {
+		m, ok := current.Value.(*core.YispMap)
+		if !ok {
+			return fmt.Errorf("expected map, got %T", current.Value)
 		}
-		// Delete all keys
-		for _, key := range keys {
-			m.Delete(key)
+		
+		// If this is the last token, delete all matching keys
+		if wildcardIndex == len(tokens)-1 {
+			// Collect all keys first (to avoid modification during iteration)
+			keys := []string{}
+			for key := range m.AllFromFront() {
+				keys = append(keys, key)
+			}
+			// Delete all keys
+			for _, key := range keys {
+				m.Delete(key)
+			}
+		} else {
+			// Wildcard is in the middle, need to apply remaining path to all matching keys
+			remainingTokens := tokens[wildcardIndex+1:]
+			for key, val := range m.AllFromFront() {
+				targetNode, ok := val.(*core.YispNode)
+				if !ok {
+					return fmt.Errorf("expected YispNode, got %T", val)
+				}
+				
+				// Construct path for remaining tokens
+				remainingPath := ""
+				for _, t := range remainingTokens {
+					remainingPath += "/" + strings.ReplaceAll(strings.ReplaceAll(t, "~", "~0"), "/", "~1")
+				}
+				
+				// Recursively apply delete to this node with remaining path
+				err := deleteValue(targetNode, remainingPath)
+				if err != nil {
+					return fmt.Errorf("failed to delete from key %s: %v", key, err)
+				}
+			}
+		}
+	} else if current.Kind == core.KindArray {
+		arr, ok := current.Value.([]any)
+		if !ok {
+			return fmt.Errorf("expected array, got %T", current.Value)
+		}
+		
+		// If this is the last token, delete all array elements
+		if wildcardIndex == len(tokens)-1 {
+			// Clear the array by setting it to empty slice
+			current.Value = []any{}
+		} else {
+			// Wildcard is in the middle, need to apply remaining path to all array elements
+			remainingTokens := tokens[wildcardIndex+1:]
+			for i, elem := range arr {
+				targetNode, ok := elem.(*core.YispNode)
+				if !ok {
+					return fmt.Errorf("expected YispNode, got %T", elem)
+				}
+				
+				// Construct path for remaining tokens
+				remainingPath := ""
+				for _, t := range remainingTokens {
+					remainingPath += "/" + strings.ReplaceAll(strings.ReplaceAll(t, "~", "~0"), "/", "~1")
+				}
+				
+				// Recursively apply delete to this node with remaining path
+				err := deleteValue(targetNode, remainingPath)
+				if err != nil {
+					return fmt.Errorf("failed to delete from array index %d: %v", i, err)
+				}
+			}
 		}
 	} else {
-		// Wildcard is in the middle, need to apply remaining path to all matching keys
-		remainingTokens := tokens[wildcardIndex+1:]
-		for key, val := range m.AllFromFront() {
-			targetNode, ok := val.(*core.YispNode)
-			if !ok {
-				return fmt.Errorf("expected YispNode, got %T", val)
-			}
-			
-			// Construct path for remaining tokens
-			remainingPath := ""
-			for _, t := range remainingTokens {
-				remainingPath += "/" + strings.ReplaceAll(strings.ReplaceAll(t, "~", "~0"), "/", "~1")
-			}
-			
-			// Recursively apply delete to this node with remaining path
-			err := deleteValue(targetNode, remainingPath)
-			if err != nil {
-				return fmt.Errorf("failed to delete from key %s: %v", key, err)
-			}
-		}
+		return fmt.Errorf("wildcard can only be used with maps or arrays, got %s", current.Kind)
 	}
 	
 	return nil

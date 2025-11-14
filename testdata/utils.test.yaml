@@ -169,3 +169,66 @@
 #     name: first
 #   entry2:
 #     name: second
+---
+# wildcard - add to all array elements
+!yisp
+- utils.op-patch
+- !quote
+  items:
+    - name: item1
+    - name: item2
+    - name: item3
+- !quote
+  - op: add
+    path: /items/*
+    value:
+      enabled: true
+# items:
+#   - name: item1
+#     enabled: true
+#   - name: item2
+#     enabled: true
+#   - name: item3
+#     enabled: true
+---
+# wildcard - replace all array elements
+!yisp
+- utils.op-patch
+- !quote
+  values:
+    - old1
+    - old2
+    - old3
+- !quote
+  - op: replace
+    path: /values/*
+    value: replaced
+# values:
+#   - replaced
+#   - replaced
+#   - replaced
+---
+# wildcard in middle - add field to nested objects
+!yisp
+- utils.op-patch
+- !quote
+  resource:
+    server1:
+      labels:
+        env: prod
+    server2:
+      labels:
+        env: dev
+- !quote
+  - op: add
+    path: /resource/*/labels/team
+    value: platform
+# resource:
+#   server1:
+#     labels:
+#       env: prod
+#       team: platform
+#   server2:
+#     labels:
+#       env: dev
+#       team: platform
