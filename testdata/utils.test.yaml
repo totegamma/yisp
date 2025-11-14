@@ -112,3 +112,60 @@
     from: /hoge
 # hoge: 1
 # piyo: 1
+---
+# wildcard - add to all map entries
+!yisp
+- utils.op-patch
+- !quote
+  resource:
+    my-object0:
+      attr: hoge
+    my-object1:
+      attr: piyo
+- !quote
+  - op: add
+    path: /resource/*
+    value:
+      tag: my-tag
+# resource:
+#   my-object0:
+#     attr: hoge
+#     tag: my-tag
+#   my-object1:
+#     attr: piyo
+#     tag: my-tag
+---
+# wildcard - replace all map entries
+!yisp
+- utils.op-patch
+- !quote
+  items:
+    item1: old-value1
+    item2: old-value2
+- !quote
+  - op: replace
+    path: /items/*
+    value: new-value
+# items:
+#   item1: new-value
+#   item2: new-value
+---
+# wildcard - remove specific field from all entries
+!yisp
+- utils.op-patch
+- !quote
+  data:
+    entry1:
+      name: first
+      temp: remove-me
+    entry2:
+      name: second
+      temp: remove-me
+- !quote
+  - op: remove
+    path: /data/*/temp
+# data:
+#   entry1:
+#     name: first
+#   entry2:
+#     name: second

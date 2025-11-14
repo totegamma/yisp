@@ -32,3 +32,21 @@ items:
 ---
 hoge: 1
 piyo: 1
+---
+resource:
+  my-object0:
+    attr: hoge
+    tag: my-tag
+  my-object1:
+    attr: piyo
+    tag: my-tag
+---
+items:
+  item1: new-value
+  item2: new-value
+---
+data:
+  entry1:
+    name: first
+  entry2:
+    name: second
