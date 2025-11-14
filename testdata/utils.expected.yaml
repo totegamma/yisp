@@ -1,6 +1,22 @@
 hoge: 1
 piyo: 2
 ---
+items:
+  - a
+  - b
+  - c
+  - d
+---
+items:
+  - a
+  - b
+  - c
+---
+items:
+  - x
+  - y
+  - z
+---
 piyo: 2
 ---
 piyo: 1

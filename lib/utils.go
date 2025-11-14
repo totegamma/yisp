@@ -140,24 +140,30 @@ func addValue(node *core.YispNode, path string, value *core.YispNode) error {
 		if !ok {
 			return fmt.Errorf("expected array, got %T", current.Value)
 		}
-		idx, err := strconv.Atoi(lastToken)
-		if err != nil {
-			return fmt.Errorf("invalid array index: %s", lastToken)
-		}
-		// RFC 6902: allow appending to array when index equals array length
-		if idx < 0 || idx > len(arr) {
-			return fmt.Errorf("array index out of bounds: %d", idx)
-		}
-		if idx == len(arr) {
-			// Append to array
+		
+		// RFC 6902: "-" means append to end of array
+		if lastToken == "-" {
 			current.Value = append(arr, value)
 		} else {
-			// Insert at index, shifting elements to the right
-			newArr := make([]any, len(arr)+1)
-			copy(newArr, arr[:idx])
-			newArr[idx] = value
-			copy(newArr[idx+1:], arr[idx:])
-			current.Value = newArr
+			idx, err := strconv.Atoi(lastToken)
+			if err != nil {
+				return fmt.Errorf("invalid array index: %s", lastToken)
+			}
+			// RFC 6902: allow appending to array when index equals array length
+			if idx < 0 || idx > len(arr) {
+				return fmt.Errorf("array index out of bounds: %d", idx)
+			}
+			if idx == len(arr) {
+				// Append to array
+				current.Value = append(arr, value)
+			} else {
+				// Insert at index, shifting elements to the right
+				newArr := make([]any, len(arr)+1)
+				copy(newArr, arr[:idx])
+				newArr[idx] = value
+				copy(newArr[idx+1:], arr[idx:])
+				current.Value = newArr
+			}
 		}
 	} else {
 		return fmt.Errorf("cannot set value in %s", current.Kind)
