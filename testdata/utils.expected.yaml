@@ -1,0 +1,9 @@
+hoge: 1
+piyo: 2
+---
+piyo: 2
+---
+piyo: 1
+---
+hoge: 1
+piyo: 1

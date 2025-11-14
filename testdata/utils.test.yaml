@@ -1,0 +1,47 @@
+# RFC6902
+# add
+!yisp
+- utils.op-patch
+- hoge: 0
+- !quote
+  - op: add
+    path: /hoge
+    value: 1
+  - op: add
+    path: /piyo
+    value: 2
+# hoge: 1
+# piyo: 2
+---
+# remove
+!yisp
+- utils.op-patch
+- hoge: 1
+  piyo: 2
+- !quote
+  - op: remove
+    path: /hoge
+# piyo: 2
+---
+# move
+- !yisp
+- utils.op-patch
+- hoge: 1
+  piyo: 2
+- !quote
+  - op: move
+    path: /piyo
+    from: /hoge
+# piyo: 1
+---
+# copy
+- !yisp
+- utils.op-patch
+- hoge: 1
+  piyo: 2
+- !quote
+  - op: copy
+    path: /piyo
+    from: /hoge
+# hoge: 1
+# piyo: 1
