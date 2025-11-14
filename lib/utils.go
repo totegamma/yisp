@@ -12,6 +12,7 @@ func init() {
 	register("utils", "op-patch", opOpPatch)
 }
 
+
 // parsePointer parses a JSON Pointer (RFC 6901) path into tokens
 func parsePointer(path string) ([]string, error) {
 	if path == "" {
