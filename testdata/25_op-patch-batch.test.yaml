@@ -1,0 +1,7 @@
+# batch patching with IsDocumentRoot using include
+!yisp
+- utils.op-patch
+- - include
+  - resource.yaml
+- - include
+  - patch-batch.yaml
