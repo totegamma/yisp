@@ -1,5 +1,5 @@
 # RFC6902
-# add
+# add - object member replacement (existing member)
 !yisp
 - utils.op-patch
 - hoge: 0
@@ -13,7 +13,47 @@
 # hoge: 1
 # piyo: 2
 ---
-# remove
+# add - array index insertion
+!yisp
+- utils.op-patch
+- !quote
+  items:
+    - a
+    - b
+    - d
+- !quote
+  - op: add
+    path: /items/2
+    value: c
+# items: [a, b, c, d]
+---
+# add - array append
+!yisp
+- utils.op-patch
+- !quote
+  items:
+    - a
+    - b
+- !quote
+  - op: add
+    path: /items/2
+    value: c
+# items: [a, b, c]
+---
+# add - array append using "-"
+!yisp
+- utils.op-patch
+- !quote
+  items:
+    - x
+    - y
+- !quote
+  - op: add
+    path: /items/-
+    value: z
+# items: [x, y, z]
+---
+# remove - object member
 !yisp
 - utils.op-patch
 - hoge: 1
@@ -23,8 +63,21 @@
     path: /hoge
 # piyo: 2
 ---
-# move
-- !yisp
+# remove - array element
+!yisp
+- utils.op-patch
+- !quote
+  items:
+    - a
+    - b
+    - c
+- !quote
+  - op: remove
+    path: /items/1
+# items: [a, c]
+---
+# move - object member
+!yisp
 - utils.op-patch
 - hoge: 1
   piyo: 2
@@ -34,8 +87,22 @@
     from: /hoge
 # piyo: 1
 ---
+# move - array element
+!yisp
+- utils.op-patch
+- !quote
+  items:
+    - a
+    - b
+    - c
+- !quote
+  - op: move
+    from: /items/0
+    path: /items/2
+# items: [b, c, a]
+---
 # copy
-- !yisp
+!yisp
 - utils.op-patch
 - hoge: 1
   piyo: 2
