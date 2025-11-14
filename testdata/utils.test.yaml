@@ -24,7 +24,7 @@
 # piyo: 2
 ---
 # move
-- !yisp
+!yisp
 - utils.op-patch
 - hoge: 1
   piyo: 2
@@ -35,7 +35,7 @@
 # piyo: 1
 ---
 # copy
-- !yisp
+!yisp
 - utils.op-patch
 - hoge: 1
   piyo: 2
