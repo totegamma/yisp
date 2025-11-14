@@ -232,3 +232,34 @@
 #     labels:
 #       env: dev
 #       team: platform
+---
+# wildcard in middle - merge multiple fields preserving existing
+!yisp
+- utils.op-patch
+- !quote
+  resource:
+    aws_instance:
+      example0:
+        tags:
+          Name: instance-0
+      example1:
+        tags:
+          Name: instance-1
+- !quote
+  - op: add
+    path: /resource/aws_instance/*/tags
+    value:
+      Environment: Production
+      Owner: DevOps
+# resource:
+#   aws_instance:
+#     example0:
+#       tags:
+#         Name: instance-0
+#         Environment: Production
+#         Owner: DevOps
+#     example1:
+#       tags:
+#         Name: instance-1
+#         Environment: Production
+#         Owner: DevOps

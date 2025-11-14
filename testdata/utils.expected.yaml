@@ -73,3 +73,16 @@ resource:
     labels:
       env: dev
       team: platform
+---
+resource:
+  aws_instance:
+    example0:
+      tags:
+        Name: instance-0
+        Environment: Production
+        Owner: DevOps
+    example1:
+      tags:
+        Name: instance-1
+        Environment: Production
+        Owner: DevOps

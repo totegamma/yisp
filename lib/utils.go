@@ -278,10 +278,28 @@ func addValueWithWildcard(node *core.YispNode, tokens []string, wildcardIndex in
 					remainingPath += "/" + strings.ReplaceAll(strings.ReplaceAll(t, "~", "~0"), "/", "~1")
 				}
 				
-				// Recursively apply add to this node with remaining path
-				err := addValue(targetNode, remainingPath, value)
-				if err != nil {
-					return fmt.Errorf("failed to add to key %s: %v", key, err)
+				// Check if target exists and should be merged
+				existingValue, err := getValue(targetNode, remainingPath)
+				if err == nil && value.Kind == core.KindMap && existingValue.Kind == core.KindMap {
+					// Both are maps, merge them
+					targetMap, ok := existingValue.Value.(*core.YispMap)
+					if !ok {
+						return fmt.Errorf("expected map, got %T", existingValue.Value)
+					}
+					valueMap, ok := value.Value.(*core.YispMap)
+					if !ok {
+						return fmt.Errorf("expected map, got %T", value.Value)
+					}
+					// Merge value map into target map
+					for vKey, vVal := range valueMap.AllFromFront() {
+						targetMap.Set(vKey, vVal)
+					}
+				} else {
+					// Recursively apply add to this node with remaining path
+					err := addValue(targetNode, remainingPath, value)
+					if err != nil {
+						return fmt.Errorf("failed to add to key %s: %v", key, err)
+					}
 				}
 			}
 		}
@@ -334,10 +352,28 @@ func addValueWithWildcard(node *core.YispNode, tokens []string, wildcardIndex in
 					remainingPath += "/" + strings.ReplaceAll(strings.ReplaceAll(t, "~", "~0"), "/", "~1")
 				}
 				
-				// Recursively apply add to this node with remaining path
-				err := addValue(targetNode, remainingPath, value)
-				if err != nil {
-					return fmt.Errorf("failed to add to array index %d: %v", i, err)
+				// Check if target exists and should be merged
+				existingValue, err := getValue(targetNode, remainingPath)
+				if err == nil && value.Kind == core.KindMap && existingValue.Kind == core.KindMap {
+					// Both are maps, merge them
+					targetMap, ok := existingValue.Value.(*core.YispMap)
+					if !ok {
+						return fmt.Errorf("expected map, got %T", existingValue.Value)
+					}
+					valueMap, ok := value.Value.(*core.YispMap)
+					if !ok {
+						return fmt.Errorf("expected map, got %T", value.Value)
+					}
+					// Merge value map into target map
+					for vKey, vVal := range valueMap.AllFromFront() {
+						targetMap.Set(vKey, vVal)
+					}
+				} else {
+					// Recursively apply add to this node with remaining path
+					err := addValue(targetNode, remainingPath, value)
+					if err != nil {
+						return fmt.Errorf("failed to add to array index %d: %v", i, err)
+					}
 				}
 			}
 		}
