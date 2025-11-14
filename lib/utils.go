@@ -837,45 +837,28 @@ func opOpPatch(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.E
 
 	// Check if target has IsDocumentRoot flag set to true
 	// If so, apply patches to each element in the target
+	// IsDocumentRoot is currently only set for KindArray (e.g., from include operator)
 	if target.IsDocumentRoot {
-		if target.Kind == core.KindMap {
-			m, ok := target.Value.(*core.YispMap)
+		if target.Kind != core.KindArray {
+			return nil, core.NewEvaluationError(target, fmt.Sprintf("target with IsDocumentRoot must be an array, got %s", target.Kind))
+		}
+		
+		arr, ok := target.Value.([]any)
+		if !ok {
+			return nil, core.NewEvaluationError(target, fmt.Sprintf("expected array, got %T", target.Value))
+		}
+		
+		// Apply patches to each element in the array
+		for _, elem := range arr {
+			elementNode, ok := elem.(*core.YispNode)
 			if !ok {
-				return nil, core.NewEvaluationError(target, fmt.Sprintf("expected map, got %T", target.Value))
+				return nil, core.NewEvaluationError(target, fmt.Sprintf("expected YispNode, got %T", elem))
 			}
 			
-			// Apply patches to each element in the map
-			for _, val := range m.AllFromFront() {
-				elementNode, ok := val.(*core.YispNode)
-				if !ok {
-					return nil, core.NewEvaluationError(target, fmt.Sprintf("expected YispNode, got %T", val))
-				}
-				
-				// Apply all patches to this element
-				if err := applyPatches(elementNode, patchesArray); err != nil {
-					return nil, err
-				}
+			// Apply all patches to this element
+			if err := applyPatches(elementNode, patchesArray); err != nil {
+				return nil, err
 			}
-		} else if target.Kind == core.KindArray {
-			arr, ok := target.Value.([]any)
-			if !ok {
-				return nil, core.NewEvaluationError(target, fmt.Sprintf("expected array, got %T", target.Value))
-			}
-			
-			// Apply patches to each element in the array
-			for _, elem := range arr {
-				elementNode, ok := elem.(*core.YispNode)
-				if !ok {
-					return nil, core.NewEvaluationError(target, fmt.Sprintf("expected YispNode, got %T", elem))
-				}
-				
-				// Apply all patches to this element
-				if err := applyPatches(elementNode, patchesArray); err != nil {
-					return nil, err
-				}
-			}
-		} else {
-			return nil, core.NewEvaluationError(target, "target with IsDocumentRoot must be a map or array")
 		}
 		
 		return target, nil
