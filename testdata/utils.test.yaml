@@ -53,7 +53,7 @@
     value: z
 # items: [x, y, z]
 ---
-# remove
+# remove - object member
 !yisp
 - utils.op-patch
 - hoge: 1
@@ -63,7 +63,20 @@
     path: /hoge
 # piyo: 2
 ---
-# move
+# remove - array element
+!yisp
+- utils.op-patch
+- !quote
+  items:
+    - a
+    - b
+    - c
+- !quote
+  - op: remove
+    path: /items/1
+# items: [a, c]
+---
+# move - object member
 !yisp
 - utils.op-patch
 - hoge: 1
@@ -73,6 +86,20 @@
     path: /piyo
     from: /hoge
 # piyo: 1
+---
+# move - array element
+!yisp
+- utils.op-patch
+- !quote
+  items:
+    - a
+    - b
+    - c
+- !quote
+  - op: move
+    from: /items/0
+    path: /items/2
+# items: [b, c, a]
 ---
 # copy
 !yisp

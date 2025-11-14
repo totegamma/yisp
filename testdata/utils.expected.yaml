@@ -19,7 +19,16 @@ items:
 ---
 piyo: 2
 ---
+items:
+  - a
+  - c
+---
 piyo: 1
+---
+items:
+  - b
+  - c
+  - a
 ---
 hoge: 1
 piyo: 1
