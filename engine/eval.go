@@ -12,7 +12,7 @@ import (
 func (e *engine) Eval(node *core.YispNode, env *core.Env, mode core.EvalMode) (*core.YispNode, error) {
 
 	if e.showTrace {
-		val, err := ToNative(node)
+		val, err := node.ToNative()
 		if err != nil {
 			return nil, core.NewEvaluationError(node, fmt.Sprintf("failed to convert node to native: %v", err))
 		}

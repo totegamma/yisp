@@ -15,7 +15,7 @@ func YamlPrint(obj any) {
 }
 
 func PrintYispNode(tag string, node *core.YispNode) {
-	native, err := ToNative(node)
+	native, err := node.ToNative()
 	if err != nil {
 		fmt.Println("Error converting to native:", err)
 		return
@@ -152,61 +152,4 @@ func pad(length int) string {
 		result += "  "
 	}
 	return result
-}
-
-func ToNative(node *core.YispNode) (any, error) {
-	switch node.Kind {
-	case core.KindNull, core.KindBool, core.KindInt, core.KindFloat, core.KindString:
-		return node.Value, nil
-	case core.KindArray:
-		arr, ok := node.Value.([]any)
-		if !ok {
-			return nil, fmt.Errorf("invalid array value. Actual type: %T", node.Value)
-		}
-		results := make([]any, len(arr))
-		for i, item := range arr {
-			node, ok := item.(*core.YispNode)
-			if !ok {
-				return nil, fmt.Errorf("invalid item type: %T", item)
-			}
-			var err error
-			results[i], err = ToNative(node)
-			if err != nil {
-				return nil, err
-			}
-		}
-		return results, nil
-	case core.KindMap:
-		m, ok := node.Value.(*core.YispMap)
-		if !ok {
-			return nil, fmt.Errorf("invalid map value")
-		}
-		results := map[string]any{}
-		for key, item := range m.AllFromFront() {
-			node, ok := item.(*core.YispNode)
-			if !ok {
-				return nil, fmt.Errorf("invalid item type: %T", item)
-			}
-
-			content, err := ToNative(node)
-			if err != nil {
-				return nil, err
-			}
-
-			results[key] = content
-
-		}
-		return results, nil
-
-	case core.KindLambda:
-		return "(lambda)", nil
-	case core.KindParameter:
-		return "(parameter)", nil
-	case core.KindSymbol:
-		return "*" + node.Value.(string), nil
-	case core.KindType:
-		return "(type)", nil
-	default:
-		return "(unknown)", nil
-	}
 }

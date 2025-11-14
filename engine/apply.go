@@ -395,7 +395,7 @@ func opSchema(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.En
 		return nil, core.NewEvaluationError(node, fmt.Sprintf("schema requires a map argument, got %v", node.Kind))
 	}
 
-	rendered, err := ToNative(node)
+	rendered, err := node.ToNative()
 	if err != nil {
 		return nil, core.NewEvaluationErrorWithParent(node, "failed to render schema", err)
 	}

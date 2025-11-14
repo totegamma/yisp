@@ -152,6 +152,63 @@ func (n *YispNode) String() string {
 	}
 }
 
+func (n *YispNode) ToNative() (any, error) {
+	switch n.Kind {
+	case KindNull, KindBool, KindInt, KindFloat, KindString:
+		return n.Value, nil
+	case KindArray:
+		arr, ok := n.Value.([]any)
+		if !ok {
+			return nil, fmt.Errorf("invalid array value. Actual type: %T", n.Value)
+		}
+		results := make([]any, len(arr))
+		for i, item := range arr {
+			node, ok := item.(*YispNode)
+			if !ok {
+				return nil, fmt.Errorf("invalid item type: %T", item)
+			}
+			var err error
+			results[i], err = node.ToNative()
+			if err != nil {
+				return nil, err
+			}
+		}
+		return results, nil
+	case KindMap:
+		m, ok := n.Value.(*YispMap)
+		if !ok {
+			return nil, fmt.Errorf("invalid map value")
+		}
+		results := map[string]any{}
+		for key, item := range m.AllFromFront() {
+			node, ok := item.(*YispNode)
+			if !ok {
+				return nil, fmt.Errorf("invalid item type: %T", item)
+			}
+
+			content, err := node.ToNative()
+			if err != nil {
+				return nil, err
+			}
+
+			results[key] = content
+
+		}
+		return results, nil
+
+	case KindLambda:
+		return "(lambda)", nil
+	case KindParameter:
+		return "(parameter)", nil
+	case KindSymbol:
+		return "*" + n.Value.(string), nil
+	case KindType:
+		return "(type)", nil
+	default:
+		return "(unknown)", nil
+	}
+}
+
 func (n *YispNode) Sourcemap() string {
 
 	if len(n.Attr.Sources) == 0 {

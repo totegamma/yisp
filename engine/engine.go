@@ -91,7 +91,7 @@ func (e *engine) EvaluateFileToAny(path string) (any, error) {
 		return "", err
 	}
 
-	result, err := ToNative(evaluated)
+	result, err := evaluated.ToNative()
 	if err != nil {
 		return "", err
 	}
