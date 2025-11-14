@@ -86,3 +86,7 @@ resource:
         Name: instance-1
         Environment: Production
         Owner: DevOps
+---
+hoge: 0
+piyo: 1
+fuga: 2

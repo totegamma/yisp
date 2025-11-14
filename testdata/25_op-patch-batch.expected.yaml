@@ -1,0 +1,16 @@
+resource:
+  aws_instance:
+    example0:
+      ami: ${data.aws_ami.amazon_linux.id}
+      instance_type: t2.micro
+      tags:
+        Name: example-instance-0
+        Environment: Production
+        Owner: DevOps Team
+    example1:
+      ami: ${data.aws_ami.amazon_linux.id}
+      instance_type: t2.micro
+      tags:
+        Name: example-instance-1
+        Environment: Production
+        Owner: DevOps Team
