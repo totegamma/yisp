@@ -12,7 +12,6 @@ func init() {
 	register("utils", "op-patch", opOpPatch)
 }
 
-
 // parsePointer parses a JSON Pointer (RFC 6901) path into tokens
 func parsePointer(path string) ([]string, error) {
 	if path == "" {
@@ -24,7 +23,7 @@ func parsePointer(path string) ([]string, error) {
 	if path == "/" {
 		return []string{""}, nil
 	}
-	
+
 	tokens := strings.Split(path[1:], "/")
 	// Unescape special characters per RFC 6901
 	for i, token := range tokens {
@@ -41,7 +40,7 @@ func getValue(node *core.YispNode, path string) (*core.YispNode, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	current := node
 	for _, token := range tokens {
 		if current.Kind == core.KindMap {
@@ -88,11 +87,11 @@ func addValue(node *core.YispNode, path string, value *core.YispNode) error {
 	if err != nil {
 		return err
 	}
-	
+
 	if len(tokens) == 0 {
 		return fmt.Errorf("cannot replace root node")
 	}
-	
+
 	// Check if path contains wildcard
 	wildcardIndex := -1
 	for i, token := range tokens {
@@ -101,12 +100,12 @@ func addValue(node *core.YispNode, path string, value *core.YispNode) error {
 			break
 		}
 	}
-	
+
 	// If wildcard found, handle it specially
 	if wildcardIndex >= 0 {
 		return addValueWithWildcard(node, tokens, wildcardIndex, value)
 	}
-	
+
 	current := node
 	for i := 0; i < len(tokens)-1; i++ {
 		token := tokens[i]
@@ -143,7 +142,7 @@ func addValue(node *core.YispNode, path string, value *core.YispNode) error {
 			return fmt.Errorf("cannot navigate through %s", current.Kind)
 		}
 	}
-	
+
 	lastToken := tokens[len(tokens)-1]
 	if current.Kind == core.KindMap {
 		m, ok := current.Value.(*core.YispMap)
@@ -156,7 +155,7 @@ func addValue(node *core.YispNode, path string, value *core.YispNode) error {
 		if !ok {
 			return fmt.Errorf("expected array, got %T", current.Value)
 		}
-		
+
 		// RFC 6902: "-" means append to end of array
 		if lastToken == "-" {
 			current.Value = append(arr, value)
@@ -184,7 +183,7 @@ func addValue(node *core.YispNode, path string, value *core.YispNode) error {
 	} else {
 		return fmt.Errorf("cannot set value in %s", current.Kind)
 	}
-	
+
 	return nil
 }
 
@@ -227,14 +226,14 @@ func addValueWithWildcard(node *core.YispNode, tokens []string, wildcardIndex in
 			return fmt.Errorf("cannot navigate through %s", current.Kind)
 		}
 	}
-	
+
 	// At this point, current is the node where wildcard should match
 	if current.Kind == core.KindMap {
 		m, ok := current.Value.(*core.YispMap)
 		if !ok {
 			return fmt.Errorf("expected map, got %T", current.Value)
 		}
-		
+
 		// If this is the last token, add/merge value to all matching keys
 		if wildcardIndex == len(tokens)-1 {
 			// Iterate over all keys and add/merge the value
@@ -243,7 +242,7 @@ func addValueWithWildcard(node *core.YispNode, tokens []string, wildcardIndex in
 				if !ok {
 					return fmt.Errorf("expected YispNode, got %T", val)
 				}
-				
+
 				// If value is a map, merge it with the existing value
 				if value.Kind == core.KindMap && targetNode.Kind == core.KindMap {
 					targetMap, ok := targetNode.Value.(*core.YispMap)
@@ -271,13 +270,13 @@ func addValueWithWildcard(node *core.YispNode, tokens []string, wildcardIndex in
 				if !ok {
 					return fmt.Errorf("expected YispNode, got %T", val)
 				}
-				
+
 				// Construct path for remaining tokens
 				remainingPath := ""
 				for _, t := range remainingTokens {
 					remainingPath += "/" + strings.ReplaceAll(strings.ReplaceAll(t, "~", "~0"), "/", "~1")
 				}
-				
+
 				// Check if target exists and should be merged
 				existingValue, err := getValue(targetNode, remainingPath)
 				if err == nil && value.Kind == core.KindMap && existingValue.Kind == core.KindMap {
@@ -308,7 +307,7 @@ func addValueWithWildcard(node *core.YispNode, tokens []string, wildcardIndex in
 		if !ok {
 			return fmt.Errorf("expected array, got %T", current.Value)
 		}
-		
+
 		// If this is the last token, add/merge value to all array elements
 		if wildcardIndex == len(tokens)-1 {
 			// Iterate over all array elements and add/merge the value
@@ -317,7 +316,7 @@ func addValueWithWildcard(node *core.YispNode, tokens []string, wildcardIndex in
 				if !ok {
 					return fmt.Errorf("expected YispNode, got %T", elem)
 				}
-				
+
 				// If value is a map, merge it with the existing value
 				if value.Kind == core.KindMap && targetNode.Kind == core.KindMap {
 					targetMap, ok := targetNode.Value.(*core.YispMap)
@@ -345,13 +344,13 @@ func addValueWithWildcard(node *core.YispNode, tokens []string, wildcardIndex in
 				if !ok {
 					return fmt.Errorf("expected YispNode, got %T", elem)
 				}
-				
+
 				// Construct path for remaining tokens
 				remainingPath := ""
 				for _, t := range remainingTokens {
 					remainingPath += "/" + strings.ReplaceAll(strings.ReplaceAll(t, "~", "~0"), "/", "~1")
 				}
-				
+
 				// Check if target exists and should be merged
 				existingValue, err := getValue(targetNode, remainingPath)
 				if err == nil && value.Kind == core.KindMap && existingValue.Kind == core.KindMap {
@@ -380,7 +379,7 @@ func addValueWithWildcard(node *core.YispNode, tokens []string, wildcardIndex in
 	} else {
 		return fmt.Errorf("wildcard can only be used with maps or arrays, got %s", current.Kind)
 	}
-	
+
 	return nil
 }
 
@@ -392,11 +391,11 @@ func replaceValue(node *core.YispNode, path string, value *core.YispNode) error 
 	if err != nil {
 		return err
 	}
-	
+
 	if len(tokens) == 0 {
 		return fmt.Errorf("cannot replace root node")
 	}
-	
+
 	// Check if path contains wildcard
 	wildcardIndex := -1
 	for i, token := range tokens {
@@ -405,12 +404,12 @@ func replaceValue(node *core.YispNode, path string, value *core.YispNode) error 
 			break
 		}
 	}
-	
+
 	// If wildcard found, handle it specially
 	if wildcardIndex >= 0 {
 		return replaceValueWithWildcard(node, tokens, wildcardIndex, value)
 	}
-	
+
 	current := node
 	for i := 0; i < len(tokens)-1; i++ {
 		token := tokens[i]
@@ -447,7 +446,7 @@ func replaceValue(node *core.YispNode, path string, value *core.YispNode) error 
 			return fmt.Errorf("cannot navigate through %s", current.Kind)
 		}
 	}
-	
+
 	lastToken := tokens[len(tokens)-1]
 	if current.Kind == core.KindMap {
 		m, ok := current.Value.(*core.YispMap)
@@ -475,7 +474,7 @@ func replaceValue(node *core.YispNode, path string, value *core.YispNode) error 
 	} else {
 		return fmt.Errorf("cannot set value in %s", current.Kind)
 	}
-	
+
 	return nil
 }
 
@@ -518,14 +517,14 @@ func replaceValueWithWildcard(node *core.YispNode, tokens []string, wildcardInde
 			return fmt.Errorf("cannot navigate through %s", current.Kind)
 		}
 	}
-	
+
 	// At this point, current is the node where wildcard should match
 	if current.Kind == core.KindMap {
 		m, ok := current.Value.(*core.YispMap)
 		if !ok {
 			return fmt.Errorf("expected map, got %T", current.Value)
 		}
-		
+
 		// If this is the last token, replace value for all matching keys
 		if wildcardIndex == len(tokens)-1 {
 			// Iterate over all keys and replace the value
@@ -540,13 +539,13 @@ func replaceValueWithWildcard(node *core.YispNode, tokens []string, wildcardInde
 				if !ok {
 					return fmt.Errorf("expected YispNode, got %T", val)
 				}
-				
+
 				// Construct path for remaining tokens
 				remainingPath := ""
 				for _, t := range remainingTokens {
 					remainingPath += "/" + strings.ReplaceAll(strings.ReplaceAll(t, "~", "~0"), "/", "~1")
 				}
-				
+
 				// Recursively apply replace to this node with remaining path
 				err := replaceValue(targetNode, remainingPath, value)
 				if err != nil {
@@ -559,7 +558,7 @@ func replaceValueWithWildcard(node *core.YispNode, tokens []string, wildcardInde
 		if !ok {
 			return fmt.Errorf("expected array, got %T", current.Value)
 		}
-		
+
 		// If this is the last token, replace value for all array elements
 		if wildcardIndex == len(tokens)-1 {
 			// Iterate over all array elements and replace the value
@@ -574,13 +573,13 @@ func replaceValueWithWildcard(node *core.YispNode, tokens []string, wildcardInde
 				if !ok {
 					return fmt.Errorf("expected YispNode, got %T", elem)
 				}
-				
+
 				// Construct path for remaining tokens
 				remainingPath := ""
 				for _, t := range remainingTokens {
 					remainingPath += "/" + strings.ReplaceAll(strings.ReplaceAll(t, "~", "~0"), "/", "~1")
 				}
-				
+
 				// Recursively apply replace to this node with remaining path
 				err := replaceValue(targetNode, remainingPath, value)
 				if err != nil {
@@ -591,7 +590,7 @@ func replaceValueWithWildcard(node *core.YispNode, tokens []string, wildcardInde
 	} else {
 		return fmt.Errorf("wildcard can only be used with maps or arrays, got %s", current.Kind)
 	}
-	
+
 	return nil
 }
 
@@ -602,11 +601,11 @@ func deleteValue(node *core.YispNode, path string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	if len(tokens) == 0 {
 		return fmt.Errorf("cannot delete root node")
 	}
-	
+
 	// Check if path contains wildcard
 	wildcardIndex := -1
 	for i, token := range tokens {
@@ -615,12 +614,12 @@ func deleteValue(node *core.YispNode, path string) error {
 			break
 		}
 	}
-	
+
 	// If wildcard found, handle it specially
 	if wildcardIndex >= 0 {
 		return deleteValueWithWildcard(node, tokens, wildcardIndex)
 	}
-	
+
 	current := node
 	for i := 0; i < len(tokens)-1; i++ {
 		token := tokens[i]
@@ -657,7 +656,7 @@ func deleteValue(node *core.YispNode, path string) error {
 			return fmt.Errorf("cannot navigate through %s", current.Kind)
 		}
 	}
-	
+
 	lastToken := tokens[len(tokens)-1]
 	if current.Kind == core.KindMap {
 		m, ok := current.Value.(*core.YispMap)
@@ -688,7 +687,7 @@ func deleteValue(node *core.YispNode, path string) error {
 	} else {
 		return fmt.Errorf("cannot delete value from %s", current.Kind)
 	}
-	
+
 	return nil
 }
 
@@ -731,14 +730,14 @@ func deleteValueWithWildcard(node *core.YispNode, tokens []string, wildcardIndex
 			return fmt.Errorf("cannot navigate through %s", current.Kind)
 		}
 	}
-	
+
 	// At this point, current is the node where wildcard should match
 	if current.Kind == core.KindMap {
 		m, ok := current.Value.(*core.YispMap)
 		if !ok {
 			return fmt.Errorf("expected map, got %T", current.Value)
 		}
-		
+
 		// If this is the last token, delete all matching keys
 		if wildcardIndex == len(tokens)-1 {
 			// Collect all keys first (to avoid modification during iteration)
@@ -758,13 +757,13 @@ func deleteValueWithWildcard(node *core.YispNode, tokens []string, wildcardIndex
 				if !ok {
 					return fmt.Errorf("expected YispNode, got %T", val)
 				}
-				
+
 				// Construct path for remaining tokens
 				remainingPath := ""
 				for _, t := range remainingTokens {
 					remainingPath += "/" + strings.ReplaceAll(strings.ReplaceAll(t, "~", "~0"), "/", "~1")
 				}
-				
+
 				// Recursively apply delete to this node with remaining path
 				err := deleteValue(targetNode, remainingPath)
 				if err != nil {
@@ -777,7 +776,7 @@ func deleteValueWithWildcard(node *core.YispNode, tokens []string, wildcardIndex
 		if !ok {
 			return fmt.Errorf("expected array, got %T", current.Value)
 		}
-		
+
 		// If this is the last token, delete all array elements
 		if wildcardIndex == len(tokens)-1 {
 			// Clear the array by setting it to empty slice
@@ -790,13 +789,13 @@ func deleteValueWithWildcard(node *core.YispNode, tokens []string, wildcardIndex
 				if !ok {
 					return fmt.Errorf("expected YispNode, got %T", elem)
 				}
-				
+
 				// Construct path for remaining tokens
 				remainingPath := ""
 				for _, t := range remainingTokens {
 					remainingPath += "/" + strings.ReplaceAll(strings.ReplaceAll(t, "~", "~0"), "/", "~1")
 				}
-				
+
 				// Recursively apply delete to this node with remaining path
 				err := deleteValue(targetNode, remainingPath)
 				if err != nil {
@@ -807,7 +806,7 @@ func deleteValueWithWildcard(node *core.YispNode, tokens []string, wildcardIndex
 	} else {
 		return fmt.Errorf("wildcard can only be used with maps or arrays, got %s", current.Kind)
 	}
-	
+
 	return nil
 }
 
@@ -819,7 +818,7 @@ func opOpPatch(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.E
 
 	target := cdr[0]
 	patchesNode := cdr[1]
-	
+
 	// Convert patches to array if it's not already
 	var patchesArray []any
 	if patchesNode.Kind == core.KindArray {
@@ -842,25 +841,25 @@ func opOpPatch(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.E
 		if target.Kind != core.KindArray {
 			return nil, core.NewEvaluationError(target, fmt.Sprintf("target with IsDocumentRoot must be an array, got %s", target.Kind))
 		}
-		
+
 		arr, ok := target.Value.([]any)
 		if !ok {
 			return nil, core.NewEvaluationError(target, fmt.Sprintf("expected array, got %T", target.Value))
 		}
-		
+
 		// Apply patches to each element in the array
 		for _, elem := range arr {
 			elementNode, ok := elem.(*core.YispNode)
 			if !ok {
 				return nil, core.NewEvaluationError(target, fmt.Sprintf("expected YispNode, got %T", elem))
 			}
-			
+
 			// Apply all patches to this element
 			if err := applyPatches(elementNode, patchesArray); err != nil {
 				return nil, err
 			}
 		}
-		
+
 		return target, nil
 	}
 
@@ -880,16 +879,16 @@ func applyPatches(target *core.YispNode, patchesArray []any) error {
 		if !ok {
 			return fmt.Errorf("expected YispNode for patch, got %T", patchAny)
 		}
-		
+
 		if patchNode.Kind != core.KindMap {
 			return core.NewEvaluationError(patchNode, "each patch must be a map")
 		}
-		
+
 		patchMap, ok := patchNode.Value.(*core.YispMap)
 		if !ok {
 			return core.NewEvaluationError(patchNode, fmt.Sprintf("expected YispMap, got %T", patchNode.Value))
 		}
-		
+
 		// Extract operation type
 		opAny, ok := patchMap.Get("op")
 		if !ok {
@@ -903,7 +902,7 @@ func applyPatches(target *core.YispNode, patchesArray []any) error {
 		if !ok {
 			return core.NewEvaluationError(opNode, fmt.Sprintf("expected string for op, got %T", opNode.Value))
 		}
-		
+
 		// Extract path
 		pathAny, ok := patchMap.Get("path")
 		if !ok {
@@ -917,7 +916,7 @@ func applyPatches(target *core.YispNode, patchesArray []any) error {
 		if !ok {
 			return core.NewEvaluationError(pathNode, fmt.Sprintf("expected string for path, got %T", pathNode.Value))
 		}
-		
+
 		switch op {
 		case "add":
 			// Extract value
@@ -929,18 +928,18 @@ func applyPatches(target *core.YispNode, patchesArray []any) error {
 			if !ok {
 				return core.NewEvaluationError(patchNode, fmt.Sprintf("expected YispNode for value, got %T", valueAny))
 			}
-			
+
 			err := addValue(target, path, valueNode)
 			if err != nil {
 				return core.NewEvaluationError(patchNode, fmt.Sprintf("add operation failed: %v", err))
 			}
-			
+
 		case "remove":
 			err := deleteValue(target, path)
 			if err != nil {
 				return core.NewEvaluationError(patchNode, fmt.Sprintf("remove operation failed: %v", err))
 			}
-			
+
 		case "replace":
 			// Extract value
 			valueAny, ok := patchMap.Get("value")
@@ -951,12 +950,12 @@ func applyPatches(target *core.YispNode, patchesArray []any) error {
 			if !ok {
 				return core.NewEvaluationError(patchNode, fmt.Sprintf("expected YispNode for value, got %T", valueAny))
 			}
-			
+
 			err := replaceValue(target, path, valueNode)
 			if err != nil {
 				return core.NewEvaluationError(patchNode, fmt.Sprintf("replace operation failed: %v", err))
 			}
-			
+
 		case "move":
 			// Extract from
 			fromAny, ok := patchMap.Get("from")
@@ -971,7 +970,7 @@ func applyPatches(target *core.YispNode, patchesArray []any) error {
 			if !ok {
 				return core.NewEvaluationError(fromNode, fmt.Sprintf("expected string for from, got %T", fromNode.Value))
 			}
-			
+
 			// Get value from 'from' path
 			value, err := getValue(target, from)
 			if err != nil {
@@ -987,7 +986,7 @@ func applyPatches(target *core.YispNode, patchesArray []any) error {
 			if err != nil {
 				return core.NewEvaluationError(patchNode, fmt.Sprintf("move operation (add) failed: %v", err))
 			}
-			
+
 		case "copy":
 			// Extract from
 			fromAny, ok := patchMap.Get("from")
@@ -1002,7 +1001,7 @@ func applyPatches(target *core.YispNode, patchesArray []any) error {
 			if !ok {
 				return core.NewEvaluationError(fromNode, fmt.Sprintf("expected string for from, got %T", fromNode.Value))
 			}
-			
+
 			// Get value from 'from' path
 			value, err := getValue(target, from)
 			if err != nil {
@@ -1013,7 +1012,7 @@ func applyPatches(target *core.YispNode, patchesArray []any) error {
 			if err != nil {
 				return core.NewEvaluationError(patchNode, fmt.Sprintf("copy operation (add) failed: %v", err))
 			}
-			
+
 		case "test":
 			// Extract value
 			valueAny, ok := patchMap.Get("value")
@@ -1024,7 +1023,7 @@ func applyPatches(target *core.YispNode, patchesArray []any) error {
 			if !ok {
 				return core.NewEvaluationError(patchNode, fmt.Sprintf("expected YispNode for value, got %T", valueAny))
 			}
-			
+
 			// Test that value at path equals specified value
 			value, err := getValue(target, path)
 			if err != nil {
@@ -1035,7 +1034,7 @@ func applyPatches(target *core.YispNode, patchesArray []any) error {
 				return core.NewEvaluationError(patchNode, fmt.Sprintf("test operation failed: kind mismatch"))
 			}
 			// TODO: Deep comparison if needed
-			
+
 		default:
 			return core.NewEvaluationError(patchNode, fmt.Sprintf("unknown operation: %s", op))
 		}

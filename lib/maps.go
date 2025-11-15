@@ -13,6 +13,7 @@ func init() {
 	register("maps", "merge", opMerge)
 	register("maps", "to-entries", opToEntries)
 	register("maps", "values", opValues)
+	register("maps", "make", opMakeMap)
 }
 
 func opFromEntries(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
@@ -175,5 +176,30 @@ func opValues(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.En
 		Kind:  core.KindArray,
 		Value: result,
 		Attr:  node.Attr,
+	}, nil
+}
+
+func opMakeMap(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
+
+	mapNode := core.NewYispMap()
+
+	for i := 0; i < len(cdr); i += 2 {
+		keyNode := cdr[i]
+		if keyNode.Kind != core.KindString {
+			return nil, core.NewEvaluationError(keyNode, fmt.Sprintf("map keys must be strings, got %v", keyNode.Kind))
+		}
+		keyStr, _ := keyNode.Value.(string)
+
+		if i+1 >= len(cdr) {
+			return nil, core.NewEvaluationError(keyNode, "map requires an even number of arguments")
+		}
+		valueNode := cdr[i+1]
+
+		mapNode.Set(keyStr, valueNode)
+	}
+
+	return &core.YispNode{
+		Kind:  core.KindMap,
+		Value: mapNode,
 	}, nil
 }
