@@ -455,6 +455,16 @@ func (e *engine) Eval(node *core.YispNode, env *core.Env, mode core.EvalMode) (*
 					),
 				)
 			}
+
+			err = schema.ValidateWithOptions(result, true) // ignore missing fields
+			if err != nil && !e.allowUntypedManifest {
+				return nil, core.NewEvaluationErrorWithParent(
+					node,
+					fmt.Sprintf("manifest does not conform to schema %s/%s/%s: %s", group, version, kind, err.Error()),
+					err,
+				)
+			}
+
 			result.Type = schema
 		}
 	}

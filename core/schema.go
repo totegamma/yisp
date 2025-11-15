@@ -27,6 +27,7 @@ type Schema struct {
 	ID                   string             `json:"$id,omitempty"`
 	Ref                  string             `json:"$ref,omitempty"`
 	Type                 string             `json:"type,omitempty"`
+	Format               string             `json:"format,omitempty"`
 	Required             []string           `json:"required,omitempty"`
 	Properties           map[string]*Schema `json:"properties,omitempty"`
 	Items                *Schema            `json:"items,omitempty"`
@@ -339,7 +340,15 @@ func (s *Schema) ValidateWithOptions(node *YispNode, allowPartial bool) error {
 		}
 	case "string":
 		if node.Kind != KindString {
-			return NewEvaluationError(node, fmt.Sprintf("expected string, got %s", node.Kind))
+			if s.Format == "int-or-string" {
+				if node.Kind != KindInt {
+					return NewEvaluationError(node, fmt.Sprintf("expected string or int, got %s", node.Kind))
+				}
+				node.Kind = KindString
+				node.Value = fmt.Sprintf("%d", node.Value.(int))
+			} else {
+				return NewEvaluationError(node, fmt.Sprintf("expected string, got %s", node.Kind))
+			}
 		}
 		if s.MinLength != nil && len(node.Value.(string)) < *s.MinLength {
 			return NewEvaluationError(node, fmt.Sprintf("string length %d is less than minimum %d", len(node.Value.(string)), *s.MinLength))
