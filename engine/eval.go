@@ -414,13 +414,23 @@ func (e *engine) Eval(node *core.YispNode, env *core.Env, mode core.EvalMode) (*
 		}
 
 		if schemaID != "" {
-			schema, err := core.LoadSchemaFromID(schemaID)
+			schema, err := core.LoadSchemaFromURL(schemaID)
 			if err != nil && !e.allowUntypedManifest {
 				return nil, core.NewEvaluationError(
 					node,
 					fmt.Sprintf("failed to resolve type for %s.", schemaID),
 				)
 			}
+
+			err = schema.Validate(result)
+			if err != nil && !e.allowUntypedManifest {
+				return nil, core.NewEvaluationErrorWithParent(
+					node,
+					fmt.Sprintf("manifest does not conform to schema %s: %s", schemaID, err.Error()),
+					err,
+				)
+			}
+
 			result.Type = schema
 		} else if apiVersion != "" && kind != "" {
 			split := strings.Split(apiVersion, "/")

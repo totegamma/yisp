@@ -1,9 +1,11 @@
 package core
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"slices"
@@ -152,6 +154,67 @@ func (s *Schema) ToYispNode() (*YispNode, error) {
 	}
 
 	return ParseAny("", anyValue)
+}
+
+func LoadSchemaFromURL(url string) (*Schema, error) {
+
+	cachekey := base64.StdEncoding.EncodeToString([]byte(url))
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+	schemasPath := filepath.Join(home, ".cache", "yisp", "schemas", cachekey+".json")
+	file, err := os.Open(schemasPath)
+	if err == nil {
+		defer file.Close()
+		var schema Schema
+		decoder := json.NewDecoder(file)
+		err = decoder.Decode(&schema)
+		if err != nil {
+			return nil, err
+		}
+		return &schema, nil
+	} else {
+		resp, err := http.Get(url)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("failed to fetch schema from URL: %s", resp.Status)
+		}
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		var schema Schema
+		err = json.Unmarshal(body, &schema)
+		if err != nil {
+			return nil, err
+		}
+
+		err = os.MkdirAll(filepath.Dir(schemasPath), os.ModePerm)
+		if err != nil {
+			return nil, err
+		}
+
+		file, err := os.Create(schemasPath)
+		if err != nil {
+			return nil, err
+		}
+		defer file.Close()
+
+		encoder := json.NewEncoder(file)
+		err = encoder.Encode(&schema)
+		if err != nil {
+			return nil, err
+		}
+
+		return &schema, nil
+	}
 }
 
 func LoadSchemaFromID(id string) (*Schema, error) {
@@ -334,7 +397,9 @@ func (s *Schema) Validate(node *YispNode) error {
 		left := NewYispMap()
 		for key, item := range m.AllFromFront() {
 			if _, ok := processed[key]; !ok {
-				left.Set(key, item)
+				if key != "$schema" {
+					left.Set(key, item)
+				}
 			}
 		}
 
