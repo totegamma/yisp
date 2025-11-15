@@ -267,11 +267,15 @@ func LoadSchemaFromGVK(group, version, kind string) (*Schema, error) {
 }
 
 func (s *Schema) Validate(node *YispNode) error {
+	return s.ValidateWithOptions(node, false)
+}
+
+func (s *Schema) ValidateWithOptions(node *YispNode, allowPartial bool) error {
 
 	if s.OneOf != nil {
 		var errors []string
 		for _, subSchema := range s.OneOf {
-			err := subSchema.Validate(node)
+			err := subSchema.ValidateWithOptions(node, allowPartial)
 			if err == nil {
 				return nil // Valid against one of the schemas
 			}
@@ -359,7 +363,7 @@ func (s *Schema) Validate(node *YispNode) error {
 				if !ok {
 					return NewEvaluationError(node, fmt.Sprintf("expected YispNode, got %T", item))
 				}
-				if err := subSchema.Validate(itemNode); err != nil {
+				if err := subSchema.ValidateWithOptions(itemNode, allowPartial); err != nil {
 					return err
 				}
 			}
@@ -377,7 +381,7 @@ func (s *Schema) Validate(node *YispNode) error {
 		for key, subSchema := range s.GetProperties() {
 			item, ok := m.Get(key)
 			if !ok {
-				if slices.Contains(s.Required, key) {
+				if slices.Contains(s.Required, key) && !allowPartial {
 					return NewEvaluationError(node, fmt.Sprintf("missing required property: %s", key))
 				} else {
 					continue
@@ -388,7 +392,7 @@ func (s *Schema) Validate(node *YispNode) error {
 				return NewEvaluationError(node, fmt.Sprintf("[object]expected YispNode, got %T", item))
 			}
 
-			if err := subSchema.Validate(itemNode); err != nil {
+			if err := subSchema.ValidateWithOptions(itemNode, allowPartial); err != nil {
 				return err
 			}
 			processed[key] = true
@@ -417,7 +421,7 @@ func (s *Schema) Validate(node *YispNode) error {
 					if !ok {
 						return NewEvaluationError(node, fmt.Sprintf("expected YispNode, got %T", item))
 					}
-					if err := ap.Validate(itemNode); err != nil {
+					if err := ap.ValidateWithOptions(itemNode, allowPartial); err != nil {
 						return NewEvaluationError(node, fmt.Sprintf("additional property %s does not match schema: %v", key, err))
 					}
 				}
