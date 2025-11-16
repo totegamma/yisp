@@ -18,6 +18,50 @@ func JsonPrint(tag string, obj any) {
 	fmt.Println(tag, string(b))
 }
 
+func VerifyTypes(node *YispNode, allowUntypedManifest bool) error {
+	// If this node has a schema attached, validate it
+	if node.Type != nil && !allowUntypedManifest {
+		err := node.Type.Validate(node)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Recursively validate child nodes
+	switch node.Kind {
+	case KindArray:
+		arr, ok := node.Value.([]any)
+		if !ok {
+			return fmt.Errorf("invalid array value: %T", node.Value)
+		}
+		for _, item := range arr {
+			childNode, ok := item.(*YispNode)
+			if !ok {
+				continue // Skip non-YispNode items
+			}
+			if err := VerifyTypes(childNode, allowUntypedManifest); err != nil {
+				return err
+			}
+		}
+	case KindMap:
+		m, ok := node.Value.(*YispMap)
+		if !ok {
+			return fmt.Errorf("invalid map value: %T", node.Value)
+		}
+		for _, item := range m.AllFromFront() {
+			childNode, ok := item.(*YispNode)
+			if !ok {
+				continue // Skip non-YispNode items
+			}
+			if err := VerifyTypes(childNode, allowUntypedManifest); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 func DeepMergeYispNode(dst, src *YispNode, schema *Schema) (*YispNode, error) {
 
 	strategy := "replace"

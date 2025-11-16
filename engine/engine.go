@@ -16,6 +16,7 @@ type engine struct {
 	renderSources        bool
 	renderSpecialObjects bool
 	allowUntypedManifest bool
+	disableTypeCheck     bool
 }
 
 type Options struct {
@@ -23,6 +24,7 @@ type Options struct {
 	RenderSources        bool
 	RenderSpecialObjects bool
 	AllowUntypedManifest bool
+	DisableTypeCheck     bool
 }
 
 func NewEngine(opts Options) *engine {
@@ -32,6 +34,7 @@ func NewEngine(opts Options) *engine {
 		renderSpecialObjects: opts.RenderSpecialObjects,
 		renderSources:        opts.RenderSources,
 		allowUntypedManifest: opts.AllowUntypedManifest,
+		disableTypeCheck:     opts.DisableTypeCheck,
 	}
 }
 
@@ -50,6 +53,13 @@ func (e *engine) EvaluateFileToYamlWithEnv(path string, env *core.Env) (string, 
 	evaluated, err := core.CallEngineByPath(path, "", env, e)
 	if err != nil {
 		return "", err
+	}
+
+	if !e.disableTypeCheck {
+		err = core.VerifyTypes(evaluated, e.allowUntypedManifest)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	result, err := e.Render(evaluated)
@@ -71,6 +81,13 @@ func (e *engine) EvaluateReaderToYamlWithEnv(reader io.Reader, env *core.Env, lo
 		return "", err
 	}
 
+	if !e.disableTypeCheck {
+		err = core.VerifyTypes(evaluated, e.allowUntypedManifest)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	result, err := e.Render(evaluated)
 	if err != nil {
 		return "", err
@@ -89,6 +106,13 @@ func (e *engine) EvaluateFileToAny(path string) (any, error) {
 	evaluated, err := core.CallEngineByPath(path, "", env, e)
 	if err != nil {
 		return "", err
+	}
+
+	if !e.disableTypeCheck {
+		err = core.VerifyTypes(evaluated, e.allowUntypedManifest)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	result, err := evaluated.ToNative()
@@ -114,6 +138,13 @@ func (e *engine) EvaluateBytesToYaml(data []byte, global map[string]any) (string
 	evaluated, err := e.Run(reader, env, "inline")
 	if err != nil {
 		return "", err
+	}
+
+	if !e.disableTypeCheck {
+		err = core.VerifyTypes(evaluated, e.allowUntypedManifest)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	result, err := e.Render(evaluated)

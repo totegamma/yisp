@@ -268,15 +268,11 @@ func LoadSchemaFromGVK(group, version, kind string) (*Schema, error) {
 }
 
 func (s *Schema) Validate(node *YispNode) error {
-	return s.ValidateWithOptions(node, false)
-}
-
-func (s *Schema) ValidateWithOptions(node *YispNode, allowPartial bool) error {
 
 	if s.OneOf != nil {
 		var errors []string
 		for _, subSchema := range s.OneOf {
-			err := subSchema.ValidateWithOptions(node, allowPartial)
+			err := subSchema.Validate(node)
 			if err == nil {
 				return nil // Valid against one of the schemas
 			}
@@ -372,7 +368,7 @@ func (s *Schema) ValidateWithOptions(node *YispNode, allowPartial bool) error {
 				if !ok {
 					return NewEvaluationError(node, fmt.Sprintf("expected YispNode, got %T", item))
 				}
-				if err := subSchema.ValidateWithOptions(itemNode, allowPartial); err != nil {
+				if err := subSchema.Validate(itemNode); err != nil {
 					return err
 				}
 			}
@@ -390,7 +386,7 @@ func (s *Schema) ValidateWithOptions(node *YispNode, allowPartial bool) error {
 		for key, subSchema := range s.GetProperties() {
 			item, ok := m.Get(key)
 			if !ok {
-				if slices.Contains(s.Required, key) && !allowPartial {
+				if slices.Contains(s.Required, key) {
 					return NewEvaluationError(node, fmt.Sprintf("missing required property: %s", key))
 				} else {
 					continue
@@ -401,7 +397,7 @@ func (s *Schema) ValidateWithOptions(node *YispNode, allowPartial bool) error {
 				return NewEvaluationError(node, fmt.Sprintf("[object]expected YispNode, got %T", item))
 			}
 
-			if err := subSchema.ValidateWithOptions(itemNode, allowPartial); err != nil {
+			if err := subSchema.Validate(itemNode); err != nil {
 				return err
 			}
 			processed[key] = true
@@ -422,7 +418,14 @@ func (s *Schema) ValidateWithOptions(node *YispNode, allowPartial bool) error {
 			switch ap := additionalProperties.(type) {
 			case bool:
 				if !ap {
-					return NewEvaluationError(node, fmt.Sprintf("unexpected properties: %v", left.Keys()))
+					keys := ""
+					for key := range left.AllFromFront() {
+						if keys != "" {
+							keys += ", "
+						}
+						keys += key
+					}
+					return NewEvaluationError(node, fmt.Sprintf("unexpected properties: %v", keys))
 				}
 			case *Schema:
 				for key, item := range left.AllFromFront() {
@@ -430,7 +433,7 @@ func (s *Schema) ValidateWithOptions(node *YispNode, allowPartial bool) error {
 					if !ok {
 						return NewEvaluationError(node, fmt.Sprintf("expected YispNode, got %T", item))
 					}
-					if err := ap.ValidateWithOptions(itemNode, allowPartial); err != nil {
+					if err := ap.Validate(itemNode); err != nil {
 						return NewEvaluationError(node, fmt.Sprintf("additional property %s does not match schema: %v", key, err))
 					}
 				}
