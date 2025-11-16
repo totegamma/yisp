@@ -343,6 +343,53 @@ func fetchRemote(rawURL string) (io.ReadCloser, error) {
 	return resp.Body, nil
 }
 
+// VerifyTypes walks the entire object tree and validates any nodes that have
+// a schema attached (via $schema or K8s GVK). This should be called at render time
+// rather than during evaluation to allow partial objects during patching.
+func VerifyTypes(node *YispNode, allowUntypedManifest bool) error {
+	// If this node has a schema attached, validate it
+	if node.Type != nil && !allowUntypedManifest {
+		err := node.Type.Validate(node)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Recursively validate child nodes
+	switch node.Kind {
+	case KindArray:
+		arr, ok := node.Value.([]any)
+		if !ok {
+			return fmt.Errorf("invalid array value: %T", node.Value)
+		}
+		for _, item := range arr {
+			childNode, ok := item.(*YispNode)
+			if !ok {
+				continue // Skip non-YispNode items
+			}
+			if err := VerifyTypes(childNode, allowUntypedManifest); err != nil {
+				return err
+			}
+		}
+	case KindMap:
+		m, ok := node.Value.(*YispMap)
+		if !ok {
+			return fmt.Errorf("invalid map value: %T", node.Value)
+		}
+		for _, item := range m.AllFromFront() {
+			childNode, ok := item.(*YispNode)
+			if !ok {
+				continue // Skip non-YispNode items
+			}
+			if err := VerifyTypes(childNode, allowUntypedManifest); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 // isTruthy determines if a value is considered "truthy" in a boolean context
 func IsTruthy(node *YispNode) (bool, error) {
 	switch node.Kind {

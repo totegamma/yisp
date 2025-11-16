@@ -507,7 +507,7 @@ func (s *Schema) InterpolateDefaults(node *YispNode) error {
 		for key, subSchema := range s.Properties {
 			item, ok := m.Get(key)
 			if !ok {
-				// Skip required check - validation happens at output time
+				// Skip required check during interpolation - validation happens at render time
 				if subSchema.Default != nil {
 					defaultNode := &YispNode{
 						Kind:  schemaTypeToKind[subSchema.Type],
@@ -550,7 +550,7 @@ func (s *Schema) Cast(node *YispNode) (*YispNode, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to cast %v to %v (%v)", node, s, err)
 	}
-	// Validation moved to output rendering phase
+	// Validation is deferred to render time via VerifyTypes
 	// err = s.Validate(node)
 	// if err != nil {
 	// 	return nil, fmt.Errorf("failed to cast %v to %v (%v)", node, s, err)
