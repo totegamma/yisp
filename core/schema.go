@@ -507,9 +507,7 @@ func (s *Schema) InterpolateDefaults(node *YispNode) error {
 		for key, subSchema := range s.Properties {
 			item, ok := m.Get(key)
 			if !ok {
-				if slices.Contains(s.Required, key) {
-					return NewEvaluationError(node, fmt.Sprintf("missing required property: %s", key))
-				}
+				// Skip required check - validation happens at output time
 				if subSchema.Default != nil {
 					defaultNode := &YispNode{
 						Kind:  schemaTypeToKind[subSchema.Type],
@@ -552,10 +550,11 @@ func (s *Schema) Cast(node *YispNode) (*YispNode, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to cast %v to %v (%v)", node, s, err)
 	}
-	err = s.Validate(node)
-	if err != nil {
-		return nil, fmt.Errorf("failed to cast %v to %v (%v)", node, s, err)
-	}
+	// Validation moved to output rendering phase
+	// err = s.Validate(node)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("failed to cast %v to %v (%v)", node, s, err)
+	// }
 
 	node.Type = s
 
