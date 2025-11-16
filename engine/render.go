@@ -222,6 +222,15 @@ func (e *engine) Render(node *core.YispNode) (string, error) {
 			if !ok {
 				return "", fmt.Errorf("invalid item type: %T", item)
 			}
+			
+			// Validate on output if the node has a schema attached
+			if node.Type != nil && !e.allowUntypedManifest {
+				err := node.Type.Validate(node)
+				if err != nil {
+					return "", fmt.Errorf("manifest does not conform to schema: %v", err)
+				}
+			}
+			
 			rendered, err := e.renderYamlNodes(node)
 			if err != nil {
 				return "", err
@@ -237,6 +246,14 @@ func (e *engine) Render(node *core.YispNode) (string, error) {
 		return buf.String(), nil
 
 	} else {
+		// Validate on output if the node has a schema attached
+		if node.Type != nil && !e.allowUntypedManifest {
+			err := node.Type.Validate(node)
+			if err != nil {
+				return "", fmt.Errorf("manifest does not conform to schema: %v", err)
+			}
+		}
+		
 		rendered, err := e.renderYamlNodes(node)
 		if err != nil {
 			return "", err
