@@ -26,6 +26,30 @@ By default, the output is printed to stdout. You can redirect it to a file if ne
 yisp build path/to/your/file.yaml > output.yaml
 ```
 
+### Build Command Options
+
+The `yisp build` command supports several flags to customize the build process:
+
+- `--output`, `-o`: Specify the output format (`yaml` or `json`, default: `yaml`)
+- `--disable-type-check`: Disable type checking during output generation
+- `--allow-untyped-manifest`: Allow manifests without type information (useful for Kubernetes resources)
+- `--show-trace`: Show detailed trace information for debugging
+- `--enable-sourcemap`: Include source map comments in the output YAML
+- `--render-special-objects`: Display special objects like types and lambdas in the output
+- `--allow-cmd`: Allow command execution through `exec.*` operators
+
+**Example:**
+```sh
+# Build with JSON output
+yisp build input.yaml --output json
+
+# Build with type checking disabled
+yisp build input.yaml --disable-type-check
+
+# Build with trace information for debugging
+yisp build input.yaml --show-trace
+```
+
 ## Your First YISP File
 
 Let's create a simple YISP file to demonstrate the basics:
@@ -138,6 +162,84 @@ greeting: !yisp
   - "World"
 # Evaluates to: greeting: "Hello, World!"
 ```
+
+## Type Checking
+
+YISP includes a type checking system to help catch errors early and ensure data consistency. The type system supports basic types like strings, integers, floats, and booleans, as well as custom type schemas for more complex structures.
+
+### Type Tags
+
+You can specify types for lambda function parameters using type tags:
+
+```yaml
+!yisp &calculate
+- lambda
+- [!int x, !int y]
+- - +
+  - *x
+  - *y
+
+---
+result: !yisp
+  - *calculate
+  - 10
+  - 20
+# Evaluates to: result: 30
+```
+
+**Available type tags:**
+- `!string`: String type
+- `!int`: Integer type
+- `!float`: Floating-point number type
+- `!bool`: Boolean type
+
+### Type Assertions
+
+You can use the `types.assert` operator to validate that a value matches a specific type:
+
+```yaml
+validated: !yisp
+  - types.assert
+  - "hello"
+  - !string
+# Passes validation
+
+invalid: !yisp
+  - types.assert
+  - 42
+  - !string
+# Fails with a type error
+```
+
+### Type Checking for Kubernetes Manifests
+
+When working with Kubernetes manifests, YISP can validate resources against their schemas. By default, type checking is enabled. If you're working with resources that don't have schema information, you can use the `--allow-untyped-manifest` flag.
+
+If you want to disable type checking entirely (e.g., during development or for debugging), use the `--disable-type-check` flag:
+
+```sh
+yisp build manifests.yaml --disable-type-check
+```
+
+### Getting Type Information
+
+You can retrieve type information about values using type operators:
+
+```yaml
+# Get the type of a value as a string
+type: !yisp
+  - types.of
+  - 42
+# Evaluates to: type: "int"
+
+# Get detailed type information
+info: !yisp
+  - types.get
+  - "hello world"
+# Returns type metadata
+```
+
+For more information about type operators, see the [Types documentation](operators/types.md).
 
 ## Working with Multiple Files
 
