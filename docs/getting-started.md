@@ -26,6 +26,30 @@ By default, the output is printed to stdout. You can redirect it to a file if ne
 yisp build path/to/your/file.yaml > output.yaml
 ```
 
+### Build Command Options
+
+The `yisp build` command supports several flags to customize the build process:
+
+- `--output`, `-o`: Specify the output format (`yaml` or `json`, default: `yaml`)
+- `--disable-type-check`: Disable type checking during output generation
+- `--allow-untyped-manifest`: Allow manifests without type information (useful for Kubernetes resources)
+- `--show-trace`: Show detailed trace information for debugging
+- `--enable-sourcemap`: Include source map comments in the output YAML
+- `--render-special-objects`: Display special objects like types and lambdas in the output
+- `--allow-cmd`: Allow command execution through `exec.*` operators
+
+**Example:**
+```sh
+# Build with JSON output
+yisp build input.yaml --output json
+
+# Build with type checking disabled
+yisp build input.yaml --disable-type-check
+
+# Build with trace information for debugging
+yisp build input.yaml --show-trace
+```
+
 ## Your First YISP File
 
 Let's create a simple YISP file to demonstrate the basics:
