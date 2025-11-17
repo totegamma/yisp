@@ -1,7 +1,7 @@
 # RFC6902
 # add - object member replacement (existing member)
 !yisp
-- utils.op-patch
+- maps.patch
 - hoge: 0
 - !quote
   - op: add
@@ -15,7 +15,7 @@
 ---
 # add - array index insertion
 !yisp
-- utils.op-patch
+- maps.patch
 - !quote
   items:
     - a
@@ -29,7 +29,7 @@
 ---
 # add - array append
 !yisp
-- utils.op-patch
+- maps.patch
 - !quote
   items:
     - a
@@ -42,7 +42,7 @@
 ---
 # add - array append using "-"
 !yisp
-- utils.op-patch
+- maps.patch
 - !quote
   items:
     - x
@@ -55,7 +55,7 @@
 ---
 # remove - object member
 !yisp
-- utils.op-patch
+- maps.patch
 - hoge: 1
   piyo: 2
 - !quote
@@ -65,7 +65,7 @@
 ---
 # remove - array element
 !yisp
-- utils.op-patch
+- maps.patch
 - !quote
   items:
     - a
@@ -78,7 +78,7 @@
 ---
 # move - object member
 !yisp
-- utils.op-patch
+- maps.patch
 - hoge: 1
   piyo: 2
 - !quote
@@ -89,7 +89,7 @@
 ---
 # move - array element
 !yisp
-- utils.op-patch
+- maps.patch
 - !quote
   items:
     - a
@@ -103,7 +103,7 @@
 ---
 # copy
 !yisp
-- utils.op-patch
+- maps.patch
 - hoge: 1
   piyo: 2
 - !quote
@@ -115,7 +115,7 @@
 ---
 # wildcard - add to all map entries
 !yisp
-- utils.op-patch
+- maps.patch
 - !quote
   resource:
     my-object0:
@@ -137,7 +137,7 @@
 ---
 # wildcard - replace all map entries
 !yisp
-- utils.op-patch
+- maps.patch
 - !quote
   items:
     item1: old-value1
@@ -152,7 +152,7 @@
 ---
 # wildcard - remove specific field from all entries
 !yisp
-- utils.op-patch
+- maps.patch
 - !quote
   data:
     entry1:
@@ -172,7 +172,7 @@
 ---
 # wildcard - add to all array elements
 !yisp
-- utils.op-patch
+- maps.patch
 - !quote
   items:
     - name: item1
@@ -193,7 +193,7 @@
 ---
 # wildcard - replace all array elements
 !yisp
-- utils.op-patch
+- maps.patch
 - !quote
   values:
     - old1
@@ -210,7 +210,7 @@
 ---
 # wildcard in middle - add field to nested objects
 !yisp
-- utils.op-patch
+- maps.patch
 - !quote
   resource:
     server1:
@@ -235,7 +235,7 @@
 ---
 # wildcard in middle - merge multiple fields preserving existing
 !yisp
-- utils.op-patch
+- maps.patch
 - !quote
   resource:
     aws_instance:
@@ -266,7 +266,7 @@
 ---
 # single patch object input (not array)
 !yisp
-- utils.op-patch
+- maps.patch
 - hoge: 0
   piyo: 1
 - op: add

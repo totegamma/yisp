@@ -1,6 +1,6 @@
 # batch patching with IsDocumentRoot using include
 !yisp
-- utils.op-patch
+- maps.patch
 - - include
   - resource.yaml
 - - include
