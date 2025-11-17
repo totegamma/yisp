@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-	register("utils", "op-patch", opOpPatch)
+	register("maps", "patch", opOpPatch)
 }
 
 // parsePointer parses a JSON Pointer (RFC 6901) path into tokens
