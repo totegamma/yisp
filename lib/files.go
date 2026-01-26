@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"github.com/bmatcuk/doublestar/v4"
 
 	"github.com/totegamma/yisp/core"
 )
@@ -18,33 +21,36 @@ func opGlob(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engi
 	result := make([]any, 0)
 
 	for _, node := range cdr {
-		str, ok := node.Value.(string)
+		entry, ok := node.Value.(string)
 		if !ok {
 			return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid argument type for open: %T", node))
 		}
 
-		path := str
-		if node.Attr.File() != "" {
-			path = filepath.Clean(filepath.Join(filepath.Dir(node.Attr.File()), str))
+		if after, ok := strings.CutPrefix(entry, "./"); ok {
+			entry = after
 		}
 
-		files, err := filepath.Glob(path)
+		dirFs := os.DirFS(filepath.Dir(node.Attr.File()))
+
+		paths, err := doublestar.Glob(dirFs, entry)
 		if err != nil {
-			return nil, core.NewEvaluationError(node, fmt.Sprintf("failed to glob path: %s", str))
+			return nil, core.NewEvaluationError(node, fmt.Sprintf("failed to glob path: %s", entry))
 		}
 
-		for _, file := range files {
+		fmt.Printf("Globbed %d files for pattern %s; base: %s\n", len(paths), entry, filepath.Dir(node.Attr.File()))
 
-			filename := filepath.Base(file)
-			body, err := os.ReadFile(file)
+		for _, path := range paths {
+
+			filename := filepath.Base(path)
+			body, err := os.ReadFile(path)
 			if err != nil {
-				return nil, core.NewEvaluationError(node, fmt.Sprintf("failed to read file: %s", file))
+				return nil, core.NewEvaluationError(node, fmt.Sprintf("failed to read file: %s", path))
 			}
 
 			value := core.NewYispMap()
 			value.Set("path", &core.YispNode{
 				Kind:  core.KindString,
-				Value: file,
+				Value: path,
 			})
 			value.Set("name", &core.YispNode{
 				Kind:  core.KindString,
@@ -61,7 +67,7 @@ func opGlob(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engi
 				Attr: core.Attribute{
 					Sources: []core.FilePos{
 						{
-							File:   file,
+							File:   path,
 							Line:   node.Attr.Line(),
 							Column: node.Attr.Column(),
 						},

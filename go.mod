@@ -3,6 +3,7 @@ module github.com/totegamma/yisp
 go 1.24.2
 
 require (
+	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/elliotchance/orderedmap/v3 v3.1.0
 	github.com/rs/xid v1.6.0
 	github.com/spf13/cobra v1.9.1

@@ -3,7 +3,11 @@ package engine
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
+
+	"github.com/bmatcuk/doublestar/v4"
 
 	"github.com/totegamma/yisp/core"
 	"github.com/totegamma/yisp/lib"
@@ -329,34 +333,59 @@ func opNot(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engin
 func opInclude(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
 	results := make([]any, 0)
 	for _, node := range cdr {
-		relpath, ok := node.Value.(string)
+		entry, ok := node.Value.(string)
 		if !ok {
 			return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid path type: %T", node.Value))
 		}
 
-		var err error
-		evaluated, err := core.CallEngineByPath(relpath, node.Attr.File(), core.NewEnv(), e)
-		if err != nil {
-			return nil, core.NewEvaluationErrorWithParent(node, "failed to include file", err)
+		if after, ok := strings.CutPrefix(entry, "./"); ok {
+			entry = after
 		}
 
-		if evaluated.Kind == core.KindArray {
-			arr, ok := evaluated.Value.([]any)
-			if !ok {
-				return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid array value: %T", evaluated.Value))
+		dirFs := os.DirFS(filepath.Dir(node.Attr.File()))
+
+		paths, err := doublestar.Glob(dirFs, entry)
+		if err != nil {
+			return nil, core.NewEvaluationError(node, fmt.Sprintf("failed to glob path: %s", entry))
+		}
+
+		if len(paths) == 0 {
+			paths = []string{entry}
+		}
+
+		for _, path := range paths {
+
+			// continue if the file is the same as the including file
+			includingFile := filepath.Clean(node.Attr.File())
+			includedFile := filepath.Clean(filepath.Join(filepath.Dir(node.Attr.File()), path))
+			if includingFile == includedFile {
+				fmt.Println("Skipping include of self:", includingFile)
+				continue
 			}
 
-			for _, item := range arr {
-				itemNode, ok := item.(*core.YispNode)
-				if !ok {
-					return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
-				}
-				itemNode.Tag = "!quote"
-				results = append(results, itemNode)
+			evaluated, err := core.CallEngineByPath(path, node.Attr.File(), core.NewEnv(), e)
+			if err != nil {
+				return nil, core.NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to include file: %s", path), err)
 			}
-		} else {
-			evaluated.Tag = "!quote"
-			results = append(results, evaluated)
+
+			if evaluated.Kind == core.KindArray {
+				arr, ok := evaluated.Value.([]any)
+				if !ok {
+					return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid array value: %T", evaluated.Value))
+				}
+
+				for _, item := range arr {
+					itemNode, ok := item.(*core.YispNode)
+					if !ok {
+						return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
+					}
+					itemNode.Tag = "!quote"
+					results = append(results, itemNode)
+				}
+			} else {
+				evaluated.Tag = "!quote"
+				results = append(results, evaluated)
+			}
 		}
 	}
 
