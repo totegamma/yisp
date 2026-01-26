@@ -359,7 +359,6 @@ func opInclude(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.E
 			includingFile := filepath.Clean(node.Attr.File())
 			includedFile := filepath.Clean(filepath.Join(filepath.Dir(node.Attr.File()), path))
 			if includingFile == includedFile {
-				fmt.Println("Skipping include of self:", includingFile)
 				continue
 			}
 

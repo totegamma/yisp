@@ -10,6 +10,7 @@ func init() {
 	register("lists", "car", opCar)
 	register("lists", "cdr", opCdr)
 	register("lists", "cons", opCons)
+	register("lists", "contains", opListContains)
 	register("lists", "filter", opFilter)
 	register("lists", "flatten", opFlatten)
 	register("lists", "map", opMap)
@@ -106,6 +107,42 @@ func opCons(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engi
 	}, nil
 }
 
+func opListContains(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
+	if len(cdr) != 2 {
+		return nil, core.NewEvaluationError(nil, fmt.Sprintf("contains requires 2 arguments, got %d", len(cdr)))
+	}
+
+	listNode := cdr[0]
+	elemNode := cdr[1]
+
+	if listNode.Kind != core.KindArray {
+		return nil, core.NewEvaluationError(listNode, fmt.Sprintf("contains requires a list as the first argument, got %v", listNode.Kind))
+	}
+
+	arr, ok := listNode.Value.([]any)
+	if !ok {
+		return nil, core.NewEvaluationError(listNode, fmt.Sprintf("invalid array value: %T", listNode.Value))
+	}
+
+	for _, item := range arr {
+		itemNode, ok := item.(*core.YispNode)
+		if !ok {
+			return nil, core.NewEvaluationError(listNode, fmt.Sprintf("invalid item type: %T", item))
+		}
+		if itemNode.Value == elemNode.Value {
+			return &core.YispNode{
+				Kind:  core.KindBool,
+				Value: true,
+			}, nil
+		}
+	}
+
+	return &core.YispNode{
+		Kind:  core.KindBool,
+		Value: false,
+	}, nil
+}
+
 func opFilter(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engine) (*core.YispNode, error) {
 	if len(cdr) < 2 {
 		return nil, core.NewEvaluationError(nil, fmt.Sprintf("filter requires at least 2 arguments, got %d", len(cdr)))
@@ -176,7 +213,22 @@ func opFlatten(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.E
 				if !ok {
 					return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid item type: %T", item))
 				}
-				flattened = append(flattened, itemNode)
+
+				if itemNode.Kind == core.KindArray {
+					arr, ok := itemNode.Value.([]any)
+					if !ok {
+						return nil, core.NewEvaluationError(itemNode, fmt.Sprintf("invalid argument type for flatten: %T", itemNode))
+					}
+					for _, subItem := range arr {
+						subItemNode, ok := subItem.(*core.YispNode)
+						if !ok {
+							return nil, core.NewEvaluationError(itemNode, fmt.Sprintf("invalid item type: %T", subItem))
+						}
+						flattened = append(flattened, subItemNode)
+					}
+				} else {
+					flattened = append(flattened, itemNode)
+				}
 			}
 		} else {
 			flattened = append(flattened, node)

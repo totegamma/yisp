@@ -10,6 +10,19 @@ import (
 func ParseAny(filename string, v any) (*YispNode, error) {
 
 	typ := reflect.TypeOf(v)
+	if typ == nil {
+		return &YispNode{
+			Kind:  KindNull,
+			Value: nil,
+			Attr: Attribute{
+				Sources: []FilePos{
+					{
+						File: filename,
+					},
+				},
+			},
+		}, nil
+	}
 
 	switch typ.Kind() {
 	case reflect.Bool:

@@ -37,9 +37,13 @@ func opGlob(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engi
 			return nil, core.NewEvaluationError(node, fmt.Sprintf("failed to glob path: %s", entry))
 		}
 
-		fmt.Printf("Globbed %d files for pattern %s; base: %s\n", len(paths), entry, filepath.Dir(node.Attr.File()))
-
 		for _, path := range paths {
+
+			includingFile := filepath.Clean(node.Attr.File())
+			includedFile := filepath.Clean(filepath.Join(filepath.Dir(node.Attr.File()), path))
+			if includingFile == includedFile {
+				continue
+			}
 
 			filename := filepath.Base(path)
 			body, err := os.ReadFile(path)

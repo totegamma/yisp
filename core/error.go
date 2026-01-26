@@ -79,7 +79,7 @@ func (e *ErrorTypeEvaluation) Error() string {
 				},
 			})
 			if err != nil {
-				message += fmt.Sprintf("Error reading file: %s\n", err)
+				message += "<unknown source>\n"
 			} else {
 				message += fmt.Sprintf("%s\n", line)
 			}

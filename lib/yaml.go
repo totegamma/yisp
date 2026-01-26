@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/totegamma/yisp/core"
 	"github.com/totegamma/yisp/internal/yaml"
@@ -44,16 +45,31 @@ func opUnmarshal(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core
 		return nil, core.NewEvaluationError(node, fmt.Sprintf("invalid yaml string value: %T", node.Value))
 	}
 
-	var result any
-	err := yaml.Unmarshal([]byte(yamlStr), &result)
-	if err != nil {
-		return nil, core.NewEvaluationErrorWithParent(node, "failed to unmarshal yaml", err)
+	decoder := yaml.NewDecoder(strings.NewReader(yamlStr))
+	if decoder == nil {
+		return nil, core.NewEvaluationError(node, "failed to create yaml decoder")
 	}
 
-	resultNode, err := core.ParseAny(node.Attr.File(), result)
-	if err != nil {
-		return nil, core.NewEvaluationErrorWithParent(node, "failed to parse yaml result", err)
+	var resultNodes []any
+	for {
+		var value any
+		err := decoder.Decode(&value)
+		if err != nil {
+			if err.Error() == "EOF" {
+				break
+			}
+			return nil, core.NewEvaluationErrorWithParent(node, fmt.Sprintf("failed to decode yaml: `%s`", yamlStr), err)
+		}
+		parsedNode, err := core.ParseAny(node.Attr.File(), value)
+		if err != nil {
+			return nil, core.NewEvaluationErrorWithParent(node, "failed to parse yaml node", err)
+		}
+		resultNodes = append(resultNodes, parsedNode)
 	}
 
-	return resultNode, nil
+	return &core.YispNode{
+		Kind:  core.KindArray,
+		Value: resultNodes,
+		Attr:  node.Attr,
+	}, nil
 }
