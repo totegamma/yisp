@@ -40,7 +40,7 @@ To embed unevaluated YAML structures inside expressions, you can use the `!quote
 
 ### simple example:
 
-hello_world.yaml
+hello_world.yisp
 ```yaml
 mystring: !yisp
   - strings.concat
@@ -51,7 +51,7 @@ mystring: !yisp
 
 build:
 ```sh
-yisp build hello_world.yaml
+yisp build hello_world.yisp
 ```
 
 result:
@@ -61,7 +61,7 @@ mystring: hello world
 
 ### Define functions and call it from another file:
 
-template.yaml:
+template.yisp:
 ```yaml
 !yisp &mkpod
 - lambda
@@ -77,11 +77,11 @@ template.yaml:
         image: *image
 ```
 
-main.yaml
+main.yisp
 ```yaml
 !yisp
 - import
-- ["template", "./template.yaml"]
+- ["template", "./template.yisp"]
 ---
 !yisp
 - *template.mkpod
@@ -116,7 +116,7 @@ func main() {
 
 	e := engine.NewEngine(engine.Options{})
 
-	evaluated, err := e.EvaluateFileToYaml("test.yaml")
+	evaluated, err := e.EvaluateFileToYaml("test.yisp")
 	if err != nil {
 		panic(err)
 	}

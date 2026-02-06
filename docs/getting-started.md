@@ -14,16 +14,16 @@ This will download and install the latest version of YISP to your Go bin directo
 
 ## Basic Usage
 
-The primary command for using YISP is `yisp build`, which processes a YAML file with YISP expressions and outputs the evaluated result.
+The primary command for using YISP is `yisp build`, which processes a YISP file with YISP expressions and outputs the evaluated result.
 
 ```sh
-yisp build path/to/your/file.yaml
+yisp build path/to/your/file.yisp
 ```
 
 By default, the output is printed to stdout. You can redirect it to a file if needed:
 
 ```sh
-yisp build path/to/your/file.yaml > output.yaml
+yisp build path/to/your/file.yisp > output.yaml
 ```
 
 ### Build Command Options
@@ -41,20 +41,20 @@ The `yisp build` command supports several flags to customize the build process:
 **Example:**
 ```sh
 # Build with JSON output
-yisp build input.yaml --output json
+yisp build input.yisp --output json
 
 # Build with type checking disabled
-yisp build input.yaml --disable-type-check
+yisp build input.yisp --disable-type-check
 
 # Build with trace information for debugging
-yisp build input.yaml --show-trace
+yisp build input.yisp --show-trace
 ```
 
 ## Your First YISP File
 
 Let's create a simple YISP file to demonstrate the basics:
 
-1. Create a file named `hello.yaml` with the following content:
+1. Create a file named `hello.yisp` with the following content:
 
 ```yaml
 message: !yisp
@@ -80,7 +80,7 @@ conditional: !yisp
 2. Process the file with YISP:
 
 ```sh
-yisp build hello.yaml
+yisp build hello.yisp
 ```
 
 3. You should see the following output:
@@ -172,22 +172,24 @@ YISP allows you to include and import files, making it easy to organize your cod
 The `include` operator evaluates files and returns their results as a list:
 
 ```yaml
-# main.yaml
+# main.yisp
 results: !yisp
   - include
   - "part1.yaml"
   - "part2.yaml"
 ```
 
+Note: `include` can include both `.yisp` files (with yisp syntax) and `.yaml` files (plain YAML).
+
 ### Importing Modules
 
 The `import` operator imports modules, making their definitions available in the current environment:
 
 ```yaml
-# main.yaml
+# main.yisp
 !yisp
 - import
-- ["utils", "./utils.yaml"]
+- ["utils", "./utils.yisp"]
 ---
 result: !yisp
   - *utils.some_function
