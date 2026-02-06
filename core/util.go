@@ -345,7 +345,7 @@ func CallEngineByPath(path, base string, env *Env, e Engine) (*YispNode, error) 
 			}
 
 			if stat.IsDir() {
-				targetURL = &url.URL{Path: filepath.Join(targetURL.Path, "index.yaml")}
+				targetURL = &url.URL{Path: filepath.Join(targetURL.Path, "index.yisp")}
 			}
 			reader, err = os.Open(targetURL.Path)
 			if err != nil {
