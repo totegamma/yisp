@@ -1,8 +1,8 @@
 !yisp
 - import
-- [deployment, deployment.yaml]
-- [service, service.yaml]
-- [statefulset, statefulset.yaml]
+- [deployment, deployment.yisp]
+- [service, service.yisp]
+- [statefulset, statefulset.yisp]
 
 ---
 !yisp &AppProps
