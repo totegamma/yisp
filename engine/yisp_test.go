@@ -40,7 +40,7 @@ func TestYisp(t *testing.T) {
 		AllowUntypedManifest: true,
 	})
 
-	files, err := filepath.Glob("../testdata/*.test.yaml")
+	files, err := filepath.Glob("../testdata/*.test.yisp")
 	if err != nil {
 		t.Fatalf("Error finding test files: %v", err)
 	}

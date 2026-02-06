@@ -308,7 +308,7 @@ func CallEngineByPath(path, base string, env *Env, e Engine) (*YispNode, error) 
 
 	var reader io.Reader
 
-	extension := ".yaml"
+	extension := ".yisp"
 	source := ""
 
 	if path == "-" {
@@ -345,7 +345,7 @@ func CallEngineByPath(path, base string, env *Env, e Engine) (*YispNode, error) 
 			}
 
 			if stat.IsDir() {
-				targetURL = &url.URL{Path: filepath.Join(targetURL.Path, "index.yaml")}
+				targetURL = &url.URL{Path: filepath.Join(targetURL.Path, "index.yisp")}
 			}
 			reader, err = os.Open(targetURL.Path)
 			if err != nil {
@@ -357,8 +357,10 @@ func CallEngineByPath(path, base string, env *Env, e Engine) (*YispNode, error) 
 	}
 
 	switch extension {
-	case ".yml", ".yaml", ".yisp":
+	case ".yisp":
 		return e.Run(reader, env, source)
+	case ".yml", ".yaml":
+		return ParseYaml(source, reader)
 	case ".json":
 		return ParseJson(source, reader)
 	default:

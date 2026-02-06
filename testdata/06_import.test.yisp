@@ -1,7 +1,7 @@
 !yisp
 - import
-- ["podmod", "./02_template.test.yaml"]
-- ["svcmod", "./mksvc.yaml"]
+- ["podmod", "./02_template.test.yisp"]
+- ["svcmod", "./mksvc.yisp"]
 ---
 !yisp
 - *podmod.mkpod

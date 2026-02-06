@@ -10,7 +10,7 @@ YISP excels at managing complex Kubernetes configurations by allowing you to cre
 
 One of the most powerful features of YISP is the ability to create reusable templates for Kubernetes resources. This example demonstrates how to create a template for a Pod and then use it to generate a specific Pod configuration.
 
-**template.yaml**
+**template.yisp**
 ```yaml
 !yisp &mkpod
 - lambda
@@ -32,11 +32,11 @@ In this template:
 - The `!quote` tag ensures the YAML structure is preserved without evaluation
 - The `*name` and `*image` references are replaced with the actual values when the function is called
 
-**use.yaml**
+**use.yisp**
 ```yaml
 !yisp
 - import
-- ["template", "./template.yaml"]
+- ["template", "./template.yisp"]
 ---
 !yisp
 - *template.mkpod
@@ -66,7 +66,7 @@ This approach allows you to maintain consistent resource definitions while custo
 
 Sometimes you need to modify existing Kubernetes manifests without completely rewriting them. YISP makes this easy with its functional approach to data transformation.
 
-**patch.yaml**
+**patch.yisp**
 ```yaml
 !yisp &selective-patch
 - lambda
@@ -111,7 +111,7 @@ This function:
 ```
 
 This example:
-1. Loads manifests from `./mymanifests.yaml`
+1. Loads manifests from `./mymanifests.yaml` (can be standard YAML file)
 2. Finds all Deployment resources
 3. Adds a `checksum/config` annotation with the SHA-256 hash of a configuration object
 
