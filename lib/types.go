@@ -61,17 +61,9 @@ func opTypeOf(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.En
 
 	node := cdr[0]
 
-	if node.Type == nil {
-		return &core.YispNode{
-			Kind:  core.KindNull,
-			Value: nil,
-			Attr:  node.Attr,
-		}, nil
-	}
-
 	return &core.YispNode{
-		Kind:  core.KindType,
-		Value: node.Type,
+		Kind:  core.KindString,
+		Value: node.Kind.String(),
 		Attr:  node.Attr,
 	}, nil
 }
