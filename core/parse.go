@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+
+	"gopkg.in/yaml.v3"
 )
 
 func ParseAny(filename string, v any) (*YispNode, error) {
@@ -140,6 +142,22 @@ func ParseJson(filename string, reader io.Reader) (*YispNode, error) {
 	node, err := ParseAny(filename, data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse JSON: %v", err)
+	}
+
+	return node, nil
+}
+
+// ParseYaml parses standard YAML (not yisp-extended YAML) into a YispNode
+func ParseYaml(filename string, reader io.Reader) (*YispNode, error) {
+	var data any
+	decoder := yaml.NewDecoder(reader)
+	if err := decoder.Decode(&data); err != nil {
+		return nil, fmt.Errorf("failed to decode YAML: %v", err)
+	}
+
+	node, err := ParseAny(filename, data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse YAML: %v", err)
 	}
 
 	return node, nil
