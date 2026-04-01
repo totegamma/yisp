@@ -46,7 +46,7 @@ func opGlob(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engi
 			}
 
 			filename := filepath.Base(path)
-			body, err := os.ReadFile(path)
+			body, err := os.ReadFile(includedFile)
 			if err != nil {
 				return nil, core.NewEvaluationError(node, fmt.Sprintf("failed to read file: %s", path))
 			}
