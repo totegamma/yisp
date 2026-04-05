@@ -54,7 +54,7 @@ func opPatch(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Eng
 				return nil, core.NewEvaluationErrorWithParent(targetNode, "failed to get GVK from target", err)
 			}
 
-			if patchID == targetID {
+			if patchID.Covers(targetID) {
 				targetArray[i], err = core.DeepMergeYispNode(targetNode, patchNode, targetNode.Type)
 				if err != nil {
 					return nil, core.NewEvaluationErrorWithParent(patchNode, "failed to apply patch", err)
@@ -67,71 +67,97 @@ func opPatch(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Eng
 	return targets, nil
 }
 
-func getManifestID(node *core.YispNode) (string, error) {
+type manifestID struct {
+	apiVersion string
+	kind       string
+	namespace  string
+	name       string
+}
+
+func (id manifestID) String() string {
+	if id.namespace != "" {
+		return fmt.Sprintf("%s/%s/%s/%s", id.apiVersion, id.kind, id.namespace, id.name)
+	}
+	return fmt.Sprintf("%s/%s/%s", id.apiVersion, id.kind, id.name)
+}
+
+func (id manifestID) Covers(other manifestID) bool {
+	if id.apiVersion != "" && id.apiVersion != other.apiVersion {
+		return false
+	}
+	if id.kind != "" && id.kind != other.kind {
+		return false
+	}
+	if id.namespace != "" && id.namespace != other.namespace {
+		return false
+	}
+	if id.name != "" && id.name != other.name {
+		return false
+	}
+	return true
+}
+
+func getManifestID(node *core.YispNode) (manifestID, error) {
+	var result manifestID
 	if node.Kind != core.KindMap {
-		return "", fmt.Errorf("expected core.KindMap for GVK, got %s", node.Kind)
+		return result, fmt.Errorf("expected core.KindMap for GVK, got %s", node.Kind)
 	}
 
 	m, ok := node.Value.(*core.YispMap)
 	if !ok {
-		return "", fmt.Errorf("expected core.YispMap for GVK, got %T", node.Value)
+		return result, fmt.Errorf("expected core.YispMap for GVK, got %T", node.Value)
 	}
-
-	var apiVersion string
-	var kind string
-	var namespace string
-	var name string
 
 	apiVersionAny, ok := m.Get("apiVersion")
 	if ok {
 		apiVersionNode, ok := apiVersionAny.(*core.YispNode)
 		if !ok {
-			return "", fmt.Errorf("expected core.YispNode for apiVersion, got %T", apiVersionAny)
+			return result, fmt.Errorf("expected core.YispNode for apiVersion, got %T", apiVersionAny)
 		}
-		apiVersion, _ = apiVersionNode.Value.(string)
+		result.apiVersion, _ = apiVersionNode.Value.(string)
 	}
 
 	kindAny, ok := m.Get("kind")
 	if ok {
 		kindNode, ok := kindAny.(*core.YispNode)
 		if !ok {
-			return "", fmt.Errorf("expected core.YispNode for kind, got %T", kindAny)
+			return result, fmt.Errorf("expected core.YispNode for kind, got %T", kindAny)
 		}
-		kind, _ = kindNode.Value.(string)
+		result.kind, _ = kindNode.Value.(string)
 	}
 
 	metadataAny, ok := m.Get("metadata")
 	if ok {
 		metadataNode, ok := metadataAny.(*core.YispNode)
 		if !ok {
-			return "", fmt.Errorf("expected core.YispNode for metadata, got %T", metadataAny)
+			return result, fmt.Errorf("expected core.YispNode for metadata, got %T", metadataAny)
 		}
 		if metadataNode.Kind != core.KindMap {
-			return "", fmt.Errorf("expected core.KindMap for metadata, got %s", metadataNode.Kind)
+			return result, fmt.Errorf("expected core.KindMap for metadata, got %s", metadataNode.Kind)
 		}
 		metadataMap, ok := metadataNode.Value.(*core.YispMap)
 		if !ok {
-			return "", fmt.Errorf("expected core.YispMap for metadata, got %T", metadataNode.Value)
+			return result, fmt.Errorf("expected core.YispMap for metadata, got %T", metadataNode.Value)
 		}
 
 		namespaceAny, ok := metadataMap.Get("namespace")
 		if ok {
 			namespaceNode, ok := namespaceAny.(*core.YispNode)
 			if !ok {
-				return "", fmt.Errorf("expected core.YispNode for namespace, got %T", namespaceAny)
+				return result, fmt.Errorf("expected core.YispNode for namespace, got %T", namespaceAny)
 			}
-			namespace, _ = namespaceNode.Value.(string)
+			result.namespace, _ = namespaceNode.Value.(string)
 		}
 
 		nameAny, ok := metadataMap.Get("name")
 		if ok {
 			nameNode, ok := nameAny.(*core.YispNode)
 			if !ok {
-				return "", fmt.Errorf("expected core.YispNode for name, got %T", nameAny)
+				return result, fmt.Errorf("expected core.YispNode for name, got %T", nameAny)
 			}
-			name, _ = nameNode.Value.(string)
+			result.name, _ = nameNode.Value.(string)
 		}
 	}
 
-	return fmt.Sprintf("%s/%s/%s/%s", apiVersion, kind, namespace, name), nil
+	return result, nil
 }
