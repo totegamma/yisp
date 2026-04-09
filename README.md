@@ -103,6 +103,23 @@ spec:
 
 More examples are available in `/testfiles`.
 
+## Call external tool (e.g. Helm)
+call helm with go-run command. adapter: ( https://github.com/totegamma/yisp-helm-adapter )
+```yaml
+!yisp &template
+- lambda
+- [props]
+- - exec.go
+  - pkg: github.com/totegamma/yisp-helm-adapter@v0.1.0
+    args: !quote
+      - *props.repo
+      - *props.release
+      - *props.version
+    stdin:
+      - yaml.marshal
+      - *props.values
+```
+
 ## Use yisp from Go code
 ```go
 package main
