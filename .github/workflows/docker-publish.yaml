@@ -28,10 +28,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-    - uses: actions/setup-go@v6.4.0
-      with:
-        go-version-file: go.mod
-        cache: true
+      - uses: actions/setup-go@v6.4.0
+        with:
+          go-version-file: go.mod
+          cache: true
 
       - name: Create k8s Kind Cluster
         uses: helm/kind-action@v1.14.0
