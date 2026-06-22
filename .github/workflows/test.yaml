@@ -15,18 +15,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: setup go
-      uses: actions/setup-go@v2
+    - uses: actions/setup-go@v6.4.0
       with:
-        go-version: '1.24.2'
-      id: go
+        go-version-file: go.mod
+        cache: true
 
-    - uses: engineerd/setup-kind@v0.6.2
-      with:
-        version: "v0.29.0"
+    - name: Create k8s Kind Cluster
+      uses: helm/kind-action@v1.14.0
 
     - name: Check out code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v7.0.0
 
     - name: Go Generate
       run: go generate ./...
