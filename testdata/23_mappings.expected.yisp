@@ -5,6 +5,12 @@ b: 2
 piyo
 
 ---
+yisp
+
+---
+optional_missing: null
+
+---
 [hoge, fuga, neko]
 
 ---

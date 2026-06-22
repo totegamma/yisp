@@ -88,64 +88,21 @@ func (e *Env) Set(key string, value *YispNode) {
 func (e *Env) Get(key string) (*YispNode, bool) {
 
 	split := strings.Split(key, ".")
-
-	fst := split[0]
-	optional := false
-	if fst[len(fst)-1] == '?' {
-		fst = fst[:len(fst)-1]
-		optional = true
+	if len(split) == 0 || split[0] == "" {
+		return nil, false
 	}
 
-	value, ok := e.Vars[split[0]]
+	fst, optional := parsePathSegment(split[0])
+	value, ok := lookupYispNodeChild(e.Vars, fst)
 	if !ok {
 		if e.Parent != nil {
 			return e.Parent.Get(key)
 		}
 		if optional {
-			return &YispNode{
-				Kind:  KindNull,
-				Value: nil,
-			}, true
+			return newNullYispNode(), true
 		}
 		return nil, false
 	}
 
-	for _, key := range split[1:] {
-		if key[len(key)-1] == '?' {
-			key = key[:len(key)-1]
-			optional = true
-		} else {
-			optional = false
-		}
-
-		maps, ok := value.Value.(map[string]*YispNode)
-		if !ok {
-			anyMaps, ok := value.Value.(*YispMap)
-			if !ok {
-				return nil, false
-			}
-			maps = make(map[string]*YispNode)
-			for key, item := range anyMaps.AllFromFront() {
-				node, ok := item.(*YispNode)
-				if !ok {
-					continue
-				}
-				maps[key] = node
-			}
-		}
-
-		value, ok = maps[key]
-		if !ok {
-			if optional {
-				return &YispNode{
-					Kind:  KindNull,
-					Value: nil,
-				}, true
-			} else {
-				return nil, false
-			}
-		}
-	}
-
-	return value, ok
+	return lookupYispNodeByPathSegments(value, split[1:])
 }

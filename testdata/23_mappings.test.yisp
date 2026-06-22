@@ -18,6 +18,26 @@
 
 ---
 !yisp
+- maps.get
+- app:
+    metadata:
+      name: yisp
+      labels:
+        env: test
+- app.metadata.name
+# yisp
+
+---
+optional_missing: !yisp
+  - maps.get
+  - app:
+      metadata:
+        name: yisp
+  - app.metadata.labels?
+# optional_missing: null
+
+---
+!yisp
 - maps.keys
 - hoge: piyo
   fuga: miyo
@@ -80,4 +100,3 @@
 - a: 1
   b: 2
 # [1, 2]
-

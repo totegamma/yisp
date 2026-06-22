@@ -76,14 +76,9 @@ func opGet(cdr []*core.YispNode, env *core.Env, mode core.EvalMode, e core.Engin
 		return nil, core.NewEvaluationError(cdr[1], fmt.Sprintf("mapping-get requires a string key, got %v", cdr[1].Kind))
 	}
 
-	value, ok := mapValue.Get(keyValue)
+	valueNode, ok := core.LookupYispNodeByPath(mapValue, keyValue)
 	if !ok {
 		return nil, core.NewEvaluationError(cdr[1], fmt.Sprintf("key %s not found in map", keyValue))
-	}
-
-	valueNode, ok := value.(*core.YispNode)
-	if !ok {
-		return nil, core.NewEvaluationError(cdr[1], fmt.Sprintf("invalid value type: %T", value))
 	}
 
 	return valueNode, nil
