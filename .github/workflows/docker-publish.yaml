@@ -64,6 +64,7 @@ jobs:
         uses: docker/build-push-action@v7.2.0
         with:
           context: .
+          pull: true
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha
