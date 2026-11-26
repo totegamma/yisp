@@ -78,6 +78,11 @@ func Parse(filename string, node *yaml.Node) (*core.YispNode, error) {
 			}
 
 			value.Attr.KeyStyle = keyNode.Style
+			value.Attr.KeyPos = &core.FilePos{
+				File:   filename,
+				Line:   keyNode.Line,
+				Column: keyNode.Column,
+			}
 			value.Attr.KeyHeadComment = keyNode.HeadComment
 			value.Attr.KeyLineComment = keyNode.LineComment
 			value.Attr.KeyFootComment = keyNode.FootComment

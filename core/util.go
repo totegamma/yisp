@@ -124,6 +124,7 @@ func DeepMergeYispNode(dst, src *YispNode, schema *Schema) (*YispNode, error) {
 		return &YispNode{
 			Kind:  KindMap,
 			Value: result,
+			Attr:  dst.Attr.Merge(src.Attr),
 			Type:  src.Type, // TODO: sum type
 		}, nil
 
@@ -227,6 +228,7 @@ func DeepMergeYispNode(dst, src *YispNode, schema *Schema) (*YispNode, error) {
 		return &YispNode{
 			Kind:  KindArray,
 			Value: result,
+			Attr:  dst.Attr.Merge(src.Attr),
 			Type:  src.Type, // TODO: sum type
 		}, nil
 

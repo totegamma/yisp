@@ -94,6 +94,8 @@ type Attribute struct {
 
 	KeyStyle yaml.Style
 	Style    yaml.Style
+
+	KeyPos *FilePos
 }
 
 func (a Attribute) Merge(other Attribute) Attribute {

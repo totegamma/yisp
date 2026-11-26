@@ -419,13 +419,26 @@ func (s *Schema) Validate(node *YispNode) error {
 			case bool:
 				if !ap {
 					keys := ""
-					for key := range left.AllFromFront() {
+					errNode := node
+					for key, item := range left.AllFromFront() {
 						if keys != "" {
 							keys += ", "
+						} else if itemNode, ok := item.(*YispNode); ok && len(itemNode.Attr.Sources) > 0 {
+							if itemNode.Attr.KeyPos == nil {
+								errNode = itemNode
+							} else {
+								errNode = &YispNode{
+									Kind:  itemNode.Kind,
+									Value: itemNode.Value,
+									Attr: Attribute{
+										Sources: []FilePos{*itemNode.Attr.KeyPos},
+									},
+								}
+							}
 						}
 						keys += key
 					}
-					return NewEvaluationError(node, fmt.Sprintf("unexpected properties: %v", keys))
+					return NewEvaluationError(errNode, fmt.Sprintf("unexpected properties: %v", keys))
 				}
 			case *Schema:
 				for key, item := range left.AllFromFront() {
